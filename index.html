@@ -19,6 +19,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <style>
 :root{--navy:#0B1929;--navy2:#112240;--teal:#0E6E8C;--teal2:#1589AA;--teal3:#64CCC5;--gold:#C9A84C;--gold2:#E8C97E;--gold3:#FBF0D0;--sage:#1A7A4A;--sage2:#2EAD6D;--sage3:#D4F5E5;--crimson:#B5302A;--crim2:#FDEEEE;--white:#FFFFFF;--off:#F7FAFC;--light:#EEF4F8;--border:#D0DCE8;--text1:#0B1929;--text2:#3D5269;--text3:#7A92A8;--shadow:0 4px 24px rgba(11,25,41,0.12);--shadow2:0 2px 8px rgba(11,25,41,0.08);--radius:12px;--radius2:8px;}
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -694,6 +696,27 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
 </head>
 <body>
 
+<!-- ═══ LOGIN SCREEN (حماية بكلمة سر — Firebase Auth) ═══ -->
+<div id="loginScreen" style="position:fixed;inset:0;z-index:9999;background:linear-gradient(180deg,#0B1929,#112240);display:flex;align-items:center;justify-content:center;padding:20px;direction:rtl;font-family:'Tajawal',sans-serif;">
+  <div style="background:#fff;border-radius:16px;padding:32px 26px;width:100%;max-width:360px;box-shadow:0 20px 60px rgba(0,0,0,0.4);">
+    <div style="text-align:center;margin-bottom:20px;">
+      <div style="font-size:40px;">💊</div>
+      <div style="font-size:17px;font-weight:900;color:#0B1929;margin-top:6px;">نظام صرف الأدوية</div>
+      <div style="font-size:12.5px;color:#7A92A8;margin-top:2px;">سجّل دخولك للمتابعة</div>
+    </div>
+    <div style="margin-bottom:12px;">
+      <label style="display:block;font-size:12.5px;font-weight:700;color:#3D5269;margin-bottom:5px;">البريد الإلكتروني</label>
+      <input type="email" id="loginEmail" placeholder="example@pharmacy.com" style="width:100%;box-sizing:border-box;padding:11px 12px;border:1px solid #D0DCE8;border-radius:8px;font-size:14px;" onkeydown="if(event.key==='Enter')document.getElementById('loginPassword').focus()">
+    </div>
+    <div style="margin-bottom:14px;">
+      <label style="display:block;font-size:12.5px;font-weight:700;color:#3D5269;margin-bottom:5px;">كلمة المرور</label>
+      <input type="password" id="loginPassword" placeholder="••••••••" style="width:100%;box-sizing:border-box;padding:11px 12px;border:1px solid #D0DCE8;border-radius:8px;font-size:14px;" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <div id="loginError" style="display:none;background:#FDEEEE;color:#B5302A;font-size:12.5px;padding:8px 10px;border-radius:6px;margin-bottom:12px;text-align:center;"></div>
+    <button onclick="doLogin()" id="loginBtn" style="width:100%;padding:12px;background:#0B1929;color:#fff;border:none;border-radius:8px;font-size:14.5px;font-weight:700;cursor:pointer;">تسجيل الدخول</button>
+  </div>
+</div>
+
 <nav class="sidebar">
   <div class="logo-mark">💊</div>
   <button class="nav-btn active" onclick="showPage('entry')" id="nav-entry">✏️<span class="tip">إدخال البيانات</span></button>
@@ -707,6 +730,7 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
   <div class="sidebar-sep"></div>
   <button class="nav-btn" onclick="showPage('backup')" id="nav-backup" title="حفظ واسترجاع">💾<span class="tip">حفظ واسترجاع</span></button>
   <button class="nav-btn" onclick="manualSave()" title="حفظ يدوي">💾<span class="tip">حفظ (Ctrl+S)</span></button>
+  <button class="nav-btn" onclick="doLogout()" title="تسجيل الخروج">🚪<span class="tip">تسجيل الخروج</span></button>
 </nav>
 
 <div class="main">
@@ -1594,16 +1618,56 @@ function setSyncStatus(text,bg,color){
   badge.style.background=bg;badge.style.color=color;
 }
 
+let fbAuth=null, _cloudStarted=false;
+
 try{
   firebase.initializeApp(firebaseConfig);
   fbDb=firebase.firestore();
   fbDb.enablePersistence({synchronizeTabs:true}).catch(function(){});
   fbDocRef=fbDb.collection('pharmacy').doc('main');
+  fbAuth=firebase.auth();
   _fbReady=true;
-  startCloudSync();
+
+  fbAuth.onAuthStateChanged(function(user){
+    const screen=document.getElementById('loginScreen');
+    if(user){
+      screen.style.display='none';
+      if(!_cloudStarted){_cloudStarted=true;startCloudSync();}
+    }else{
+      screen.style.display='flex';
+    }
+  });
 }catch(e){
   console.error('Firebase init failed',e);
   setSyncStatus('⚠️ المزامنة غير متاحة','var(--crim2)','var(--crimson)');
+}
+
+function doLogin(){
+  const email=document.getElementById('loginEmail').value.trim();
+  const pass=document.getElementById('loginPassword').value;
+  const errBox=document.getElementById('loginError');
+  const btn=document.getElementById('loginBtn');
+  errBox.style.display='none';
+  if(!email||!pass){
+    errBox.textContent='برجاء إدخال الإيميل وكلمة المرور';
+    errBox.style.display='block';
+    return;
+  }
+  btn.disabled=true;btn.textContent='جاري الدخول...';
+  fbAuth.signInWithEmailAndPassword(email,pass).catch(function(err){
+    let msg='بيانات الدخول غير صحيحة';
+    if(err.code==='auth/invalid-email')msg='صيغة الإيميل غير صحيحة';
+    if(err.code==='auth/too-many-requests')msg='محاولات كتير غلط — حاول تاني بعد شوية';
+    errBox.textContent=msg;
+    errBox.style.display='block';
+  }).finally(function(){
+    btn.disabled=false;btn.textContent='تسجيل الدخول';
+  });
+}
+
+function doLogout(){
+  if(!confirm('تسجيل الخروج من النظام؟'))return;
+  fbAuth.signOut();
 }
 
 function buildSyncPayload(){
