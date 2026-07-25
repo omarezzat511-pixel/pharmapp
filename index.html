@@ -1608,7 +1608,18 @@ const firebaseConfig={
   messagingSenderId:"14490151067",
   appId:"1:14490151067:web:4a544bafa3f108bbb2be3e"
 };
-let fbDb=null, fbDocRef=null, _fbReady=false, _applyingRemote=false, _fbSaveTimer=null;
+let fbDb=null, fbColl=null, fbOldDocRef=null, _fbReady=false, _applyingRemote=false, _fbSaveTimer=null;
+
+const SYNC_DOCS=[
+  {key:'daily',fields:['daily']},
+  {key:'archive',fields:['archive']},
+  {key:'items',fields:['items','nextId']},
+  {key:'patients',fields:['patients']},
+  {key:'receipts',fields:['receipts']},
+  {key:'inventory',fields:['inventory','activeInvMonth','archiveInventory']},
+  {key:'planning',fields:['orderPlanningOverrides']}
+];
+let _docStatus={};
 
 function setSyncStatus(text,bg,color){
   const badge=document.getElementById('syncBadge');
@@ -1624,7 +1635,8 @@ try{
   firebase.initializeApp(firebaseConfig);
   fbDb=firebase.firestore();
   fbDb.enablePersistence({synchronizeTabs:true}).catch(function(){});
-  fbDocRef=fbDb.collection('pharmacy').doc('main');
+  fbColl=fbDb.collection('pharmacy_data');
+  fbOldDocRef=fbDb.collection('pharmacy').doc('main'); // التصميم القديم (مستند واحد) — بيتستخدم مرة واحدة بس للترحيل
   fbAuth=firebase.auth();
   _fbReady=true;
 
@@ -1679,28 +1691,57 @@ function buildSyncPayload(){
   };
 }
 
-function pushToCloud(){
+function buildDocPayload(fields){
+  const payload={_updatedAt:Date.now()};
+  fields.forEach(function(f){payload[f]=S[f];});
+  return payload;
+}
+
+function pushDocToCloud(key,fields){
   if(!_fbReady||_applyingRemote)return;
-  fbDocRef.set(buildSyncPayload()).catch(function(){
-    // الكتابة هتتخزن محلياً وتتبعت تلقائي لما يرجع الاتصال — الحالة الحقيقية بتتحدث من خلال onSnapshot تحت
+  fbColl.doc(key).set(buildDocPayload(fields)).catch(function(){
+    // هتتخزن محلياً وتتبعت تلقائي لما يرجع الاتصال — الحالة الحقيقية بتتحدث من onSnapshot
   });
 }
 
-function applyRemoteData(data){
-  _applyingRemote=true;
-  if(data.items)S.items=data.items;
-  if(data.nextId)S.nextId=data.nextId;
-  if(data.patients)S.patients=data.patients;
-  if(data.daily)S.daily=data.daily;
-  if(data.archive)S.archive=data.archive;
-  if(data.receipts)S.receipts=data.receipts;
-  if(data.inventory)S.inventory=data.inventory;
-  if(data.activeInvMonth)S.activeInvMonth=data.activeInvMonth;
-  if(data.archiveInventory)S.archiveInventory=data.archiveInventory;
-  if(data.orderPlanningOverrides)S.orderPlanningOverrides=data.orderPlanningOverrides;
-  try{localStorage.setItem('pharm_v4',JSON.stringify(data));}catch(e){}
-  renderAll();
-  _applyingRemote=false;
+// كل استدعاء لـ save() بيبعت كل الأقسام ماعدا "اليومية" — لأن اليومية بيدخل عليها أكتر من جهاز
+// في نفس اللحظة عادةً، فبنستخدم لها عمليات ذرية مخصصة (تحت) بدل الكتابة فوق اليوم بالكامل.
+function pushToCloud(){
+  SYNC_DOCS.forEach(function(d){
+    if(d.key==='daily')return;
+    pushDocToCloud(d.key,d.fields);
+  });
+}
+
+// إضافة مريض جديد لليومية — عملية ذرية (arrayUnion) بتضيف الصف من غير ما تلمس أي صفوف تانية،
+// فلو جهازين ضافوا مريضين مختلفين لنفس اليوم في نفس اللحظة بالظبط، الاتنين بيتسجلوا صح من غير ما أي حد يمسح التاني.
+function appendDailyRowToCloud(day,row){
+  if(!_fbReady)return;
+  const payload={_updatedAt:Date.now()};
+  payload['daily.'+day]=firebase.firestore.FieldValue.arrayUnion(row);
+  fbColl.doc('daily').set(payload,{merge:true}).catch(function(){});
+}
+
+// تعديل/حذف صف موجود في اليومية — بيكتب فوق يوم واحد بس (مش كل الأيام)، فمفيش تأثير على أيام تانية أو أقسام تانية
+function pushDailyDayToCloud(day){
+  if(!_fbReady)return;
+  const payload={_updatedAt:Date.now()};
+  payload['daily.'+day]=S.daily[day]||[];
+  fbColl.doc('daily').set(payload,{merge:true}).catch(function(){});
+}
+
+function applyDocData(fields,data){
+  fields.forEach(function(f){
+    if(data[f]!==undefined)S[f]=data[f];
+  });
+}
+
+function updateAggregateStatus(){
+  const vals=Object.values(_docStatus);
+  if(!vals.length)return;
+  if(vals.indexOf('pending')!==-1){setSyncStatus('🔄 جاري الحفظ في السحابة...','var(--gold3)','#8a6d1a');}
+  else if(vals.indexOf('cache')!==-1){setSyncStatus('📴 غير متصل — هيتزامن لما يرجع النت','var(--gold3)','#8a6d1a');}
+  else{setSyncStatus('☁️ متزامن (تأكد من السيرفر)','var(--sage3)','var(--sage2)');}
 }
 
 function renderAll(){
@@ -1708,28 +1749,44 @@ function renderAll(){
   updateStats();updateBackupStats();renderPatientsDB();renderStockAlertBanner();
 }
 
-// ملاحظة مهمة: بنعتمد على doc.metadata.hasPendingWrites/fromCache (مش navigator.onLine ولا نجاح set() المحلي)
-// عشان نعرف هل البيانات فعلاً وصلت وتأكدت من سيرفر Firebase، لأن الكتابة بتتحفظ محلياً فوراً
-// حتى لو النت مقطوع فعلياً (persistence) وده كان بيدي انطباع "متزامن" غلط.
 function startCloudSync(){
   setSyncStatus('⏳ جاري الاتصال بالمزامنة...','var(--light)','var(--text3)');
-  fbDocRef.onSnapshot({includeMetadataChanges:true},function(doc){
-    if(!doc.exists){
-      // أول مرة على الإطلاق — لسه مفيش بيانات في السحابة، ارفع البيانات المحلية كنقطة بداية مشتركة
-      pushToCloud();
-      return;
-    }
-    applyRemoteData(doc.data());
-    if(doc.metadata.hasPendingWrites){
-      setSyncStatus('🔄 جاري الحفظ في السحابة...','var(--gold3)','#8a6d1a');
-    }else if(doc.metadata.fromCache){
-      setSyncStatus('📴 غير متصل — هيتزامن لما يرجع النت','var(--gold3)','#8a6d1a');
-    }else{
-      setSyncStatus('☁️ متزامن (تأكد من السيرفر)','var(--sage3)','var(--sage2)');
-    }
-  },function(err){
-    console.error('Cloud sync error',err);
-    setSyncStatus('⚠️ خطأ في المزامنة','var(--crim2)','var(--crimson)');
+
+  // ترحيل تلقائي لمرة واحدة من التصميم القديم (مستند واحد) لو الأقسام الجديدة لسه فاضية
+  fbOldDocRef.get().then(function(oldDoc){
+    if(!oldDoc.exists)return;
+    const oldData=oldDoc.data();
+    SYNC_DOCS.forEach(function(d){
+      fbColl.doc(d.key).get().then(function(newDoc){
+        if(newDoc.exists)return;
+        const payload={_updatedAt:Date.now()};
+        d.fields.forEach(function(f){if(oldData[f]!==undefined)payload[f]=oldData[f];});
+        fbColl.doc(d.key).set(payload).catch(function(){});
+      });
+    });
+  }).catch(function(){});
+
+  SYNC_DOCS.forEach(function(d){
+    _docStatus[d.key]='pending';
+    fbColl.doc(d.key).onSnapshot({includeMetadataChanges:true},function(doc){
+      if(!doc.exists){
+        pushDocToCloud(d.key,d.fields);
+        return;
+      }
+      _applyingRemote=true;
+      applyDocData(d.fields,doc.data());
+      try{localStorage.setItem('pharm_v4',JSON.stringify(buildSyncPayload()));}catch(e){}
+      renderAll();
+      _applyingRemote=false;
+
+      if(doc.metadata.hasPendingWrites)_docStatus[d.key]='pending';
+      else if(doc.metadata.fromCache)_docStatus[d.key]='cache';
+      else _docStatus[d.key]='synced';
+      updateAggregateStatus();
+    },function(err){
+      console.error('Cloud sync error ('+d.key+')',err);
+      setSyncStatus('⚠️ خطأ في المزامنة','var(--crim2)','var(--crimson)');
+    });
   });
 }
 
@@ -2117,7 +2174,8 @@ function transferToDaily(){
   else{const ex=S.patients.findIndex(p=>p.name===name);if(ex<0)S.patients.push({name,id:''});}
   if(!S.daily[date])S.daily[date]=[];
   const obj={};S.currentItems.forEach(i=>{obj[i.itemName]=(obj[i.itemName]||0)+i.qty;});
-  S.daily[date].push({patientName:name,patientId:id,items:obj});
+  const newDailyRow={patientName:name,patientId:id,items:obj};
+  S.daily[date].push(newDailyRow);
 
   // Update inventory
   updateInventoryOut(date, obj);
@@ -2129,6 +2187,7 @@ function transferToDaily(){
   });
 
   save();
+  appendDailyRowToCloud(date,newDailyRow);
   document.getElementById('patientName').value='';
   document.getElementById('patientId').value='';
   document.getElementById('itemSearch').value='';
@@ -3054,7 +3113,7 @@ function executeTransferSelected(){
     const days=Object.keys(S.daily).sort().reverse();
     S.activeDay=days[0]||'';
   }
-  save();closeModal('transferDailyModal');
+  save();pushDailyDayToCloud(ad);pushDailyDayToCloud(targetDate);closeModal('transferDailyModal');
   renderDaily();updateStats();renderInventory();
   toast(`تم ترحيل ${movedCount} مريض إلى يومية ${fmtDate(targetDate)} ✓`,'success');
 }
@@ -3315,7 +3374,7 @@ function savePatientEdit(){
   updateInventoryOut(editCtx.day, obj);
 
   S.daily[editCtx.day][editCtx.idx]={patientName:name,patientId:document.getElementById('editPatientId').value.trim(),items:obj};
-  save();renderDaily();updateStats();renderInventory();closeModal('editPatientModal');toast('تم حفظ التعديلات ✓','success');
+  save();pushDailyDayToCloud(editCtx.day);renderDaily();updateStats();renderInventory();closeModal('editPatientModal');toast('تم حفظ التعديلات ✓','success');
 }
 function deletePatientRow(){
   if(!confirm('حذف هذا المريض من اليومية نهائياً؟'))return;
@@ -3339,7 +3398,7 @@ function deletePatientRow(){
   updateInventoryOut(editCtx.day, row.items, true);
   S.daily[editCtx.day].splice(editCtx.idx,1);
   if(!S.daily[editCtx.day].length)delete S.daily[editCtx.day];
-  save();renderDaily();updateStats();renderInventory();renderItemsGrid();closeModal('editPatientModal');toast('تم حذف المريض واسترجاع الكميات للمخزون','success');
+  save();pushDailyDayToCloud(editCtx.day);renderDaily();updateStats();renderInventory();renderItemsGrid();closeModal('editPatientModal');toast('تم حذف المريض واسترجاع الكميات للمخزون','success');
 }
 
 // Helper to revert inventory
@@ -4936,7 +4995,7 @@ function executeDeleteDay(){
   const remaining=Object.keys(S.daily).sort().reverse();
   if(remaining.length){S.activeDay=remaining[0];}
   else{S.activeDay=S.date;}
-  save();renderDaily();updateStats();renderInventory();renderItemsGrid();
+  save();pushDailyDayToCloud(day);renderDaily();updateStats();renderInventory();renderItemsGrid();
   closeModal('deleteDayModal');
   toast(`✓ تم حذف يومية ${fmtDate(day)} بالكامل واسترجاع الكميات للمخزون`,'success');
 }
