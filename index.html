@@ -1681,10 +1681,8 @@ function buildSyncPayload(){
 
 function pushToCloud(){
   if(!_fbReady||_applyingRemote)return;
-  fbDocRef.set(buildSyncPayload()).then(function(){
-    if(navigator.onLine)setSyncStatus('☁️ متزامن','var(--sage3)','var(--sage2)');
-  }).catch(function(){
-    setSyncStatus('📴 غير متصل — هيتزامن لما يرجع النت','var(--gold3)','#8a6d1a');
+  fbDocRef.set(buildSyncPayload()).catch(function(){
+    // الكتابة هتتخزن محلياً وتتبعت تلقائي لما يرجع الاتصال — الحالة الحقيقية بتتحدث من خلال onSnapshot تحت
   });
 }
 
@@ -1710,17 +1708,25 @@ function renderAll(){
   updateStats();updateBackupStats();renderPatientsDB();renderStockAlertBanner();
 }
 
+// ملاحظة مهمة: بنعتمد على doc.metadata.hasPendingWrites/fromCache (مش navigator.onLine ولا نجاح set() المحلي)
+// عشان نعرف هل البيانات فعلاً وصلت وتأكدت من سيرفر Firebase، لأن الكتابة بتتحفظ محلياً فوراً
+// حتى لو النت مقطوع فعلياً (persistence) وده كان بيدي انطباع "متزامن" غلط.
 function startCloudSync(){
   setSyncStatus('⏳ جاري الاتصال بالمزامنة...','var(--light)','var(--text3)');
-  fbDocRef.onSnapshot(function(doc){
+  fbDocRef.onSnapshot({includeMetadataChanges:true},function(doc){
     if(!doc.exists){
       // أول مرة على الإطلاق — لسه مفيش بيانات في السحابة، ارفع البيانات المحلية كنقطة بداية مشتركة
       pushToCloud();
       return;
     }
     applyRemoteData(doc.data());
-    setSyncStatus(navigator.onLine?'☁️ متزامن':'📴 غير متصل — هيتزامن لما يرجع النت',
-      navigator.onLine?'var(--sage3)':'var(--gold3)', navigator.onLine?'var(--sage2)':'#8a6d1a');
+    if(doc.metadata.hasPendingWrites){
+      setSyncStatus('🔄 جاري الحفظ في السحابة...','var(--gold3)','#8a6d1a');
+    }else if(doc.metadata.fromCache){
+      setSyncStatus('📴 غير متصل — هيتزامن لما يرجع النت','var(--gold3)','#8a6d1a');
+    }else{
+      setSyncStatus('☁️ متزامن (تأكد من السيرفر)','var(--sage3)','var(--sage2)');
+    }
   },function(err){
     console.error('Cloud sync error',err);
     setSyncStatus('⚠️ خطأ في المزامنة','var(--crim2)','var(--crimson)');
