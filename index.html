@@ -1715,11 +1715,19 @@ function pushToCloud(){
 
 // إضافة مريض جديد لليومية — عملية ذرية (arrayUnion) بتضيف الصف من غير ما تلمس أي صفوف تانية،
 // فلو جهازين ضافوا مريضين مختلفين لنفس اليوم في نفس اللحظة بالظبط، الاتنين بيتسجلوا صح من غير ما أي حد يمسح التاني.
+// ملاحظة فنية: بنستخدم update() مش set(merge:true) لأن مسارات النقاط (dot-path) بتشتغل صح مع update() بس
+// — set() مع merge:true بيكتب فوق الحقل بالكامل لو استخدمنا معاه مسار منقط.
 function appendDailyRowToCloud(day,row){
   if(!_fbReady)return;
   const payload={_updatedAt:Date.now()};
   payload['daily.'+day]=firebase.firestore.FieldValue.arrayUnion(row);
-  fbColl.doc('daily').set(payload,{merge:true}).catch(function(){});
+  fbColl.doc('daily').update(payload).catch(function(err){
+    if(err && err.code==='not-found'){
+      const initPayload={_updatedAt:Date.now(),daily:{}};
+      initPayload.daily[day]=[row];
+      fbColl.doc('daily').set(initPayload,{merge:true}).catch(function(){});
+    }
+  });
 }
 
 // تعديل/حذف صف موجود في اليومية — بيكتب فوق يوم واحد بس (مش كل الأيام)، فمفيش تأثير على أيام تانية أو أقسام تانية
@@ -1727,7 +1735,13 @@ function pushDailyDayToCloud(day){
   if(!_fbReady)return;
   const payload={_updatedAt:Date.now()};
   payload['daily.'+day]=S.daily[day]||[];
-  fbColl.doc('daily').set(payload,{merge:true}).catch(function(){});
+  fbColl.doc('daily').update(payload).catch(function(err){
+    if(err && err.code==='not-found'){
+      const initPayload={_updatedAt:Date.now(),daily:{}};
+      initPayload.daily[day]=S.daily[day]||[];
+      fbColl.doc('daily').set(initPayload,{merge:true}).catch(function(){});
+    }
+  });
 }
 
 function applyDocData(fields,data){
