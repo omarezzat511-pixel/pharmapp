@@ -4450,6 +4450,7 @@ function importBackup(input){
       if(data.archiveInventory)S.archiveInventory=data.archiveInventory;
       if(data.activeInvMonth)S.activeInvMonth=data.activeInvMonth;
       save();
+      pushDocToCloud('daily',['daily']); // استرجاع كامل مقصود — لازم يكتب فوق اليومية في السحابة كمان
       renderItemsGrid();renderDaily();renderArchive();renderReceipts();renderInventory();updateStats();updateBackupStats();
       toast('✓ تم استرجاع البيانات بنجاح','success');
     }catch(err){
@@ -4658,6 +4659,7 @@ function executeReset(){
   rcptNextId=1;
   try{localStorage.removeItem('pharm_v4');}catch(e){}
   save();
+  pushDocToCloud('daily',['daily']); // مسح شامل مقصود — لازم يمسح اليومية من السحابة كمان
   // Re-render everything
   renderItemsGrid();renderDaily();renderArchive();renderReceipts();
   renderInventory();updateStats();updateBackupStats();renderPatientsDB();
