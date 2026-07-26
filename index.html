@@ -745,6 +745,14 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
     </div>
   </div>
 
+  <div id="backupReminderBanner" style="display:none;background:var(--gold3);color:#6a5010;padding:10px 20px;align-items:center;justify-content:space-between;gap:10px;font-size:13px;">
+    <span>⏰ عدّت فترة كويسة من غير ما تعمل نسخة احتياطية — لو بتنقل البيانات يدوي بين الأجهزة، دي فرصة تعمل واحدة دلوقتي.</span>
+    <div style="display:flex;gap:8px;flex-shrink:0;">
+      <button class="btn btn-sm btn-navy" onclick="exportBackup()">⬇ صدّر دلوقتي</button>
+      <button class="btn btn-sm" style="background:rgba(255,255,255,0.5);color:#6a5010;" onclick="snoozeBackupReminder()">تذكرني بعدين</button>
+    </div>
+  </div>
+
   <div class="page active" id="page-entry">
     <div class="page-header">
       <div><div class="page-title">إدخال بيانات المريض</div><div class="page-subtitle">أدخل بيانات المريض والأصناف ثم ارحّل إلى اليومية</div></div>
@@ -4435,14 +4443,55 @@ function updateBackupStats(){
   document.getElementById('bk-stat-days').textContent=Object.keys(S.daily).length;
 }
 
+// ═══════════════════════════════════════════════════════════════
+// ══ تذكير دوري بعمل نسخة احتياطية (مفيد مع النقل اليدوي بين الأجهزة) ══
+// ═══════════════════════════════════════════════════════════════
+// عدّل الرقم ده لو عايز تغيّر كل قد إيه يفكرك (بالساعات)
+const BACKUP_REMINDER_HOURS=2;
+let _backupReminderSnoozeUntil=0;
+
+function checkBackupReminder(){
+  if(Date.now()<_backupReminderSnoozeUntil)return;
+  let last=parseInt(localStorage.getItem('pharma_lastBackupExport')||'0',10);
+  if(!last){
+    // أول مرة يفتح فيها التطبيق — ابدأ العد من دلوقتي بدل ما نعتبره متأخر فورًا
+    last=Date.now();
+    try{localStorage.setItem('pharma_lastBackupExport',last.toString());}catch(e){}
+  }
+  const hoursSince=(Date.now()-last)/(1000*60*60);
+  const banner=document.getElementById('backupReminderBanner');
+  if(!banner)return;
+  if(hoursSince>=BACKUP_REMINDER_HOURS){
+    banner.style.display='flex';
+  }
+}
+
+function snoozeBackupReminder(){
+  hideBackupReminderBanner();
+  _backupReminderSnoozeUntil=Date.now()+30*60*1000; // فكّرني تاني بعد نص ساعة
+  toast('تمام، هفكّرك تاني بعد نص ساعة','success');
+}
+
+function hideBackupReminderBanner(){
+  const banner=document.getElementById('backupReminderBanner');
+  if(banner)banner.style.display='none';
+}
+
+setInterval(checkBackupReminder,5*60*1000); // افحص كل 5 دقايق
+setTimeout(checkBackupReminder,3000); // وافحص بعد شوية من فتح التطبيق
+
 function exportBackup(){
   const data=JSON.stringify(S,null,2);
   const blob=new Blob([data],{type:'application/json'});
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
-  const now=new Date().toISOString().split('T')[0];
-  a.download=`pharmacy_backup_${now}.json`;
+  const d=new Date();
+  const stamp=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')
+    +'_'+String(d.getHours()).padStart(2,'0')+'-'+String(d.getMinutes()).padStart(2,'0');
+  a.download=`pharmacy_backup_${stamp}.json`;
   a.click();
+  try{localStorage.setItem('pharma_lastBackupExport',Date.now().toString());}catch(e){}
+  hideBackupReminderBanner();
   toast('✓ تم تصدير النسخة الاحتياطية','success');
 }
 
