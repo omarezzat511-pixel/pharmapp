@@ -1647,13 +1647,29 @@ try{
   fbAuth=firebase.auth();
   _fbReady=true;
 
+  // لو الجهاز أوفلاين ولسه فيه إشارة إن آخر تسجيل دخول كان ناجح على نفس الجهاز ده،
+  // منستناش استجابة Firebase (ممكن تتأخر أو متوصلش وهو أوفلاين) — نفتح التطبيق على طول،
+  // وبرضو بنسجل مستمع onAuthStateChanged عادي عشان يصحح الحالة أول ما ينجح يتأكد فعلياً.
+  if(!navigator.onLine && localStorage.getItem('pharma_lastLoginOk')==='1'){
+    document.getElementById('loginScreen').style.display='none';
+    if(!_cloudStarted){_cloudStarted=true;startCloudSync();}
+  }
+
   fbAuth.onAuthStateChanged(function(user){
     const screen=document.getElementById('loginScreen');
     if(user){
+      try{localStorage.setItem('pharma_lastLoginOk','1');}catch(e){}
       screen.style.display='none';
       if(!_cloudStarted){_cloudStarted=true;startCloudSync();}
     }else{
-      screen.style.display='flex';
+      // لو إحنا أوفلاين، متلغيش الشاشة فورًا اعتمادًا على "مفيش مستخدم" —
+      // ده ممكن يكون بس لأن Firebase لسه مقدرش يتأكد من الجلسة القديمة بسبب انقطاع النت
+      if(navigator.onLine){
+        try{localStorage.removeItem('pharma_lastLoginOk');}catch(e){}
+        screen.style.display='flex';
+      }else if(localStorage.getItem('pharma_lastLoginOk')!=='1'){
+        screen.style.display='flex';
+      }
     }
   });
 }catch(e){
@@ -1673,7 +1689,9 @@ function doLogin(){
     return;
   }
   btn.disabled=true;btn.textContent='جاري الدخول...';
-  fbAuth.signInWithEmailAndPassword(email,pass).catch(function(err){
+  fbAuth.signInWithEmailAndPassword(email,pass).then(function(){
+    try{localStorage.setItem('pharma_lastLoginOk','1');}catch(e){}
+  }).catch(function(err){
     let msg='بيانات الدخول غير صحيحة';
     if(err.code==='auth/invalid-email')msg='صيغة الإيميل غير صحيحة';
     if(err.code==='auth/too-many-requests')msg='محاولات كتير غلط — حاول تاني بعد شوية';
@@ -1686,6 +1704,7 @@ function doLogin(){
 
 function doLogout(){
   if(!confirm('تسجيل الخروج من النظام؟'))return;
+  try{localStorage.removeItem('pharma_lastLoginOk');}catch(e){}
   fbAuth.signOut();
 }
 
