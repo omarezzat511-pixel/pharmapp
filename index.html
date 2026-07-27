@@ -682,6 +682,21 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
 .a4-table-bw td{color:#000!important;border:1px solid #555!important;background:#fff!important;font-weight:700;}
 .a4-table-bw tr:nth-child(even) td{background:#eee!important;}
 .a4-table-bw tr.a4-total-row td{background:#ddd!important;border-top:2px solid #000!important;font-weight:900!important;}
+
+/* تصميم طباعة اليومية بشكل النموذج المرجعي: شريط عنوان أزرق فاتح + أسماء أصناف رأسية */
+.a4-daily-band{background:#DCE8F5;border:2px solid #16406B;border-radius:6px;padding:10px 16px;
+  display:flex;align-items:center;justify-content:center;position:relative;margin-bottom:8px;}
+.a4-daily-band .icon-badge{position:absolute;right:14px;top:50%;transform:translateY(-50%);
+  width:38px;height:38px;border-radius:50%;background:#16406B;color:#fff;display:flex;
+  align-items:center;justify-content:center;font-size:18px;}
+.a4-daily-band h1{font-size:21px;font-weight:900;color:#16406B;margin:0;}
+.a4-daily-meta-row{display:flex;justify-content:space-between;align-items:center;
+  font-size:13px;font-weight:700;color:#16406B;margin:0 0 10px;}
+.a4-table-vertical th.item-col-v{height:105px;vertical-align:bottom;padding:4px 1px;width:24px;
+  border:1px solid #000!important;}
+.a4-table-vertical th.item-col-v .rot{display:inline-block;transform:rotate(-90deg);
+  white-space:nowrap;font-size:11px;font-weight:700;}
+.a4-daily-sign-line{display:flex;justify-content:flex-start;gap:60px;margin-top:34px;font-size:13px;font-weight:700;}
 @media print{
   body *{display:none!important;}
   #a4PrintRoot{display:block!important;}
@@ -5235,6 +5250,9 @@ function printAllDaily(){
   const data=S.daily[ad]||[];
   if(!data.length){toast('لا توجد بيانات للطباعة','error');return;}
 
+  // عدّل النص ده لو عايز تغيّر اسم/نوع الصيدلية الظاهر في الطباعة
+  const PHARMACY_LABEL='صيدلية نفقة دولة خارجي';
+
   const allItems=getItems(data);
   const totals={};
   allItems.forEach(n=>totals[n]=0);
@@ -5245,6 +5263,8 @@ function printAllDaily(){
   for(let i=0;i<data.length;i+=ROWS_PER_PAGE){pages.push(data.slice(i,i+ROWS_PER_PAGE));}
   if(!pages.length)pages.push([]);
   const today=new Date().toLocaleDateString('ar-EG');
+  const dateParts=ad.split('-'); // yyyy-mm-dd
+  const dateLabel=(dateParts.length===3)?(dateParts[0]+'/'+dateParts[1]+'/'+dateParts[2]):fmtDate(ad);
 
   let html='';
   pages.forEach(function(pageRows,pageIdx){
@@ -5269,25 +5289,22 @@ function printAllDaily(){
     }
     let signHtml='';
     if(isLastPage){
-      signHtml='<div class="a4-sign-row">';
-      signHtml+='<div class="a4-sign-box"><div class="a4-sign-line">صاحب العهدة</div></div>';
-      signHtml+='<div class="a4-sign-box"><div class="a4-sign-line">مدير الصيادلة</div></div>';
+      signHtml='<div class="a4-daily-sign-line">';
+      signHtml+='<span>توقيع الصيدلي المسؤول: ______________________</span>';
+      signHtml+='<span>الختم:</span>';
       signHtml+='</div>';
     }
     let page='<div class="a4-page a4-page-bw" style="width:auto;min-width:277mm;min-height:0;">';
-    page+='<div class="a4-header">';
-    page+='<div><h1>💊 اليومية — '+fmtDate(ad)+'</h1>';
-    page+='<div class="a4-sub">نظام صرف الأدوية | تاريخ الطباعة: '+today+'</div></div>';
-    page+='<div class="a4-page-num">صفحة '+(pageIdx+1)+' من '+pages.length+'</div>';
-    page+='</div>';
-    page+='<table class="a4-table a4-table-bw"><thead><tr>';
-    page+='<th style="width:24px;">#</th>';
+    page+='<div class="a4-daily-band"><div class="icon-badge">💊</div><h1>يومية صرف صيدلية</h1></div>';
+    page+='<div class="a4-daily-meta-row"><span>التاريخ: '+dateLabel+'</span><span>'+PHARMACY_LABEL+'</span></div>';
+    page+='<table class="a4-table a4-table-bw a4-table-vertical"><thead><tr>';
+    page+='<th style="width:22px;">م</th>';
     page+='<th class="a4-name-col">اسم المريض</th>';
     page+='<th>الرقم القومي</th>';
-    allItems.forEach(function(n){page+='<th>'+n+'</th>';});
+    allItems.forEach(function(n){page+='<th class="item-col-v"><span class="rot">'+n+'</span></th>';});
     page+='</tr></thead><tbody>'+rowsHtml+totalRowHtml+'</tbody></table>';
     page+=signHtml;
-    page+='<div class="a4-footer"><span>عدد المرضى: '+data.length+'</span><span>'+today+'</span></div>';
+    page+='<div class="a4-footer"><span>عدد المرضى: '+data.length+'</span><span>صفحة '+(pageIdx+1)+' من '+pages.length+' | تاريخ الطباعة: '+today+'</span></div>';
     page+='</div>';
     html+=page;
   });
