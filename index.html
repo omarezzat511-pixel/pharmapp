@@ -692,9 +692,10 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
 .a4-daily-band h1{font-size:21px;font-weight:900;color:#16406B;margin:0;}
 .a4-daily-meta-row{display:flex;justify-content:space-between;align-items:center;
   font-size:13px;font-weight:700;color:#16406B;margin:0 0 10px;}
-.a4-table-vertical th.item-col-v{height:105px;vertical-align:bottom;padding:4px 1px;width:24px;
-  border:1px solid #000!important;}
-.a4-table-vertical th.item-col-v .rot{display:inline-block;transform:rotate(-90deg);
+.a4-table-vertical th.item-col-v{height:105px;padding:0;width:24px;position:relative;
+  border:1px solid #000!important;overflow:hidden;}
+.a4-table-vertical th.item-col-v .rot{position:absolute;bottom:6px;left:50%;
+  transform-origin:left bottom;transform:rotate(-90deg);
   white-space:nowrap;font-size:11px;font-weight:700;}
 .a4-daily-sign-line{display:flex;justify-content:flex-start;gap:60px;margin-top:34px;font-size:13px;font-weight:700;}
 @media print{
@@ -1745,11 +1746,11 @@ function pushDocToCloud(key,fields){
   });
 }
 
-// كل استدعاء لـ save() بيبعت كل الأقسام ماعدا "اليومية" — لأن اليومية بيدخل عليها أكتر من جهاز
-// في نفس اللحظة عادةً، فبنستخدم لها عمليات ذرية مخصصة (تحت) بدل الكتابة فوق اليوم بالكامل.
+// كل استدعاء لـ save() بيبعت كل الأقسام ماعدا "اليومية" و"الوارد" — لأنهم بيدخل عليهم أكتر من جهاز
+// في نفس اللحظة عادةً، فبنستخدم لهم عمليات ذرية مخصصة (تحت) بدل الكتابة فوق القائمة بالكامل.
 function pushToCloud(){
   SYNC_DOCS.forEach(function(d){
-    if(d.key==='daily')return;
+    if(d.key==='daily'||d.key==='receipts')return;
     pushDocToCloud(d.key,d.fields);
   });
 }
@@ -1781,6 +1782,38 @@ function pushDailyDayToCloud(day){
       const initPayload={_updatedAt:Date.now(),daily:{}};
       initPayload.daily[day]=S.daily[day]||[];
       fbColl.doc('daily').set(initPayload,{merge:true}).catch(function(){});
+    }
+  });
+}
+
+// إضافة وارد جديد — عملية ذرية (arrayUnion) بنفس فكرة اليومية، عشان لو جهازين سجّلوا وارد مختلف في نفس اللحظة
+function appendReceiptToCloud(receipt){
+  if(!_fbReady)return;
+  fbColl.doc('receipts').update({
+    receipts:firebase.firestore.FieldValue.arrayUnion(receipt),
+    _updatedAt:Date.now()
+  }).catch(function(err){
+    if(err && err.code==='not-found'){
+      fbColl.doc('receipts').set({receipts:[receipt],_updatedAt:Date.now()},{merge:true}).catch(function(){});
+    }
+  });
+}
+
+// تعديل/حذف وارد موجود — بيكتب فوق قائمة الوارد بالكامل (نادر التزامن، عكس الإضافة)
+function pushReceiptsToCloud(){
+  pushDocToCloud('receipts',['receipts']);
+}
+
+// إضافة صنف جديد — تقوية إضافية سريعة بجانب المزامنة العادية لأصناف،
+// لتقليل احتمالية إن إضافة صنفين مختلفين من جهازين في نفس اللحظة يمسح حد التاني قبل ما تتزامن الكميات العادية
+function appendItemToCloud(item){
+  if(!_fbReady)return;
+  fbColl.doc('items').update({
+    items:firebase.firestore.FieldValue.arrayUnion(item),
+    _updatedAt:Date.now()
+  }).catch(function(err){
+    if(err && err.code==='not-found'){
+      fbColl.doc('items').set({items:[item],nextId:S.nextId,_updatedAt:Date.now()},{merge:true}).catch(function(){});
     }
   });
 }
@@ -2275,7 +2308,7 @@ function addReceipt(){
   if(!orderNo){toast('أدخل أمر التوريد','error');return;}
 
   const receipt={
-    id:rcptNextId++,
+    id:Date.now()+'_'+Math.random().toString(36).slice(2,8),
     itemName:name,
     qty:qty,
     company:company,
@@ -2293,7 +2326,7 @@ function addReceipt(){
   // Update inventory
   updateInventoryIn(S.date, name, qty);
 
-  save();renderReceipts();renderItemsGrid();renderInventory();
+  save();appendReceiptToCloud(receipt);renderReceipts();renderItemsGrid();renderInventory();
   clearReceiptForm();
   toast(`✓ تم تسجيل وارد ${qty} ${item?item.unit:''} من "${name}"`,'success');
   checkAndAlertStock(item?[item]:[]);
@@ -2336,7 +2369,7 @@ function renderReceipts(){
     return;
   }
 
-  tb.innerHTML=sorted.map((r,i)=>`<tr id="rcpt-row-${r.id}"><td>${i+1}</td><td class="name-cell">${r.itemName}</td><td><span class="qty-badge" id="rcpt-qty-display-${r.id}">${r.qty}</span></td><td>${r.company}</td><td>${r.deliveryNo}</td><td>${r.orderNo}</td><td>${fmtDate(r.date)}</td><td style="text-align:center;white-space:nowrap;"><button class="btn btn-sm btn-warn" onclick="openEditReceipt(${r.id})" title="تعديل الكمية">✏ تعديل</button> <button class="btn btn-sm btn-danger" onclick="deleteReceipt(${r.id})" title="حذف">✕ حذف</button></td></tr>`).join('');
+  tb.innerHTML=sorted.map((r,i)=>`<tr id="rcpt-row-${r.id}"><td>${i+1}</td><td class="name-cell">${r.itemName}</td><td><span class="qty-badge" id="rcpt-qty-display-${r.id}">${r.qty}</span></td><td>${r.company}</td><td>${r.deliveryNo}</td><td>${r.orderNo}</td><td>${fmtDate(r.date)}</td><td style="text-align:center;white-space:nowrap;"><button class="btn btn-sm btn-warn" onclick="openEditReceipt('${r.id}')" title="تعديل الكمية">✏ تعديل</button> <button class="btn btn-sm btn-danger" onclick="deleteReceipt('${r.id}')" title="حذف">✕ حذف</button></td></tr>`).join('');
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -2468,7 +2501,7 @@ function deleteReceipt(id){
     }
   }
 
-  save();renderReceipts();renderItemsGrid();renderInventory();
+  save();pushReceiptsToCloud();renderReceipts();renderItemsGrid();renderInventory();
   toast(`✓ تم حذف الوارد وإعادة حساب الجرد لـ "${r.itemName}"`,'success');
 }
 
@@ -2480,8 +2513,8 @@ function openEditReceipt(id){
   // Replace qty cell with inline input + save/cancel
   const qtyCell=row.cells[2];
   const actCell=row.cells[7];
-  qtyCell.innerHTML=`<input type="number" min="1" value="${r.qty}" id="rcpt-edit-qty-${id}" class="inline-qty" style="width:80px;" onkeydown="if(event.key==='Enter')saveEditReceipt(${id});if(event.key==='Escape')renderReceipts();">`;
-  actCell.innerHTML=`<button class="btn btn-sm btn-primary" onclick="saveEditReceipt(${id})">💾 حفظ</button> <button class="btn btn-sm" style="background:var(--light);color:var(--text2)" onclick="renderReceipts()">إلغاء</button>`;
+  qtyCell.innerHTML=`<input type="number" min="1" value="${r.qty}" id="rcpt-edit-qty-${id}" class="inline-qty" style="width:80px;" onkeydown="if(event.key==='Enter')saveEditReceipt('${id}');if(event.key==='Escape')renderReceipts();">`;
+  actCell.innerHTML=`<button class="btn btn-sm btn-primary" onclick="saveEditReceipt('${id}')">💾 حفظ</button> <button class="btn btn-sm" style="background:var(--light);color:var(--text2)" onclick="renderReceipts()">إلغاء</button>`;
   document.getElementById('rcpt-edit-qty-'+id).focus();
 }
 
@@ -2519,7 +2552,7 @@ function saveEditReceipt(id){
     }
   }
 
-  save();renderReceipts();renderItemsGrid();renderInventory();
+  save();pushReceiptsToCloud();renderReceipts();renderItemsGrid();renderInventory();
   toast(`✓ تم تعديل كمية "${r.itemName}" من ${oldQty} إلى ${newQty}`,'success');
 }
 
@@ -4327,12 +4360,13 @@ function confirmAddItem(){
   const price=parseFloat(document.getElementById('newItemPrice').value)||0;
   if(!name){toast('أدخل اسم الصنف','error');return;}
   if(S.items.find(i=>i.name===name)){toast('الصنف موجود مسبقاً','error');return;}
-  S.items.push({id:S.nextId++,name,unit,stock,note,price});
+  const newItem={id:Date.now()+'_'+Math.random().toString(36).slice(2,8),name,unit,stock,note,price};
+  S.items.push(newItem);
   // Add to current inventory month
   const cm=getMonthKey(S.date);
   if(!S.inventory[cm]){S.inventory[cm]={items:[],carriedFrom:''};}
   initInventoryMonth(cm);
-  save();renderItemsGrid();renderInventory();closeModal('addItemModal');
+  save();appendItemToCloud(newItem);renderItemsGrid();renderInventory();closeModal('addItemModal');
   toast(`✓ تمت إضافة "${name}"`,'success');
 }
 
@@ -4399,7 +4433,13 @@ function saveItemEdit(){
   }
   it.stock=newStock;
 
-  save();renderItemsGrid();renderInventory();closeModal('editItemModal');
+  save();
+  if(name!==oldName){
+    // إعادة تسمية الصنف بتلمس اليومية والوارد بالكامل — نبعتهم كاملين للسحابة استثناءً
+    pushDocToCloud('daily',['daily']);
+    pushDocToCloud('receipts',['receipts']);
+  }
+  renderItemsGrid();renderInventory();closeModal('editItemModal');
   toast('تم حفظ التعديلات ✓','success');
 }
 
@@ -4547,6 +4587,7 @@ function importBackup(input){
       if(data.activeInvMonth)S.activeInvMonth=data.activeInvMonth;
       save();
       pushDocToCloud('daily',['daily']); // استرجاع كامل مقصود — لازم يكتب فوق اليومية في السحابة كمان
+      pushDocToCloud('receipts',['receipts']); // ونفس الكلام على الوارد
       renderItemsGrid();renderDaily();renderArchive();renderReceipts();renderInventory();updateStats();updateBackupStats();
       toast('✓ تم استرجاع البيانات بنجاح','success');
     }catch(err){
@@ -4756,6 +4797,7 @@ function executeReset(){
   try{localStorage.removeItem('pharm_v4');}catch(e){}
   save();
   pushDocToCloud('daily',['daily']); // مسح شامل مقصود — لازم يمسح اليومية من السحابة كمان
+  pushDocToCloud('receipts',['receipts']); // ونفس الكلام على الوارد
   // Re-render everything
   renderItemsGrid();renderDaily();renderArchive();renderReceipts();
   renderInventory();updateStats();updateBackupStats();renderPatientsDB();
