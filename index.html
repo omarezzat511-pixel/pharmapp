@@ -692,11 +692,13 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
 .a4-daily-band h1{font-size:21px;font-weight:900;color:#16406B;margin:0;}
 .a4-daily-meta-row{display:flex;justify-content:space-between;align-items:center;
   font-size:13px;font-weight:700;color:#16406B;margin:0 0 10px;}
-.a4-table-vertical th.item-col-v{height:105px;padding:0;width:24px;position:relative;
+.a4-table-vertical{table-layout:fixed;}
+.a4-table-vertical th.item-col-v{height:100px;padding:0;width:20px;position:relative;
   border:1px solid #000!important;overflow:hidden;}
-.a4-table-vertical th.item-col-v .rot{position:absolute;bottom:6px;left:50%;
+.a4-table-vertical td{overflow:hidden;text-overflow:clip;}
+.a4-table-vertical th.item-col-v .rot{position:absolute;bottom:5px;left:50%;
   transform-origin:left bottom;transform:rotate(-90deg);
-  white-space:nowrap;font-size:11px;font-weight:700;}
+  white-space:nowrap;font-size:10px;font-weight:700;}
 .a4-daily-sign-line{display:flex;justify-content:flex-start;gap:60px;margin-top:34px;font-size:13px;font-weight:700;}
 @media print{
   body *{display:none!important;}
@@ -5340,9 +5342,9 @@ function printAllDaily(){
     page+='<div class="a4-daily-band"><div class="icon-badge">💊</div><h1>يومية صرف صيدلية</h1></div>';
     page+='<div class="a4-daily-meta-row"><span>التاريخ: '+dateLabel+'</span><span>'+PHARMACY_LABEL+'</span></div>';
     page+='<table class="a4-table a4-table-bw a4-table-vertical"><thead><tr>';
-    page+='<th style="width:22px;">م</th>';
-    page+='<th class="a4-name-col">اسم المريض</th>';
-    page+='<th>الرقم القومي</th>';
+    page+='<th style="width:20px;">م</th>';
+    page+='<th class="a4-name-col" style="width:95px;">اسم المريض</th>';
+    page+='<th style="width:70px;">الرقم القومي</th>';
     allItems.forEach(function(n){page+='<th class="item-col-v"><span class="rot">'+n+'</span></th>';});
     page+='</tr></thead><tbody>'+rowsHtml+totalRowHtml+'</tbody></table>';
     page+=signHtml;
