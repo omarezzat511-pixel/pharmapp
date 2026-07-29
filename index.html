@@ -1820,6 +1820,14 @@ function appendItemToCloud(item){
   });
 }
 
+// بيسجل امتى آخر تعديل محلي حصل لكل قسم — عشان لو رد فعل قديم من السحابة وصل متأخر
+// (بسبب تأخير في النت مثلاً)، مايكتبش فوق تعديل محلي أحدث لسه ما اتبعتش
+let _localDirtySince={};
+function markAllDirty(){
+  const now=Date.now();
+  SYNC_DOCS.forEach(function(d){_localDirtySince[d.key]=now;});
+}
+
 function applyDocData(fields,data){
   fields.forEach(function(f){
     if(data[f]!==undefined)S[f]=data[f];
@@ -1863,8 +1871,17 @@ function startCloudSync(){
         pushDocToCloud(d.key,d.fields);
         return;
       }
+      const data=doc.data();
+      const remoteTs=data._updatedAt||0;
+      const localTs=_localDirtySince[d.key]||0;
+      // لو البيانات القادمة من السيرفر أقدم من آخر تعديل محلي عندي ولسه ما اتأكدش إنه وصل،
+      // تجاهلها عشان ميحصلش استرجاع لبيانات قديمة فوق تعديل جديد
+      if(remoteTs<localTs && !doc.metadata.hasPendingWrites){
+        updateAggregateStatus();
+        return;
+      }
       _applyingRemote=true;
-      applyDocData(d.fields,doc.data());
+      applyDocData(d.fields,data);
       try{localStorage.setItem('pharm_v4',JSON.stringify(buildSyncPayload()));}catch(e){}
       renderAll();
       _applyingRemote=false;
@@ -1887,6 +1904,7 @@ function save(){
   try{
     localStorage.setItem('pharm_v4',JSON.stringify(buildSyncPayload()));
   }catch(e){}
+  markAllDirty();
   if(!_applyingRemote){
     clearTimeout(_fbSaveTimer);
     _fbSaveTimer=setTimeout(pushToCloud,400); // تجميع التحديثات المتقاربة في طلب واحد
