@@ -2489,7 +2489,7 @@ document.addEventListener('click',function(e){
 
 function deleteReceipt(id){
   if(!confirm('حذف هذا الوارد؟\nسيتم تعديل الجرد والمخزون تلقائياً.'))return;
-  const idx=S.receipts.findIndex(r=>r.id===id);
+  const idx=S.receipts.findIndex(r=>String(r.id)===String(id));
   if(idx<0)return;
   const r=S.receipts[idx];
 
@@ -2526,7 +2526,7 @@ function deleteReceipt(id){
 }
 
 function openEditReceipt(id){
-  const r=S.receipts.find(x=>x.id===id);
+  const r=S.receipts.find(x=>String(x.id)===String(id));
   if(!r)return;
   const row=document.getElementById('rcpt-row-'+id);
   if(!row)return;
@@ -2543,7 +2543,7 @@ function saveEditReceipt(id){
   if(!inp)return;
   const newQty=parseInt(inp.value);
   if(!newQty||newQty<=0){toast('أدخل كمية صحيحة','error');return;}
-  const r=S.receipts.find(x=>x.id===id);
+  const r=S.receipts.find(x=>String(x.id)===String(id));
   if(!r)return;
   const oldQty=r.qty;
   r.qty=newQty;
@@ -2604,63 +2604,66 @@ function getMonthKey(dateStr){
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
 }
 
+// يحسب القيم الصحيحة لصف صنف معين في شهر معين من غير أي افتراضات — بيتستخدم لما نحتاج ننشئ صف جديد
+// (سواء الشهر جديد كليًا، أو الصنف ده أول مرة يتحرك في شهر موجود بالفعل)
+function computeFreshInventoryRow(monthKey, itemName){
+  let inQty=0;
+  S.receipts.forEach(r=>{
+    if(r.itemName===itemName && getMonthKey(r.date)===monthKey)inQty+=r.qty;
+  });
+  let outQty=0;
+  const allDaysSource={...S.daily,...S.archive};
+  Object.keys(allDaysSource).filter(d=>d.startsWith(monthKey)).forEach(d=>{
+    (allDaysSource[d]||[]).forEach(pat=>{
+      if(pat.items[itemName])outQty+=pat.items[itemName];
+    });
+  });
+  const it=S.items.find(i=>i.name===itemName);
+  const stock=it?(it.stock||0):0;
+  const opening=Math.max(0,stock-inQty+outQty);
+  return{name:itemName,opening,in:inQty,out:outQty,balance:stock};
+}
+
 function initInventoryMonth(monthKey){
   if(!S.inventory[monthKey]){
     S.inventory[monthKey]={items:[],carriedFrom:''};
   }
   const inv=S.inventory[monthKey];
-  // ── حساب الوارد الفعلي لهذا الشهر لكل صنف ──
-  const monthReceipts={};
-  S.receipts.forEach(r=>{
-    if(getMonthKey(r.date)===monthKey){
-      monthReceipts[r.itemName]=(monthReceipts[r.itemName]||0)+r.qty;
-    }
-  });
-  // ── حساب المنصرف الفعلي لهذا الشهر ──
-  const monthOut={};
-  Object.keys(S.daily).filter(d=>d.startsWith(monthKey)).forEach(d=>{
-    (S.daily[d]||[]).forEach(pat=>{
-      Object.entries(pat.items).forEach(([name,qty])=>{
-        monthOut[name]=(monthOut[name]||0)+qty;
-      });
-    });
-  });
-  // Ensure all items exist — opening = stock - monthIn + monthOut (رصيد أول المدة الحقيقي)
   S.items.forEach(it=>{
     if(!inv.items.find(x=>x.name===it.name)){
-      const inQty=monthReceipts[it.name]||0;
-      const outQty=monthOut[it.name]||0;
-      const opening=Math.max(0,(it.stock||0)-inQty+outQty);
-      inv.items.push({name:it.name,opening,in:inQty,out:outQty,balance:(it.stock||0)});
+      inv.items.push(computeFreshInventoryRow(monthKey,it.name));
     }
   });
 }
 
 function updateInventoryIn(dateStr, itemName, qty){
   const mk=getMonthKey(dateStr);
-  if(!S.inventory[mk]){S.inventory[mk]={items:[],carriedFrom:''};initInventoryMonth(mk);}
+  if(!S.inventory[mk])S.inventory[mk]={items:[],carriedFrom:''};
   const inv=S.inventory[mk];
-  const row=inv.items.find(x=>x.name===itemName);
-  if(row){
+  const hadRowBefore=!!inv.items.find(x=>x.name===itemName);
+  if(hadRowBefore){
+    const row=inv.items.find(x=>x.name===itemName);
     row.in+=qty;
     row.balance=row.opening+row.in-row.out;
   }else{
-    inv.items.push({name:itemName,opening:0,in:qty,out:0,balance:qty});
+    // صف جديد — احسبه من الصفر بدل افتراض رصيد أول مدة = صفر (ده بيشمل المعاملة الحالية تلقائي)
+    inv.items.push(computeFreshInventoryRow(mk,itemName));
   }
 }
 
 function updateInventoryOut(dateStr, itemsObj, revert=false){
   if(revert){updateInventoryOutRevert(dateStr,itemsObj);return;}
   const mk=getMonthKey(dateStr);
-  if(!S.inventory[mk]){S.inventory[mk]={items:[],carriedFrom:''};initInventoryMonth(mk);}
+  if(!S.inventory[mk])S.inventory[mk]={items:[],carriedFrom:''};
   const inv=S.inventory[mk];
   Object.entries(itemsObj).forEach(([name,qty])=>{
-    const row=inv.items.find(x=>x.name===name);
-    if(row){
+    const hadRowBefore=!!inv.items.find(x=>x.name===name);
+    if(hadRowBefore){
+      const row=inv.items.find(x=>x.name===name);
       row.out+=qty;
       row.balance=row.opening+row.in-row.out;
     }else{
-      inv.items.push({name:name,opening:0,in:0,out:qty,balance:-qty});
+      inv.items.push(computeFreshInventoryRow(mk,name));
     }
   });
 }
@@ -2691,15 +2694,16 @@ function renderInventory(){
   if(!inv){document.getElementById('noInvMsg').style.display='block';return;}
   document.getElementById('noInvMsg').style.display='none';
 
-  // ── جمع اليوميات الخاصة بهذا الشهر من S.daily ──
-  const datesInMonth=Object.keys(S.daily).filter(d=>d.startsWith(mk)).sort();
+  // ── جمع اليوميات الخاصة بهذا الشهر من S.daily + S.archive (اليوميات المؤرشفة كانت بتتجاهل قبل كده) ──
+  const allDaysSource={...S.daily,...S.archive};
+  const datesInMonth=Object.keys(allDaysSource).filter(d=>d.startsWith(mk)).sort();
 
   // بناء خريطة المنصرف لكل يوم
   const dailyOutMap={};
   const realOut={};
   datesInMonth.forEach(d=>{
     dailyOutMap[d]={};
-    (S.daily[d]||[]).forEach(patient=>{
+    (allDaysSource[d]||[]).forEach(patient=>{
       Object.entries(patient.items).forEach(([name,qty])=>{
         dailyOutMap[d][name]=(dailyOutMap[d][name]||0)+qty;
         realOut[name]=(realOut[name]||0)+qty;
@@ -2957,11 +2961,12 @@ function carryOverInventory(){
   const lastInv=S.inventory[mk];
   if(!lastInv||!lastInv.items.length){toast('لا يوجد بيانات جرد في هذا الشهر','error');return;}
 
-  // احسب الـ out الفعلي من اليوميات عشان الـ balance يبقى صح
-  const datesInMonth=Object.keys(S.daily).filter(d=>d.startsWith(mk));
+  // احسب الـ out الفعلي من اليوميات (الحالية + المؤرشفة) عشان الـ balance يبقى صح
+  const allDaysSrc={...S.daily,...S.archive};
+  const datesInMonth=Object.keys(allDaysSrc).filter(d=>d.startsWith(mk));
   const realOut={};
   datesInMonth.forEach(d=>{
-    (S.daily[d]||[]).forEach(patient=>{
+    (allDaysSrc[d]||[]).forEach(patient=>{
       Object.entries(patient.items).forEach(([name,qty])=>{
         realOut[name]=(realOut[name]||0)+qty;
       });
@@ -3027,12 +3032,13 @@ function exportInventoryToExcel(){
   const inv=S.inventory[mk];
   if(!inv||!inv.items.length){toast('لا توجد بيانات للتصدير','error');return;}
 
-  // جمع اليوميات الخاصة بهذا الشهر
-  const datesInMonth=Object.keys(S.daily).filter(d=>d.startsWith(mk)).sort();
+  // جمع اليوميات الخاصة بهذا الشهر (الحالية + المؤرشفة)
+  const allDaysSrcXL={...S.daily,...S.archive};
+  const datesInMonth=Object.keys(allDaysSrcXL).filter(d=>d.startsWith(mk)).sort();
   const dailyOutMap={};
   datesInMonth.forEach(d=>{
     dailyOutMap[d]={};
-    (S.daily[d]||[]).forEach(patient=>{
+    (allDaysSrcXL[d]||[]).forEach(patient=>{
       Object.entries(patient.items).forEach(([name,qty])=>{
         dailyOutMap[d][name]=(dailyOutMap[d][name]||0)+qty;
       });
@@ -3546,11 +3552,12 @@ function archiveCurrentDay(){
   // حفظ snapshot الجرد وقت الأرشفة
   const mk=getMonthKey(day);
   const inv=S.inventory[mk];
-  const datesUpToNow=Object.keys(S.daily).filter(d=>d.startsWith(mk)&&d<=day).sort();
+  const allDaysSrcArch={...S.daily,...S.archive};
+  const datesUpToNow=Object.keys(allDaysSrcArch).filter(d=>d.startsWith(mk)&&d<=day).sort();
   const dailyOutMap={};
   datesUpToNow.forEach(d=>{
     dailyOutMap[d]={};
-    (S.daily[d]||[]).forEach(p=>{
+    (allDaysSrcArch[d]||[]).forEach(p=>{
       Object.entries(p.items).forEach(([name,qty])=>{
         dailyOutMap[d][name]=(dailyOutMap[d][name]||0)+qty;
       });
@@ -4038,8 +4045,8 @@ function renderItemsGrid(query=''){
         ${priceHtml}
       </div>
       <div class="item-actions">
-        <button class="btn btn-sm btn-warn" onclick="openEditItemModal(${it.id})" title="تعديل">✏</button>
-        <button class="btn btn-sm btn-danger" onclick="deleteItem(${it.id})">✕</button>
+        <button class="btn btn-sm btn-warn" onclick="openEditItemModal('${it.id}')" title="تعديل">✏</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteItem('${it.id}')">✕</button>
       </div>
     </div>`;
   }).join('')||'<div style="color:var(--text3);padding:20px">لا توجد نتائج</div>';
@@ -4392,7 +4399,7 @@ function confirmAddItem(){
 
 let editingItemId=null;
 function openEditItemModal(id){
-  const it=S.items.find(i=>i.id===id);
+  const it=S.items.find(i=>String(i.id)===String(id));
   if(!it)return;
   editingItemId=id;
   document.getElementById('editItemId').value=id;
@@ -4405,7 +4412,7 @@ function openEditItemModal(id){
 }
 
 function saveItemEdit(){
-  const it=S.items.find(i=>i.id===editingItemId);
+  const it=S.items.find(i=>String(i.id)===String(editingItemId));
   if(!it)return;
   const oldName=it.name;
   const name=document.getElementById('editItemName').value.trim();
@@ -4423,6 +4430,14 @@ function saveItemEdit(){
     });
     S.receipts.forEach(r=>{if(r.itemName===oldName)r.itemName=name;});
     Object.values(S.daily).forEach(dayArr=>{
+      dayArr.forEach(row=>{
+        if(row.items[oldName]!==undefined){
+          row.items[name]=(row.items[name]||0)+row.items[oldName];
+          delete row.items[oldName];
+        }
+      });
+    });
+    Object.values(S.archive).forEach(dayArr=>{
       dayArr.forEach(row=>{
         if(row.items[oldName]!==undefined){
           row.items[name]=(row.items[name]||0)+row.items[oldName];
@@ -4470,10 +4485,10 @@ function deleteItemConfirm(){
 }
 
 function deleteItem(id){
-  const it=S.items.find(i=>i.id===id);if(!it)return;
+  const it=S.items.find(i=>String(i.id)===String(id));if(!it)return;
   if(!confirm(`حذف "${it.name}" من قائمة الأصناف؟\n\nسيتم إخفاء الصنف من قوائم الصرف والوارد الجديدة فقط، وستبقى كل سجلات الجرد (القديمة والحالية) وسجلات الوارد وبيانات اليوميات كما هي بدون أي تغيير.`))return;
   const name=it.name;
-  S.items=S.items.filter(i=>i.id!==id);
+  S.items=S.items.filter(i=>String(i.id)!==String(id));
   save();renderItemsGrid();renderInventory();renderReceipts();
   toast(`تم حذف "${name}" من قائمة الأصناف — سجلات الجرد والوارد القديمة والحالية لم تتأثر`,'success');
 }
@@ -4497,10 +4512,11 @@ function recalculateAll(){
         monthIn[r.itemName]=(monthIn[r.itemName]||0)+r.qty;
       }
     });
-    // إعادة حساب out من اليوميات
+    // إعادة حساب out من اليوميات (الحالية + المؤرشفة)
     const monthOut={};
-    Object.keys(S.daily).filter(d=>d.startsWith(mk)).forEach(d=>{
-      (S.daily[d]||[]).forEach(pat=>{
+    const allDaysSrcRecalc={...S.daily,...S.archive};
+    Object.keys(allDaysSrcRecalc).filter(d=>d.startsWith(mk)).forEach(d=>{
+      (allDaysSrcRecalc[d]||[]).forEach(pat=>{
         Object.entries(pat.items).forEach(([name,qty])=>{
           monthOut[name]=(monthOut[name]||0)+qty;
         });
@@ -4640,10 +4656,11 @@ function renderPatientsDB(){
     return;
   }
 
-  // Count days per patient
+  // Count days per patient (تشمل الأيام المؤرشفة كمان)
   const countDays=p=>{
     let c=0;
-    Object.values(S.daily).forEach(dayArr=>{
+    const allDaysCount={...S.daily,...S.archive};
+    Object.values(allDaysCount).forEach(dayArr=>{
       if(dayArr.some(r=>r.patientName===p.name||(p.id&&r.patientId===p.id)))c++;
     });
     return c;
@@ -4757,14 +4774,20 @@ function savePatientDB(){
   const oldName=S.patients[editingPatientIdx].name;
   const oldId=S.patients[editingPatientIdx].id;
   S.patients[editingPatientIdx]={name,id};
-  // Update references in daily
+  // Update references in daily + archive
   Object.values(S.daily).forEach(dayArr=>{
     dayArr.forEach(r=>{
       if(r.patientName===oldName)r.patientName=name;
       if(oldId&&r.patientId===oldId)r.patientId=id;
     });
   });
-  save();renderPatientsDB();closeModal('editPatientDBModal');
+  Object.values(S.archive).forEach(dayArr=>{
+    dayArr.forEach(r=>{
+      if(r.patientName===oldName)r.patientName=name;
+      if(oldId&&r.patientId===oldId)r.patientId=id;
+    });
+  });
+  save();pushDocToCloud('daily',['daily']);renderPatientsDB();closeModal('editPatientDBModal');
   toast('تم حفظ بيانات المريض ✓','success');
 }
 
