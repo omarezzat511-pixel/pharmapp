@@ -306,6 +306,50 @@ body{font-family:'Tajawal',sans-serif;background:var(--navy);min-height:100vh;co
 .backup-area{background:var(--white);border-radius:var(--radius);border:1.5px dashed var(--border);padding:24px;text-align:center;}
 .backup-area:hover{border-color:var(--teal);}
 
+/* ═══ MOBILE / PORTRAIT MODE — تكيّف بصري بس، من غير أي تغيير في منطق النظام ═══ */
+@media (max-width:640px){
+  .sidebar{width:54px;padding:10px 0;gap:2px;}
+  .main{margin-right:54px;}
+  .nav-btn{width:40px;height:40px;font-size:16px;}
+  .nav-btn .tip{display:none;} /* التلميحات بتاعة الماوس مالهاش لازمة على اللمس */
+
+  .topbar{padding:0 10px;height:54px;flex-wrap:wrap;}
+  .topbar-title{font-size:13px;}
+  .topbar-title span{display:none;} /* الترجمة الإنجليزية الفرعية بتاخد مساحة مش لازمة */
+  .topbar-right{gap:6px;flex-wrap:wrap;}
+  .save-badge{font-size:10px;padding:4px 8px;}
+  .date-input{font-size:12px;padding:4px;}
+  .dm-toggle{font-size:11px;padding:4px 8px;}
+
+  .page{padding:14px 10px;}
+  .page-header{flex-direction:column;align-items:flex-start;gap:10px;}
+  .page-title{font-size:17px;}
+  .page-subtitle{font-size:11.5px;}
+
+  /* الفورمات: كل الأعمدة تترتب فوق بعض بدل جنب بعض */
+  .form-row,.form-row.triple,.form-row.four,.form-row.five{grid-template-columns:1fr;}
+
+  .items-grid{grid-template-columns:1fr;}
+
+  .modal{width:96vw;}
+  .modal-header{padding:14px 16px;}
+  .modal-body{padding:14px 16px;}
+  .modal-footer{flex-wrap:wrap;}
+
+  .btn{padding:9px 12px;font-size:13px;}
+
+  /* الجداول: خليها قابلة للتمرير الأفقي بدل ما تتقطع أو تتكسر */
+  table{font-size:12px;}
+}
+@media (max-width:640px) and (orientation:portrait){
+  /* لمسة إضافية خاصة بوضع الطول تحديدًا (مش العرضي) */
+  .sidebar{flex-direction:row;bottom:0;top:auto;width:100%;height:56px;
+    border-left:none;border-top:1px solid rgba(201,168,76,0.2);
+    justify-content:space-around;padding:0;overflow-x:auto;}
+  .main{margin-right:0;margin-bottom:56px;}
+  .sidebar-sep{display:none;}
+}
+
 /* ═══ PRINT STYLES — A4 LANDSCAPE, BLACK & WHITE, CLEAN TABLE ═══ */
 @page{size:A4 landscape;margin:10mm 8mm;}
 @media print{
