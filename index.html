@@ -749,6 +749,21 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
   transform-origin:left bottom;transform:rotate(-90deg);
   white-space:nowrap;font-size:10px;font-weight:700;}
 .a4-daily-sign-line{display:flex;justify-content:flex-start;gap:60px;margin-top:34px;font-size:13px;font-weight:700;}
+
+/* شبكة كروت الأصناف — 4 كروت بحجم ثابت في كل ورقة A4 (كارت = ربع الورقة) */
+.a4-cards-grid{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:5mm;
+  width:100%;height:277mm;box-sizing:border-box;}
+.item-print-card{border:2px solid #000;border-radius:4px;padding:8mm;box-sizing:border-box;
+  display:flex;flex-direction:column;overflow:hidden;background:#fff;}
+.item-print-card .ipc-name{font-size:16px;font-weight:900;color:#000;border-bottom:2px solid #000;
+  padding-bottom:5px;margin-bottom:6px;}
+.item-print-card .ipc-unit{font-size:11.5px;color:#333;margin-bottom:8px;}
+.item-print-card table{width:100%;border-collapse:collapse;font-size:11px;flex:1;}
+.item-print-card table th{background:#eee;border:1px solid #000;padding:3px 4px;font-weight:700;}
+.item-print-card table td{border:1px solid #555;padding:3px 4px;text-align:center;}
+.item-print-card .ipc-total{margin-top:8px;padding-top:6px;border-top:2px solid #000;
+  display:flex;justify-content:space-between;font-size:13px;font-weight:900;}
+.item-print-card .ipc-empty{color:#888;font-size:11.5px;text-align:center;padding:14px 0;}
 @media print{
   body *{display:none!important;}
   #a4PrintRoot{display:block!important;}
@@ -951,6 +966,7 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
       <div style="display:flex;gap:8px;">
         <button class="btn" onclick="openConsumptionModal()">📈 تحليل الاستهلاك والطلبيات</button>
         <button class="btn" onclick="printItemsInStock()">🖨 طباعة شيت الأصناف المتوفرة</button>
+        <button class="btn" onclick="printItemCardsA4All()">🗂 طباعة كروت الأصناف</button>
         <button class="btn btn-primary" onclick="openAddItemModal()">+ إضافة صنف</button>
       </div>
     </div>
@@ -996,6 +1012,14 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
           <div class="form-group">
             <label class="form-label">أمر التوريد</label>
             <input class="form-input" id="rcptOrderNo" placeholder="رقم أمر التوريد">
+          </div>
+          <div class="form-group">
+            <label class="form-label">رقم التشغيلة (الباتش)</label>
+            <input class="form-input" id="rcptBatch" placeholder="مثال: B2026-045">
+          </div>
+          <div class="form-group">
+            <label class="form-label">تاريخ الانتهاء</label>
+            <input class="form-input" id="rcptExpiry" type="date">
           </div>
         </div>
         <div style="margin-top:14px;display:flex;gap:10px;">
@@ -1409,6 +1433,45 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
       <button class="btn btn-excel" onclick="exportConsumptionExcel()">⬇ تصدير Excel</button>
       <button class="btn btn-navy" onclick="printConsumptionA4()">🖨 طباعة A4</button>
       <button class="btn btn-sm" style="background:var(--light);color:var(--text2)" onclick="closeModal('consumptionModal')">إغلاق</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ ITEM CARD MODAL (كارت الصنف — الباتشات وتواريخ الانتهاء) ═══ -->
+<div class="modal-overlay" id="itemCardModal">
+  <div class="modal" style="width:520px;">
+    <div class="modal-header" style="background:var(--navy);">
+      <div class="modal-title">🗂 كارت الصنف</div>
+      <button class="modal-close" onclick="closeModal('itemCardModal')">✕</button>
+    </div>
+    <div class="modal-body" style="padding:18px;">
+      <div id="itemCardHeader" style="margin-bottom:14px;padding:12px;background:var(--off);border-radius:8px;">
+        <div id="itemCardName" style="font-size:16px;font-weight:900;color:var(--navy);"></div>
+        <div id="itemCardUnit" style="font-size:12.5px;color:var(--text3);margin-top:2px;"></div>
+      </div>
+      <div style="font-size:12.5px;font-weight:700;color:var(--text2);margin-bottom:8px;">التشغيلات (الباتشات) المسجّلة:</div>
+      <div style="overflow-x:auto;">
+        <table class="a4-table" style="width:100%;font-size:12.5px;">
+          <thead><tr>
+            <th>الباتش</th>
+            <th>تاريخ الانتهاء</th>
+            <th>الكمية</th>
+            <th style="width:36px;"></th>
+          </tr></thead>
+          <tbody id="itemCardBatchBody"></tbody>
+        </table>
+      </div>
+      <div id="itemCardNoBatches" style="display:none;text-align:center;padding:24px;color:var(--text3);">
+        <div style="font-size:32px;margin-bottom:6px;">🗂</div>
+        <div>مفيش باتشات مسجّلة لهذا الصنف لسه — هتتضاف تلقائي أول ما تسجّل وارد جديد ليه مع رقم الباتش</div>
+      </div>
+      <div style="margin-top:14px;padding-top:12px;border-top:2px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-weight:700;color:var(--text2);">الإجمالي الكلي:</span>
+        <span id="itemCardTotal" style="font-size:17px;font-weight:900;color:var(--navy);"></span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-sm" style="background:var(--light);color:var(--text2)" onclick="closeModal('itemCardModal')">إغلاق</button>
     </div>
   </div>
 </div>
@@ -2368,6 +2431,8 @@ function addReceipt(){
   const company=document.getElementById('rcptCompany').value.trim();
   const deliveryNo=document.getElementById('rcptDeliveryNo').value.trim();
   const orderNo=document.getElementById('rcptOrderNo').value.trim();
+  const batch=document.getElementById('rcptBatch').value.trim();
+  const expiry=document.getElementById('rcptExpiry').value;
 
   if(!name){toast('أدخل اسم الصنف','error');return;}
   if(!S.items.find(i=>i.name===name)){toast('هذا الصنف غير موجود — اختر من قائمة الأصناف فقط','error');return;}
@@ -2383,14 +2448,29 @@ function addReceipt(){
     company:company,
     deliveryNo:deliveryNo,
     orderNo:orderNo,
-    date:S.date
+    date:S.date,
+    batch:batch||'',
+    expiry:expiry||''
   };
   S.receipts.push(receipt);
   S_receiptMonth=getMonthKey(receipt.date); // اعرض شهر الوارد الجديد تلقائياً
 
   // Update item stock
   const item=S.items.find(i=>i.name===name);
-  if(item)item.stock=(item.stock||0)+qty;
+  if(item){
+    item.stock=(item.stock||0)+qty;
+    // ── تحديث كارت الصنف (الباتشات) ──
+    if(batch){
+      if(!item.batches)item.batches=[];
+      const existing=item.batches.find(b=>b.batch.trim().toLowerCase()===batch.toLowerCase());
+      if(existing){
+        existing.qty=(existing.qty||0)+qty;
+        if(expiry)existing.expiry=expiry; // لو دخلت تاريخ جديد لنفس الباتش، حدّثه
+      }else{
+        item.batches.push({batch:batch,expiry:expiry||'',qty:qty});
+      }
+    }
+  }
 
   // Update inventory
   updateInventoryIn(S.date, name, qty);
@@ -2407,6 +2487,8 @@ function clearReceiptForm(){
   document.getElementById('rcptCompany').value='';
   document.getElementById('rcptDeliveryNo').value='';
   document.getElementById('rcptOrderNo').value='';
+  document.getElementById('rcptBatch').value='';
+  document.getElementById('rcptExpiry').value='';
   selRcptItem='';
 }
 
@@ -4083,6 +4165,66 @@ function exportDayXL(day,data){
 // ═══════════════════════════════════════════════════════════════
 // ══ ITEMS CATALOGUE (with Stock) ══════════════════════════════
 // ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
+// ══ ITEM CARD (كارت الصنف — الباتشات وتواريخ الانتهاء) ═══════════
+// ═══════════════════════════════════════════════════════════════
+let _itemCardId=null;
+
+function openItemCardModal(id){
+  const it=S.items.find(i=>String(i.id)===String(id));
+  if(!it)return;
+  _itemCardId=id;
+  document.getElementById('itemCardName').textContent=it.name;
+  document.getElementById('itemCardUnit').textContent='الوحدة: '+it.unit+(it.note?' · '+it.note:'');
+  renderItemCardBatches();
+  document.getElementById('itemCardModal').classList.add('open');
+}
+
+function renderItemCardBatches(){
+  const it=S.items.find(i=>String(i.id)===String(_itemCardId));
+  if(!it)return;
+  const batches=(it.batches||[]).filter(b=>(b.qty||0)>0).slice().sort((a,b)=>(a.expiry||'9999').localeCompare(b.expiry||'9999'));
+  const body=document.getElementById('itemCardBatchBody');
+  const noData=document.getElementById('itemCardNoBatches');
+  const today=new Date().toISOString().split('T')[0];
+
+  if(!batches.length){
+    body.innerHTML='';
+    noData.style.display='block';
+  }else{
+    noData.style.display='none';
+    body.innerHTML=batches.map(function(b,i){
+      let expiryStyle='';
+      if(b.expiry){
+        if(b.expiry<today)expiryStyle='color:var(--crimson);font-weight:900;';
+        else{
+          const daysLeft=Math.round((new Date(b.expiry)-new Date(today))/(1000*60*60*24));
+          if(daysLeft<=90)expiryStyle='color:#8a6d1a;font-weight:700;';
+        }
+      }
+      return '<tr><td class="a4-name-cell">'+(b.batch||'—')+'</td><td style="'+expiryStyle+'">'+(b.expiry?fmtDate(b.expiry):'—')+'</td><td>'+b.qty+'</td>'
+        +'<td style="text-align:center;"><button class="btn btn-sm btn-danger" onclick="removeItemBatch('+i+')" title="حذف هذه التشغيلة">✕</button></td></tr>';
+    }).join('');
+  }
+  document.getElementById('itemCardTotal').textContent=(it.stock||0)+' '+it.unit;
+}
+
+// حذف تشغيلة (باتش) بعينها من كارت الصنف — بينقص كميتها من إجمالي رصيد الصنف كمان
+function removeItemBatch(sortedIdx){
+  const it=S.items.find(i=>String(i.id)===String(_itemCardId));
+  if(!it||!it.batches)return;
+  const batches=it.batches.filter(b=>(b.qty||0)>0).slice().sort((a,b)=>(a.expiry||'9999').localeCompare(b.expiry||'9999'));
+  const target=batches[sortedIdx];
+  if(!target)return;
+  if(!confirm('حذف تشغيلة "'+(target.batch||'بدون رقم')+'" (الكمية: '+target.qty+')؟\nهيتنقص من إجمالي رصيد الصنف كمان.'))return;
+  const realIdx=it.batches.indexOf(target);
+  if(realIdx<0)return;
+  it.stock=Math.max(0,(it.stock||0)-target.qty);
+  it.batches.splice(realIdx,1);
+  save();renderItemCardBatches();renderItemsGrid();
+  toast('تم حذف التشغيلة','success');
+}
+
 function renderItemsGrid(query=''){
   const grid=document.getElementById('itemsGrid');
   const f=query?S.items.filter(i=>i.name.includes(query)||i.unit.includes(query)):S.items;
@@ -4091,6 +4233,15 @@ function renderItemsGrid(query=''){
     const cardClass='item-card'+(stk<=0?' stock-zero':stk<=LOW_STOCK_THRESHOLD?' stock-low':'');
     const stkHtml=stk<=0?`<span class="stock-badge-zero">🔴 نفد المخزون</span>`:stk<=LOW_STOCK_THRESHOLD?`<span class="stock-badge-low">🟡 ${stk} ${it.unit} — منخفض</span>`:`<span style="color:var(--teal);font-weight:700;">📦 ${stk} ${it.unit}</span>`;
     const priceHtml=it.price?`<div style="font-size:12px;color:var(--gold);font-weight:700;margin-top:2px;">💰 ${(it.price).toLocaleString('ar-EG',{minimumFractionDigits:2,maximumFractionDigits:2})} جنيه/وحدة</div>`:'';
+    const batches=it.batches||[];
+    const today=new Date().toISOString().split('T')[0];
+    const soonest=batches.filter(b=>b.expiry).sort((a,b)=>a.expiry.localeCompare(b.expiry))[0];
+    let expiryHtml='';
+    if(soonest){
+      const daysLeft=Math.round((new Date(soonest.expiry)-new Date(today))/(1000*60*60*24));
+      if(daysLeft<0)expiryHtml=`<div style="font-size:11.5px;color:var(--crimson);font-weight:700;margin-top:2px;">⛔ فيه باتش منتهي الصلاحية</div>`;
+      else if(daysLeft<=90)expiryHtml=`<div style="font-size:11.5px;color:#8a6d1a;font-weight:700;margin-top:2px;">⚠️ أقرب انتهاء صلاحية بعد ${daysLeft} يوم</div>`;
+    }
     return `<div class="${cardClass}">
       <div class="item-num">${it.id}</div>
       <div class="item-info">
@@ -4098,8 +4249,10 @@ function renderItemsGrid(query=''){
         <div class="item-unit">${it.unit}${it.note?' · '+it.note:''}</div>
         <div class="item-stock">${stkHtml}</div>
         ${priceHtml}
+        ${expiryHtml}
       </div>
       <div class="item-actions">
+        <button class="btn btn-sm" style="background:var(--light);color:var(--navy);" onclick="openItemCardModal('${it.id}')" title="كارت الصنف (الباتشات)">🗂 ${batches.length?batches.length:''}</button>
         <button class="btn btn-sm btn-warn" onclick="openEditItemModal('${it.id}')" title="تعديل">✏</button>
         <button class="btn btn-sm btn-danger" onclick="deleteItem('${it.id}')">✕</button>
       </div>
@@ -4369,6 +4522,45 @@ function printConsumptionA4(){
     html+=page;
   });
   showA4PrintPreview(html, true);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ══ PRINT ITEM CARDS — 4 كروت بحجم ثابت في كل ورقة A4 ═══════════
+// ═══════════════════════════════════════════════════════════════
+function buildItemCardHtml(it){
+  if(!it)return '<div class="item-print-card"></div>'; // خانة فاضية (لملء آخر صفحة)
+  const batches=(it.batches||[]).filter(b=>(b.qty||0)>0).slice().sort((a,b)=>(a.expiry||'9999').localeCompare(b.expiry||'9999'));
+  let inner='<div class="ipc-name">'+it.name+'</div>';
+  inner+='<div class="ipc-unit">الوحدة: '+it.unit+(it.note?' · '+it.note:'')+'</div>';
+  if(!batches.length){
+    inner+='<div class="ipc-empty">لا توجد تشغيلات مسجّلة</div>';
+  }else{
+    inner+='<table><thead><tr><th>الباتش</th><th>تاريخ الانتهاء</th><th>الكمية</th></tr></thead><tbody>';
+    batches.slice(0,6).forEach(function(b){
+      inner+='<tr><td>'+(b.batch||'—')+'</td><td>'+(b.expiry?fmtDate(b.expiry):'—')+'</td><td>'+b.qty+'</td></tr>';
+    });
+    if(batches.length>6){
+      inner+='<tr><td colspan="3" style="color:#888;">+ '+(batches.length-6)+' تشغيلة تانية...</td></tr>';
+    }
+    inner+='</tbody></table>';
+  }
+  inner+='<div class="ipc-total"><span>الإجمالي</span><span>'+(it.stock||0)+' '+it.unit+'</span></div>';
+  return '<div class="item-print-card">'+inner+'</div>';
+}
+
+function printItemCardsA4All(){
+  const items=[...S.items].sort((a,b)=>a.name.localeCompare(b.name,'ar'));
+  if(!items.length){toast('لا توجد أصناف للطباعة','error');return;}
+  const pages=[];
+  for(let i=0;i<items.length;i+=4){pages.push(items.slice(i,i+4));}
+  let html='';
+  pages.forEach(function(pageItems){
+    let grid='<div class="a4-cards-grid">';
+    for(let i=0;i<4;i++){grid+=buildItemCardHtml(pageItems[i]);}
+    grid+='</div>';
+    html+='<div class="a4-page a4-page-bw" style="padding:8mm;">'+grid+'</div>';
+  });
+  showA4PrintPreview(html);
 }
 
 function printItemsInStock(){
