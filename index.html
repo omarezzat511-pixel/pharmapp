@@ -751,8 +751,8 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
 .a4-daily-sign-line{display:flex;justify-content:flex-start;gap:60px;margin-top:34px;font-size:13px;font-weight:700;}
 
 /* شبكة كروت الأصناف — 4 كروت بحجم ثابت في كل ورقة A4 (كارت = ربع الورقة) — تصميم احترافي */
-.a4-cards-table{width:100%;height:277mm;border-collapse:separate;border-spacing:6mm;table-layout:fixed;}
-.a4-cards-table td{width:50%;height:50%;vertical-align:top;padding:0;}
+.a4-cards-page{position:relative;width:100%;height:281mm;}
+.a4-cards-slot{position:absolute;width:93mm;height:137mm;}
 .item-print-card{border:1.5px solid #C9A84C;border-radius:10px;box-sizing:border-box;
   display:flex;flex-direction:column;overflow:hidden;background:#fff;height:100%;
   box-shadow:0 0 0 1px rgba(11,25,41,0.06);}
@@ -4579,9 +4579,13 @@ function printItemCardsA4All(){
   for(let i=0;i<items.length;i+=4){pages.push(items.slice(i,i+4));}
   let html='';
   pages.forEach(function(pageItems){
-    let tbl='<table class="a4-cards-table"><tr><td>'+buildItemCardHtml(pageItems[0])+'</td><td>'+buildItemCardHtml(pageItems[1])+'</td></tr>';
-    tbl+='<tr><td>'+buildItemCardHtml(pageItems[2])+'</td><td>'+buildItemCardHtml(pageItems[3])+'</td></tr></table>';
-    html+='<div class="a4-page" style="padding:8mm;">'+tbl+'</div>';
+    let inner='<div class="a4-cards-page">';
+    inner+='<div class="a4-cards-slot" style="top:0;right:0;">'+buildItemCardHtml(pageItems[0])+'</div>';
+    inner+='<div class="a4-cards-slot" style="top:0;left:0;">'+buildItemCardHtml(pageItems[1])+'</div>';
+    inner+='<div class="a4-cards-slot" style="top:144mm;right:0;">'+buildItemCardHtml(pageItems[2])+'</div>';
+    inner+='<div class="a4-cards-slot" style="top:144mm;left:0;">'+buildItemCardHtml(pageItems[3])+'</div>';
+    inner+='</div>';
+    html+='<div class="a4-page" style="padding:8mm;">'+inner+'</div>';
   });
   showA4PrintPreview(html);
 }
