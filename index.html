@@ -2304,7 +2304,7 @@ function onReceiptItemSearch(){
   if(v.length<2){dd.classList.remove('open');return;}
   const m=S.items.filter(i=>i.name.includes(v)).slice(0,8);
   if(!m.length){dd.classList.remove('open');return;}
-  dd.innerHTML=m.map(it=>`<div class="autocomplete-item" onclick="selRcptItm('${ec(it.name)}')">${hl(it.name,v)}<span style="color:var(--text3);font-size:11px;margin-right:6px;">${it.unit}</span></div>`).join('');
+  dd.innerHTML=m.map(it=>`<div class="autocomplete-item" onmousedown="event.preventDefault();selRcptItm('${ec(it.name)}')">${hl(it.name,v)}<span style="color:var(--text3);font-size:11px;margin-right:6px;">${it.unit}</span></div>`).join('');
   dd.classList.add('open');rIdx=-1;
 }
 function onReceiptItemKeydown(e){
@@ -2526,7 +2526,7 @@ function renderReceipts(){
 
   // فلترة الوارد بالشهر المختار فقط
   const filtered=S.receipts.filter(r=>getMonthKey(r.date)===S_receiptMonth);
-  const sorted=[...filtered].sort((a,b)=>b.id-a.id);
+  const sorted=[...filtered].reverse();
 
   if(!sorted.length){
     tb.innerHTML=`<tr><td colspan="8"><div class="empty-state"><div class="empty-state-icon">📥</div><div>لا توجد واردات في هذا الشهر</div></div></td></tr>`;
@@ -5301,7 +5301,7 @@ function printMonthlyReportA4(mkParam){
 function printReceiptsA4(){
   const filtered=S.receipts.filter(r=>getMonthKey(r.date)===S_receiptMonth);
   if(!filtered.length){toast('لا توجد واردات في هذا الشهر للطباعة','error');return;}
-  const sorted=[...filtered].sort((a,b)=>a.id-b.id);
+  const sorted=[...filtered];
   const ROWS_PER_PAGE=26;
   const pages=[];
   for(let i=0;i<sorted.length;i+=ROWS_PER_PAGE){pages.push(sorted.slice(i,i+ROWS_PER_PAGE));}
