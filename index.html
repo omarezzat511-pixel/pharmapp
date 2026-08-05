@@ -785,6 +785,25 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
   .a4-page{box-shadow:none;margin:0;}
   @page{size:A4 portrait;margin:0;}
 }
+/* ══ صحة 44 ══════════════════════════════════════════════════ */
+.s44-table{width:100%;border-collapse:collapse;font-size:10px;table-layout:fixed;}
+.s44-table th,.s44-table td{border:1px solid #888;padding:2px 3px;text-align:center;vertical-align:middle;word-break:break-word;}
+.s44-corner{min-width:110px;width:110px;text-align:center;font-size:9px;font-weight:900;background:#0B1929;color:#fff;border-color:#333;}
+.s44-item-th{width:46px;height:110px;padding:0!important;background:#0B1929;border:1px solid #333;}
+.s44-item-text{writing-mode:vertical-rl;transform:rotate(180deg);white-space:nowrap;font-size:9.5px;font-weight:700;color:#fff;display:block;padding:4px 3px;}
+.s44-row-label{text-align:right!important;font-weight:600;background:#F2F5F8;white-space:nowrap;font-size:9.5px;border:1px solid #aaa;}
+.s44-sub-label{text-align:right!important;font-weight:400;font-size:8.5px;color:#555;background:#FAFBFC;padding-right:14px!important;}
+.s44-opening-row .s44-row-label,.s44-opening-row td{background:#DCE8F5!important;font-weight:700;}
+.s44-rcpt-qty .s44-row-label,.s44-rcpt-qty td{background:#FFF8E6;}
+.s44-rcpt-co .s44-row-label,.s44-rcpt-co td,
+.s44-rcpt-del .s44-row-label,.s44-rcpt-del td,
+.s44-rcpt-date .s44-row-label,.s44-rcpt-date td{background:#FFFDF5;font-size:8.5px;}
+.s44-daily-row .s44-row-label,.s44-daily-row td{background:#fff;}
+.s44-daily-row:nth-child(odd) td,.s44-daily-row:nth-child(odd) .s44-row-label{background:#F9FBFC;}
+.s44-divider td,.s44-divider th{background:#C0D4E0!important;height:4px;padding:0!important;border:1px solid #90AFC0;}
+.s44-total-out .s44-row-label,.s44-total-out td{background:#FDE8C8!important;font-weight:900;border-top:2px solid #C9A84C;}
+.s44-balance .s44-row-label,.s44-balance td{background:#D4EDE0!important;font-weight:900;border-top:2px solid #1A7A4A;}
+.s44-section-header{background:#16406B!important;color:#fff!important;font-size:8.5px;font-weight:700;text-align:center;}
 </style>
 <base target="_blank">
 </head>
@@ -1092,6 +1111,7 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
         <button class="btn btn-gold" onclick="openMonthlyReportModal()" style="width:auto;padding:10px 20px;font-size:14px;">📊 الجرد الشهري</button>
         <button class="btn btn-primary" onclick="carryOverInventory()">🔄 ترحيل للشهر الجديد</button>
         <button class="btn btn-sm btn-outline" onclick="printMonthlyReportA4(S.activeInvMonth)">🖨</button>
+        <button class="btn btn-navy" onclick="printSeha44()" style="padding:10px 20px;font-size:14px;background:#16406B;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:700;">🖨 صحة 44</button>
       </div>
     </div>
     <div id="invAlertBanner" style="margin-bottom:4px;"></div>
@@ -5315,6 +5335,184 @@ function printMonthlyReportA4(mkParam){
     html+=page;
   });
   showA4PrintPreview(html);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ══ PRINT صحة 44 — نموذج الجرد الشهري المفصّل ════════════════
+// ═══════════════════════════════════════════════════════════════
+function printSeha44(){
+  const mk=S.activeInvMonth||Object.keys(S.inventory).sort().reverse()[0];
+  const inv=S.inventory[mk];
+  if(!inv||!inv.items.length){toast('لا توجد بيانات للطباعة','error');return;}
+  const [y,mo]=mk.split('-');
+  const monthNames=['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+  const monthLabel=monthNames[parseInt(mo)-1]+' '+y;
+
+  // ترتيب الأصناف أبجدياً
+  const sorted=[...inv.items].sort((a,b)=>a.name.localeCompare(b.name,'ar'));
+  const itemNames=sorted.map(r=>r.name);
+
+  // واردات الشهر مجمّعة لكل صنف
+  const monthReceipts=S.receipts.filter(r=>getMonthKey(r.date)===mk);
+  const receiptsByItem={};
+  itemNames.forEach(n=>{receiptsByItem[n]=[];});
+  monthReceipts.forEach(r=>{if(receiptsByItem[r.itemName]!==undefined)receiptsByItem[r.itemName].push(r);});
+  itemNames.forEach(n=>receiptsByItem[n].sort((a,b)=>a.date.localeCompare(b.date)));
+
+  // أقصى عدد وارد لأي صنف (على الأقل 1 خانة)
+  const maxReceipts=Math.max(1,...itemNames.map(n=>receiptsByItem[n].length));
+
+  // أيام المنصرفات في الشهر
+  const allDaysSource={...S.daily,...S.archive};
+  const datesInMonth=Object.keys(allDaysSource).filter(d=>d.startsWith(mk)).sort();
+  const dailyOutMap={};
+  datesInMonth.forEach(d=>{
+    dailyOutMap[d]={};
+    (allDaysSource[d]||[]).forEach(pat=>{
+      Object.entries(pat.items).forEach(([name,qty])=>{dailyOutMap[d][name]=(dailyOutMap[d][name]||0)+qty;});
+    });
+  });
+
+  const today=new Date().toLocaleDateString('ar-EG');
+  const ITEMS_PER_PAGE=12; // عدد الأصناف في كل صفحة (عرض A4 أفقي)
+
+  const pages=[];
+  for(let i=0;i<itemNames.length;i+=ITEMS_PER_PAGE)pages.push(itemNames.slice(i,i+ITEMS_PER_PAGE));
+  if(!pages.length)pages.push([]);
+
+  const dash='—';
+
+  let html='';
+  pages.forEach(function(pageItems,pageIdx){
+    const isLast=pageIdx===pages.length-1;
+
+    // === بناء صفوف الجدول ===
+    let rows='';
+
+    // 1. رصيد أول المدة
+    rows+='<tr class="s44-opening-row">';
+    rows+='<th class="s44-row-label">رصيد أول المدة</th>';
+    pageItems.forEach(function(n){
+      const r=inv.items.find(x=>x.name===n);
+      rows+='<td>'+(r?r.opening:dash)+'</td>';
+    });
+    rows+='</tr>';
+
+    // فاصل
+    rows+='<tr class="s44-divider"><th></th>'+pageItems.map(()=>'<td></td>').join('')+'</tr>';
+
+    // 2. الواردات — لكل وارد 4 صفوف (كمية، شركة، إذن التسليم، تاريخ)
+    for(let ri=0;ri<maxReceipts;ri++){
+      const label='وارد '+(ri+1);
+      rows+='<tr class="s44-rcpt-qty">';
+      rows+='<th class="s44-row-label">'+label+' — الكمية</th>';
+      pageItems.forEach(function(n){
+        const r=receiptsByItem[n][ri];
+        rows+='<td>'+(r?r.qty:dash)+'</td>';
+      });
+      rows+='</tr>';
+
+      rows+='<tr class="s44-rcpt-co">';
+      rows+='<th class="s44-row-label s44-sub-label">الشركة</th>';
+      pageItems.forEach(function(n){
+        const r=receiptsByItem[n][ri];
+        rows+='<td style="font-size:8px;">'+(r?r.company:dash)+'</td>';
+      });
+      rows+='</tr>';
+
+      rows+='<tr class="s44-rcpt-del">';
+      rows+='<th class="s44-row-label s44-sub-label">إذن التسليم</th>';
+      pageItems.forEach(function(n){
+        const r=receiptsByItem[n][ri];
+        rows+='<td>'+(r?r.deliveryNo:dash)+'</td>';
+      });
+      rows+='</tr>';
+
+      rows+='<tr class="s44-rcpt-date">';
+      rows+='<th class="s44-row-label s44-sub-label">التاريخ</th>';
+      pageItems.forEach(function(n){
+        const r=receiptsByItem[n][ri];
+        rows+='<td style="font-size:8px;">'+(r?fmtDate(r.date):dash)+'</td>';
+      });
+      rows+='</tr>';
+
+      // فاصل بين واردات متعددة
+      if(ri<maxReceipts-1){
+        rows+='<tr class="s44-divider"><th></th>'+pageItems.map(()=>'<td></td>').join('')+'</tr>';
+      }
+    }
+
+    // فاصل قبل المنصرفات
+    rows+='<tr class="s44-divider"><th></th>'+pageItems.map(()=>'<td></td>').join('')+'</tr>';
+
+    // 3. المنصرفات اليومية
+    datesInMonth.forEach(function(d){
+      rows+='<tr class="s44-daily-row">';
+      rows+='<th class="s44-row-label" style="font-size:8.5px;">'+fmtDate(d)+'</th>';
+      pageItems.forEach(function(n){
+        const q=(dailyOutMap[d]&&dailyOutMap[d][n])||0;
+        rows+='<td>'+(q>0?q:dash)+'</td>';
+      });
+      rows+='</tr>';
+    });
+    if(!datesInMonth.length){
+      rows+='<tr class="s44-daily-row"><th class="s44-row-label" style="color:#999;">لا توجد منصرفات</th>';
+      pageItems.forEach(()=>{rows+='<td>'+dash+'</td>';});
+      rows+='</tr>';
+    }
+
+    // فاصل
+    rows+='<tr class="s44-divider"><th></th>'+pageItems.map(()=>'<td></td>').join('')+'</tr>';
+
+    // 4. إجمالي المنصرف
+    rows+='<tr class="s44-total-out">';
+    rows+='<th class="s44-row-label">إجمالي المنصرف</th>';
+    pageItems.forEach(function(n){
+      const r=inv.items.find(x=>x.name===n);
+      rows+='<td>'+(r?r.out:0)+'</td>';
+    });
+    rows+='</tr>';
+
+    // 5. الكمية المتبقية
+    rows+='<tr class="s44-balance">';
+    rows+='<th class="s44-row-label">الكمية المتبقية</th>';
+    pageItems.forEach(function(n){
+      const r=inv.items.find(x=>x.name===n);
+      const bal=r?r.balance:0;
+      const c=bal<=0?'#B5302A':(bal<=LOW_STOCK_THRESHOLD?'#B7950B':'#1A7A4A');
+      rows+='<td style="color:'+c+';">'+bal+'</td>';
+    });
+    rows+='</tr>';
+
+    // === بناء الصفحة ===
+    let pg='<div class="a4-page" style="min-height:0;padding:10mm 8mm;">';
+    pg+='<div class="a4-header">';
+    pg+='<div><h1>📋 صحة 44 — الجرد الشهري — '+monthLabel+'</h1>';
+    pg+='<div class="a4-sub">صيدلية نفقة الدولة خارجي | تاريخ الطباعة: '+today+'</div></div>';
+    pg+='<div class="a4-page-num">صفحة '+(pageIdx+1)+' من '+pages.length+'</div>';
+    pg+='</div>';
+
+    // رأس الجدول مع أسماء الأصناف عمودياً
+    pg+='<table class="s44-table"><thead><tr>';
+    pg+='<th class="s44-corner">البيان \\ الصنف</th>';
+    pageItems.forEach(function(n){
+      pg+='<th class="s44-item-th"><div class="s44-item-text">'+n+'</div></th>';
+    });
+    pg+='</tr></thead><tbody>'+rows+'</tbody></table>';
+
+    if(isLast){
+      pg+='<div class="a4-sign-row" style="margin-top:28px;">';
+      pg+='<div class="a4-sign-box"><div class="a4-sign-line">صاحب العهدة</div></div>';
+      pg+='<div class="a4-sign-box"><div class="a4-sign-line">مدير الصيادلة</div></div>';
+      pg+='<div class="a4-sign-box"><div class="a4-sign-line">مدير المستشفى</div></div>';
+      pg+='</div>';
+    }
+    pg+='<div class="a4-footer"><span>عدد الأصناف: '+itemNames.length+'</span><span>'+today+'</span></div>';
+    pg+='</div>';
+    html+=pg;
+  });
+
+  showA4PrintPreview(html, true); // landscape
 }
 
 // ═══════════════════════════════════════════════════════════════
