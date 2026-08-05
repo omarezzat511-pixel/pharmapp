@@ -869,7 +869,10 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
           </div>
           <div class="form-group">
             <label class="form-label">الرقم القومي</label>
-            <input class="form-input" id="patientId" placeholder="أدخل الرقم القومي..." oninput="onPatientIdInput()" onkeydown="handleIdEnter(event)">
+            <div class="autocomplete-wrap">
+              <input class="form-input" id="patientId" placeholder="أدخل الرقم القومي..." oninput="onPatientIdInput()" onkeydown="handleIdEnter(event)">
+              <div class="autocomplete-list" id="idDropdown"></div>
+            </div>
           </div>
         </div>
       </div>
@@ -952,8 +955,7 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
     <div class="stats-band">
       <div class="stat-card"><div class="stat-icon teal">👥</div><div><div class="stat-num" id="stat-patients">0</div><div class="stat-label">مرضى اليوم</div></div></div>
       <div class="stat-card"><div class="stat-icon sage">📦</div><div><div class="stat-num" id="stat-items">0</div><div class="stat-label">أنواع الأصناف</div></div></div>
-      <div class="stat-card"><div class="stat-icon gold">💊</div><div><div class="stat-num" id="stat-units">0</div><div class="stat-label">إجمالي الوحدات</div></div></div>
-      <div class="stat-card"><div class="stat-icon navy">📅</div><div><div class="stat-num" id="stat-days">0</div><div class="stat-label">أيام مسجلة</div></div></div>
+      <div class="stat-card"><div class="stat-icon gold">🧾</div><div><div class="stat-num" id="stat-month-invoices">0</div><div class="stat-label">فواتير هذا الشهر</div></div></div>
     </div>
     <div style="margin-bottom:14px;display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap;">
       <div class="search-bar" style="flex:1;max-width:320px;">
@@ -2113,15 +2115,30 @@ function onPatientNameInput(){
   if(v.length<2){dd.classList.remove('open');return;}
   const m=S.patients.filter(p=>p.name.includes(v)||(p.id&&p.id.includes(v))).slice(0,7);
   if(!m.length){dd.classList.remove('open');return;}
-  dd.innerHTML=m.map(p=>`<div class="autocomplete-item" onclick="selPat('${ec(p.name)}','${ec(p.id)}')"><strong>${hl(p.name,v)}</strong><span style="color:var(--text3);font-size:12px;margin-right:8px;">${p.id||''}</span></div>`).join('');
+  dd.innerHTML=m.map(p=>`<div class="autocomplete-item" onmousedown="event.preventDefault();selPat('${ec(p.name)}','${ec(p.id)}')"><strong>${hl(p.name,v)}</strong><span style="color:var(--text3);font-size:12px;margin-right:8px;">${p.id||''}</span></div>`).join('');
   dd.classList.add('open');pIdx=-1;
 }
 function onPatientIdInput(){
   const idVal=document.getElementById('patientId').value.trim();
   const nameVal=document.getElementById('patientName').value.trim();
-  if(!idVal)return;
+  const dd=document.getElementById('idDropdown');
 
-  // Check if this ID belongs to a known patient
+  if(!idVal){dd.classList.remove('open');return;}
+
+  // Show autocomplete suggestions matching the typed ID
+  if(idVal.length>=2){
+    const m=S.patients.filter(p=>p.id&&p.id.includes(idVal)).slice(0,7);
+    if(m.length){
+      dd.innerHTML=m.map(p=>`<div class="autocomplete-item" onmousedown="event.preventDefault();selPat('${ec(p.name)}','${ec(p.id)}')"><strong>${p.id}</strong><span style="color:var(--text3);font-size:12px;margin-right:8px;">${p.name}</span></div>`).join('');
+      dd.classList.add('open');
+    } else {
+      dd.classList.remove('open');
+    }
+  } else {
+    dd.classList.remove('open');
+  }
+
+  // Check if this ID belongs to a known patient (exact match)
   const patWithId=S.patients.find(p=>p.id===idVal);
 
   if(patWithId){
@@ -2213,7 +2230,7 @@ function onItemSearch(){
   if(v.length<2){dd.classList.remove('open');return;}
   const m=S.items.filter(i=>i.name.includes(v)).slice(0,8);
   if(!m.length){dd.classList.remove('open');return;}
-  dd.innerHTML=m.map(it=>`<div class="autocomplete-item" onclick="selItm('${ec(it.name)}')">${hl(it.name,v)}<span style="color:var(--text3);font-size:11px;margin-right:6px;">${it.unit}</span></div>`).join('');
+  dd.innerHTML=m.map(it=>`<div class="autocomplete-item" onmousedown="event.preventDefault();selItm('${ec(it.name)}')">${hl(it.name,v)}<span style="color:var(--text3);font-size:11px;margin-right:6px;">${it.unit}</span></div>`).join('');
   dd.classList.add('open');iIdx=-1;
 }
 function onItemKeydown(e){
@@ -3684,12 +3701,17 @@ function updateInventoryOutRevert(dateStr, itemsObj){
 // ═══════════════════════════════════════════════════════════════
 function updateStats(){
   const ad=S.activeDay||S.date;const data=S.daily[ad]||[];
-  const ai=new Set();let tot=0;
-  data.forEach(r=>Object.entries(r.items).forEach(([n,q])=>{ai.add(n);tot+=q;}));
+  const ai=new Set();
+  data.forEach(r=>Object.entries(r.items).forEach(([n])=>{ai.add(n);}));
   document.getElementById('stat-patients').textContent=data.length;
   document.getElementById('stat-items').textContent=ai.size;
-  document.getElementById('stat-units').textContent=tot;
-  document.getElementById('stat-days').textContent=Object.keys(S.daily).length;
+  // عدد الفواتير (صفوف المرضى) في الشهر الحالي
+  const curMonth=getMonthKey(S.date||new Date().toISOString().slice(0,10));
+  let monthInvCount=0;
+  Object.entries(S.daily).forEach(([day,rows])=>{
+    if(getMonthKey(day)===curMonth)monthInvCount+=rows.length;
+  });
+  document.getElementById('stat-month-invoices').textContent=monthInvCount;
 }
 
 // ═══════════════════════════════════════════════════════════════
