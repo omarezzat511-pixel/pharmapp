@@ -4668,7 +4668,7 @@ function printSingleItemCard(id){
   if(!it){toast('الصنف مش موجود','error');return;}
   const cardHtml=buildItemCardHtml(it);
   const html=`<div class="a4-page" style="padding:15mm;display:flex;align-items:center;justify-content:center;">
-    <div style="width:93mm;">${cardHtml}</div>
+    <div style="width:93mm;height:137mm;">${cardHtml}</div>
   </div>`;
   showA4PrintPreview(html);
 }
