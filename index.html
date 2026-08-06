@@ -4297,10 +4297,12 @@ function renderItemsGrid(query=''){
       if(daysLeft<0)expiryHtml=`<div style="font-size:11.5px;color:var(--crimson);font-weight:700;margin-top:2px;">⛔ فيه باتش منتهي الصلاحية</div>`;
       else if(daysLeft<=90)expiryHtml=`<div style="font-size:11.5px;color:#8a6d1a;font-weight:700;margin-top:2px;">⚠️ أقرب انتهاء صلاحية بعد ${daysLeft} يوم</div>`;
     }
+    const bc=batches.length;
+    const nameFz=bc>=5?'13px':bc>=3?'15px':bc>=1?'16px':'18px';
     return `<div class="${cardClass}">
       <div class="item-num">${it.id}</div>
       <div class="item-info">
-        <div class="item-name">${hl(it.name,query)}</div>
+        <div class="item-name" style="font-size:${nameFz};">${hl(it.name,query)}</div>
         <div class="item-unit">${it.unit}${it.note?' · '+it.note:''}</div>
         <div class="item-stock">${stkHtml}</div>
         ${priceHtml}
@@ -4308,6 +4310,7 @@ function renderItemsGrid(query=''){
       </div>
       <div class="item-actions">
         <button class="btn btn-sm" style="background:var(--light);color:var(--navy);" onclick="openItemCardModal('${it.id}')" title="كارت الصنف (الباتشات)">🗂 ${batches.length?batches.length:''}</button>
+        <button class="btn btn-sm" style="background:var(--light);color:var(--navy);" onclick="printSingleItemCard('${it.id}')" title="طباعة كارت هذا الصنف">🖨</button>
         <button class="btn btn-sm btn-warn" onclick="openEditItemModal('${it.id}')" title="تعديل">✏</button>
         <button class="btn btn-sm btn-danger" onclick="deleteItem('${it.id}')">✕</button>
       </div>
@@ -4629,6 +4632,16 @@ function printItemCardsA4All(){
     inner+='</div>';
     html+='<div class="a4-page" style="padding:8mm;">'+inner+'</div>';
   });
+  showA4PrintPreview(html);
+}
+
+function printSingleItemCard(id){
+  const it=S.items.find(i=>String(i.id)===String(id));
+  if(!it){toast('الصنف مش موجود','error');return;}
+  const cardHtml=buildItemCardHtml(it);
+  const html=`<div class="a4-page" style="padding:15mm;display:flex;align-items:center;justify-content:center;">
+    <div style="width:93mm;">${cardHtml}</div>
+  </div>`;
   showA4PrintPreview(html);
 }
 
