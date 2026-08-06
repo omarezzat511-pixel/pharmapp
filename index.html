@@ -783,6 +783,43 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
 .item-print-card .ipc-footer{background:#F4F6F8;border-top:1px solid #E0E5EB;
   padding:3px 8px;font-size:7.5px;color:#999;text-align:center;}
 .item-print-card,.item-print-card *{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+/* ══ PRINT MANAGER (سيستم الطباعة الموحد) ══════════════════════ */
+#pmModal{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:10000;display:none;font-family:'Tajawal',sans-serif;}
+#pmModal.open{display:flex;}
+.pm-wrap{display:flex;flex-direction:column;width:100%;height:100%;}
+.pm-topbar{background:#0B1929;color:#fff;padding:9px 18px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-shrink:0;border-bottom:2px solid #C9A84C;}
+.pm-topbar-title{font-family:'Cairo',sans-serif;font-weight:700;font-size:15px;display:flex;align-items:center;gap:8px;}
+.pm-topbar-report{font-size:12px;color:#C9A84C;font-weight:600;flex:1;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.pm-close-btn{background:none;border:none;color:#fff;font-size:22px;cursor:pointer;opacity:.65;transition:opacity .15s;line-height:1;}
+.pm-close-btn:hover{opacity:1;}
+.pm-main{display:flex;flex:1;overflow:hidden;}
+.pm-preview-area{flex:1;overflow:auto;background:#555;padding:24px;display:flex;flex-direction:column;align-items:center;gap:20px;}
+.pm-preview-page-wrap{position:relative;flex-shrink:0;}
+.pm-page-num-badge{position:absolute;bottom:-22px;left:50%;transform:translateX(-50%);font-size:11px;color:#ddd;font-weight:600;white-space:nowrap;}
+.pm-sidebar{width:268px;background:#F8F9FA;border-right:1px solid #E0E5EB;overflow-y:auto;flex-shrink:0;display:flex;flex-direction:column;}
+.pm-section{padding:13px 15px;border-bottom:1px solid #E5EAF0;}
+.pm-section-title{font-size:10.5px;font-weight:800;color:#0B1929;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;}
+.pm-row{display:flex;flex-direction:column;gap:5px;margin-bottom:10px;}
+.pm-row:last-child{margin-bottom:0;}
+.pm-lbl{font-size:11.5px;font-weight:700;color:#555;display:flex;justify-content:space-between;}
+.pm-sidebar select,.pm-sidebar input[type=number]{border:1.5px solid #D0D7E2;border-radius:6px;padding:5px 9px;font-family:'Tajawal',sans-serif;font-size:13px;color:#1a1a1a;background:#fff;outline:none;width:100%;box-sizing:border-box;}
+.pm-stepper{display:flex;align-items:center;gap:6px;}
+.pm-stepper button{width:28px;height:28px;border:1.5px solid #D0D7E2;border-radius:6px;background:#fff;font-size:17px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:700;color:#0B1929;transition:all .15s;flex-shrink:0;}
+.pm-stepper button:hover{background:#0B1929;color:#fff;border-color:#0B1929;}
+.pm-stepper input{width:52px!important;text-align:center;}
+.pm-radio-group{display:flex;gap:8px;flex-wrap:wrap;}
+.pm-radio-group label{font-size:12px;display:flex;align-items:center;gap:4px;cursor:pointer;white-space:nowrap;}
+.pm-queue-item{display:flex;align-items:center;gap:7px;padding:6px 9px;background:#fff;border:1.5px solid #E0E5EB;border-radius:6px;margin-bottom:6px;cursor:pointer;transition:all .15s;}
+.pm-queue-item:hover{border-color:#0B1929;}
+.pm-queue-item.active{border-color:var(--teal);background:#EBF7F5;}
+.pm-queue-item-name{font-size:11.5px;font-weight:600;color:#333;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.pm-queue-del{border:none;background:none;color:#bbb;cursor:pointer;font-size:14px;padding:2px 5px;transition:color .15s;line-height:1;}
+.pm-queue-del:hover{color:#B5302A;}
+.pm-empty-queue{font-size:12px;color:#aaa;text-align:center;padding:12px 0;}
+.pm-bottombar{background:#fff;border-top:2px solid #E0E5EB;padding:11px 20px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.pm-page-info{font-size:12px;color:#888;font-weight:600;}
+.pm-range-row{display:flex;align-items:center;gap:6px;font-size:12px;}
+.pm-range-row input[type=number]{width:52px!important;}
 @media print{
   body *{display:none!important;}
   #a4PrintRoot{display:block!important;}
@@ -1520,21 +1557,96 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
 <!-- ═══ A4 PRINT CONTAINER (مخفي، يظهر فقط عند الطباعة) ═══ -->
 <div id="a4PrintRoot" style="display:none;"></div>
 
-<!-- ═══ PRINT PREVIEW MODAL (معاينة قبل الطباعة) ═══ -->
-<div class="modal-overlay" id="printPreviewModal">
-  <div class="modal" style="width:auto;max-width:96vw;">
-    <div class="modal-header" style="background:var(--navy);">
-      <div class="modal-title">🖨 معاينة قبل الطباعة</div>
-      <button class="modal-close" onclick="closeModal('printPreviewModal')">✕</button>
+<!-- ═══ PRINT MANAGER (سيستم الطباعة الموحد) ═══ -->
+<div id="pmModal">
+  <div class="pm-wrap">
+    <!-- شريط العنوان -->
+    <div class="pm-topbar">
+      <div class="pm-topbar-title">🖨 نظام الطباعة الموحد</div>
+      <div class="pm-topbar-report" id="pmReportName"></div>
+      <button class="pm-close-btn" onclick="PM.close()">✕</button>
     </div>
-    <div class="modal-body" style="padding:18px;background:#8496A8;max-height:78vh;overflow:auto;">
-      <div id="printPreviewScale" style="transform:scale(0.62);transform-origin:top center;margin:0 auto;width:fit-content;">
-        <div id="printPreviewBody"></div>
+    <!-- المنطقة الرئيسية -->
+    <div class="pm-main">
+      <!-- منطقة المعاينة -->
+      <div class="pm-preview-area" id="pmPreviewArea"><div style="color:#ccc;margin:auto;">جارٍ التحميل...</div></div>
+      <!-- الشريط الجانبي -->
+      <div class="pm-sidebar">
+        <!-- الورقة -->
+        <div class="pm-section">
+          <div class="pm-section-title">📄 الورقة</div>
+          <div class="pm-row">
+            <label class="pm-lbl">حجم الورق</label>
+            <select id="pmPaper" onchange="PM.updatePreview()">
+              <option value="A4" selected>A4 (210×297mm)</option>
+              <option value="A5">A5 (148×210mm)</option>
+              <option value="Letter">Letter (216×279mm)</option>
+              <option value="Legal">Legal (216×356mm)</option>
+            </select>
+          </div>
+          <div class="pm-row">
+            <label class="pm-lbl">الاتجاه</label>
+            <div class="pm-radio-group">
+              <label><input type="radio" name="pmOri" value="auto" checked onchange="PM.updatePreview()"> تلقائي</label>
+              <label><input type="radio" name="pmOri" value="portrait" onchange="PM.updatePreview()"> ↕ عمودي</label>
+              <label><input type="radio" name="pmOri" value="landscape" onchange="PM.updatePreview()"> ↔ أفقي</label>
+            </div>
+          </div>
+        </div>
+        <!-- الإعدادات -->
+        <div class="pm-section">
+          <div class="pm-section-title">⚙️ إعدادات الطباعة</div>
+          <div class="pm-row">
+            <label class="pm-lbl">عدد النسخ</label>
+            <div class="pm-stepper">
+              <button onclick="PM.stepCopies(-1)">−</button>
+              <input type="number" id="pmCopies" value="1" min="1" max="99">
+              <button onclick="PM.stepCopies(1)">+</button>
+            </div>
+          </div>
+          <div class="pm-row">
+            <label class="pm-lbl">نطاق الصفحات</label>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              <label class="pm-radio-group"><input type="radio" name="pmRange" value="all" checked onchange="PM.updatePreview()"> الكل</label>
+              <div class="pm-range-row">
+                <label class="pm-radio-group"><input type="radio" name="pmRange" value="range" onchange="PM.updatePreview()"> من</label>
+                <input type="number" id="pmRangeFrom" value="1" min="1" oninput="PM.updatePreview()">
+                <span>إلى</span>
+                <input type="number" id="pmRangeTo" value="1" min="1" oninput="PM.updatePreview()">
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- التكبير -->
+        <div class="pm-section">
+          <div class="pm-section-title">🔍 التكبير والتصغير</div>
+          <div class="pm-row">
+            <label class="pm-lbl">المقياس <span id="pmScaleLbl" style="color:var(--teal);font-size:13px;">100%</span></label>
+            <input type="range" id="pmScale" min="30" max="150" value="100" oninput="PM.onScaleChange()" style="width:100%;accent-color:var(--teal);">
+          </div>
+          <div class="pm-row">
+            <label style="display:flex;align-items:center;gap:7px;font-size:12.5px;cursor:pointer;">
+              <input type="checkbox" id="pmFitPage" onchange="PM.onFitChange()">
+              ملء عرض الشاشة تلقائياً
+            </label>
+          </div>
+        </div>
+        <!-- قائمة الانتظار -->
+        <div class="pm-section" style="flex:1;">
+          <div class="pm-section-title">📋 قائمة الانتظار</div>
+          <div id="pmQueue"></div>
+          <div class="pm-empty-queue" id="pmQueueEmpty" style="display:none;">لا توجد تقارير في القائمة</div>
+        </div>
       </div>
     </div>
-    <div class="modal-footer">
-      <button class="btn btn-navy" onclick="confirmPrintFromPreview()">🖨 طباعة الآن</button>
-      <button class="btn btn-sm" style="background:var(--light);color:var(--text2)" onclick="closeModal('printPreviewModal')">إلغاء</button>
+    <!-- شريط الأزرار السفلي -->
+    <div class="pm-bottombar">
+      <div class="pm-page-info" id="pmPageInfo"></div>
+      <div style="display:flex;gap:9px;align-items:center;">
+        <button class="btn btn-sm" style="background:var(--light);color:var(--text2);" onclick="PM.close()">إلغاء</button>
+        <button class="btn btn-sm btn-outline" onclick="PM.exportPdf()">📄 تصدير PDF</button>
+        <button class="btn btn-navy" onclick="PM.print()">🖨 طباعة الآن</button>
+      </div>
     </div>
   </div>
 </div>
@@ -4326,58 +4438,227 @@ function renderItemsGrid(query=''){
 function filterItems(q){renderItemsGrid(q);}
 
 // ═══════════════════════════════════════════════════════════════
-// ══ PRINT PREVIEW (معاينة قبل الطباعة) ═══════════════════════════
+// ══ PRINT MANAGER — سيستم الطباعة الموحد ═══════════════════════
 // ═══════════════════════════════════════════════════════════════
-let _pendingPrintMode='a4';
-let _pendingPrintHtml='';
-let _pendingPrintRunner=null;
-let _pendingPrintLandscape=false;
+const PM={
+  queue:[],      // [{id,title,html,landscape}]
+  activeId:null,
+  _liveRunner:null,
+  _nid:1,
+  _id(){return 'pmj'+(this._nid++);},
 
-// وضع 'a4': يستخدم مع التقارير المبنية كـ HTML جاهز (a4PrintRoot)
-function showA4PrintPreview(html, landscape){
-  _pendingPrintMode='a4';
-  _pendingPrintHtml=html;
-  _pendingPrintLandscape=!!landscape;
-  document.getElementById('printPreviewBody').innerHTML=html;
-  document.getElementById('printPreviewModal').classList.add('open');
-}
+  // ── حجم الورق بالـ mm
+  _dims(paper,landscape){
+    const d={A4:{w:210,h:297},A5:{w:148,h:210},Letter:{w:216,h:279},Legal:{w:216,h:356}}[paper]||{w:210,h:297};
+    return landscape?{w:d.h,h:d.w}:d;
+  },
 
-// وضع 'live': يستخدم مع الطباعة اللي بتعتمد على تبديل محتوى الجدول الظاهر على الشاشة مؤقتاً
-function showLivePrintPreview(previewHtml, runner){
-  _pendingPrintMode='live';
-  _pendingPrintRunner=runner;
-  document.getElementById('printPreviewBody').innerHTML=previewHtml;
-  document.getElementById('printPreviewModal').classList.add('open');
-}
+  // ── استخراج صفحات .a4-page من HTML string
+  _pages(html){
+    const wrap=document.createElement('div');
+    wrap.innerHTML=html;
+    return Array.from(wrap.querySelectorAll('.a4-page'));
+  },
 
-// يضيف/يشيل تنسيق صفحة أفقي (Landscape) مؤقت للطباعات اللي محتاجة عرض أكبر (زي اليومية بكل أصنافها)
-function setTempLandscapePage(on){
-  let styleTag=document.getElementById('tempLandscapeStyle');
-  if(on){
-    if(!styleTag){
-      styleTag=document.createElement('style');
-      styleTag.id='tempLandscapeStyle';
-      document.head.appendChild(styleTag);
+  // ── قراءة الإعدادات من الـ UI
+  _cfg(){
+    const paper=document.getElementById('pmPaper').value;
+    const ori=(document.querySelector('input[name=pmOri]:checked')||{}).value||'auto';
+    const copies=Math.max(1,parseInt(document.getElementById('pmCopies').value)||1);
+    const rangeAll=(document.querySelector('input[name=pmRange]:checked')||{}).value!=='range';
+    const from=Math.max(1,parseInt(document.getElementById('pmRangeFrom').value)||1);
+    const to=Math.max(1,parseInt(document.getElementById('pmRangeTo').value)||9999);
+    const scale=parseInt(document.getElementById('pmScale').value)||100;
+    const fit=document.getElementById('pmFitPage').checked;
+    return{paper,ori,copies,rangeAll,from,to,scale,fit};
+  },
+
+  // ── فتح المعاينة بتقرير جديد
+  open(html,title,landscape){
+    this._liveRunner=null;
+    const id=this._id();
+    // لو نفس الـ HTML اتفتح قبل كده — حدّثه بدل ما تضيف
+    const ex=this.queue.find(j=>j.html===html);
+    if(ex){ex.landscape=!!landscape;this.activeId=ex.id;}
+    else{this.queue.push({id,title:title||'تقرير',html,landscape:!!landscape});this.activeId=id;}
+    this._render();
+    document.getElementById('pmModal').classList.add('open');
+    // تحديث اسم التقرير في الشريط
+    document.getElementById('pmReportName').textContent=title||'';
+  },
+
+  openLive(previewHtml,runner){
+    this._liveRunner=runner;
+    const id=this._id();
+    this.queue=[{id,title:'معاينة مباشرة',html:previewHtml,landscape:false}];
+    this.activeId=id;
+    this._render();
+    document.getElementById('pmModal').classList.add('open');
+    document.getElementById('pmReportName').textContent='معاينة مباشرة';
+  },
+
+  close(){document.getElementById('pmModal').classList.remove('open');},
+
+  // ── رسم قائمة الانتظار والمعاينة
+  _render(){this._renderQueue();this.updatePreview();},
+
+  _renderQueue(){
+    const el=document.getElementById('pmQueue');
+    const empty=document.getElementById('pmQueueEmpty');
+    if(!this.queue.length){el.innerHTML='';empty.style.display='';return;}
+    empty.style.display='none';
+    el.innerHTML=this.queue.map(j=>`
+      <div class="pm-queue-item${j.id===this.activeId?' active':''}" onclick="PM.setActive('${j.id}')">
+        <div class="pm-queue-item-name">📄 ${j.title}</div>
+        <button class="pm-queue-del" onclick="event.stopPropagation();PM.removeJob('${j.id}')" title="حذف من القائمة">✕</button>
+      </div>`).join('');
+  },
+
+  setActive(id){this.activeId=id;this._render();document.getElementById('pmReportName').textContent=(this.queue.find(j=>j.id===id)||{}).title||'';},
+  removeJob(id){this.queue=this.queue.filter(j=>j.id!==id);if(this.activeId===id)this.activeId=this.queue[0]?.id||null;this._render();},
+
+  // ── تحديث المعاينة
+  updatePreview(){
+    const s=this._cfg();
+    const job=this.queue.find(j=>j.id===this.activeId)||this.queue[0];
+    const area=document.getElementById('pmPreviewArea');
+    if(!job){area.innerHTML='<div style="color:#ccc;margin:auto;padding:40px;font-size:14px;">لا توجد تقارير في القائمة</div>';document.getElementById('pmPageInfo').textContent='';return;}
+
+    const landscape=s.ori==='auto'?job.landscape:s.ori==='landscape';
+    const dims=this._dims(s.paper,landscape);
+    const MM_TO_PX=3.7795;
+    const pageWpx=dims.w*MM_TO_PX;
+    const pageHpx=dims.h*MM_TO_PX;
+
+    let allPages=this._pages(job.html);
+    const totalPages=allPages.length;
+
+    // ضبط نطاق الصفحات
+    if(!s.rangeAll){
+      const f=Math.max(1,s.from)-1;
+      const t=Math.min(totalPages,s.to);
+      allPages=allPages.slice(f,t);
     }
-    styleTag.textContent='@page{size:A4 landscape;margin:8mm;}';
-  }else if(styleTag){
-    styleTag.remove();
-  }
-}
+    // تحديث max الـ range inputs
+    document.getElementById('pmRangeTo').max=totalPages;
+    if(!parseInt(document.getElementById('pmRangeTo').value)||parseInt(document.getElementById('pmRangeTo').value)<1)
+      document.getElementById('pmRangeTo').value=totalPages;
 
-function confirmPrintFromPreview(){
-  closeModal('printPreviewModal');
-  if(_pendingPrintMode==='a4'){
-    document.getElementById('a4PrintRoot').innerHTML=_pendingPrintHtml;
-    setTempLandscapePage(_pendingPrintLandscape);
-    setTimeout(function(){
+    // حساب مقياس العرض
+    const availW=area.clientWidth-48;
+    let dispScale=s.fit?Math.min(1,availW/pageWpx):s.scale/100;
+    dispScale=Math.max(0.2,Math.min(2,dispScale));
+    document.getElementById('pmScaleLbl').textContent=Math.round(dispScale*100)+'%';
+
+    // رسم الصفحات
+    const shown=allPages.length;
+    const offset=s.rangeAll?0:s.from-1;
+    area.innerHTML=allPages.map((pg,i)=>{
+      const sw=Math.round(pageWpx*dispScale);
+      const sh=Math.round(pageHpx*dispScale);
+      return `<div class="pm-preview-page-wrap" style="width:${sw}px;height:${sh+26}px;flex-shrink:0;">
+        <div style="width:${pageWpx}px;height:${pageHpx}px;transform:scale(${dispScale});transform-origin:top right;background:#fff;box-shadow:0 4px 20px rgba(0,0,0,.5);overflow:hidden;direction:rtl;">
+          ${pg.outerHTML}
+        </div>
+        <div class="pm-page-num-badge">صفحة ${offset+i+1} من ${totalPages}</div>
+      </div>`;
+    }).join('');
+
+    document.getElementById('pmPageInfo').textContent=
+      `${totalPages} صفحة • ${s.paper} ${landscape?'أفقي':'عمودي'} • ${this.queue.length} تقرير`;
+  },
+
+  onScaleChange(){
+    document.getElementById('pmFitPage').checked=false;
+    document.getElementById('pmScaleLbl').textContent=document.getElementById('pmScale').value+'%';
+    this.updatePreview();
+  },
+
+  onFitChange(){
+    if(document.getElementById('pmFitPage').checked){
+      const s=this._cfg();
+      const job=this.queue.find(j=>j.id===this.activeId)||this.queue[0];
+      if(!job)return;
+      const landscape=s.ori==='auto'?job.landscape:s.ori==='landscape';
+      const dims=this._dims(s.paper,landscape);
+      const area=document.getElementById('pmPreviewArea');
+      const availW=area.clientWidth-48;
+      const fitPct=Math.round(Math.min(150,Math.max(30,(availW/(dims.w*3.7795))*100)));
+      document.getElementById('pmScale').value=fitPct;
+    }
+    this.updatePreview();
+  },
+
+  stepCopies(d){
+    const el=document.getElementById('pmCopies');
+    el.value=Math.max(1,Math.min(99,(parseInt(el.value)||1)+d));
+  },
+
+  // ── بناء HTML الطباعة النهائي (كل التقارير + النسخ + النطاق)
+  _buildPrintHtml(){
+    const s=this._cfg();
+    let oneSet='';
+    this.queue.forEach(job=>{
+      let pages=this._pages(job.html);
+      if(!s.rangeAll&&job.id===this.activeId){
+        pages=pages.slice(Math.max(0,s.from-1),s.to);
+      }
+      pages.forEach(p=>{oneSet+=p.outerHTML;});
+    });
+    let all='';
+    for(let c=0;c<s.copies;c++)all+=oneSet;
+    return all;
+  },
+
+  // ── طباعة
+  print(){
+    if(this._liveRunner){const r=this._liveRunner;this.close();setTimeout(()=>r(),120);return;}
+    const s=this._cfg();
+    const job=this.queue.find(j=>j.id===this.activeId)||this.queue[0];
+    const landscape=job?(s.ori==='auto'?job.landscape:s.ori==='landscape'):false;
+    const dims=this._dims(s.paper,landscape);
+
+    const html=this._buildPrintHtml();
+    const root=document.getElementById('a4PrintRoot');
+    root.innerHTML=html;
+    // تطبيق المقياس
+    root.style.zoom=s.fit?'':(s.scale/100);
+
+    // ضبط @page
+    let pStyle=document.getElementById('pmPageStyle');
+    if(!pStyle){pStyle=document.createElement('style');pStyle.id='pmPageStyle';document.head.appendChild(pStyle);}
+    pStyle.textContent=`@page{size:${dims.w}mm ${dims.h}mm;margin:0;}`;
+
+    this.close();
+    setTimeout(()=>{
       window.print();
-      setTempLandscapePage(false);
+      root.innerHTML='';root.style.zoom='';pStyle.textContent='';
     },150);
-  }else if(_pendingPrintMode==='live' && typeof _pendingPrintRunner==='function'){
-    _pendingPrintRunner();
+  },
+
+  // ── تصدير PDF (نفس الطباعة — المستخدم يختار "حفظ كـ PDF")
+  exportPdf(){
+    toast('⬇ في نافذة الطابعة: اختر "Microsoft Print to PDF" أو "Save as PDF"','info');
+    setTimeout(()=>this.print(),900);
   }
+};
+
+// ── Wrappers للتوافق مع كل نقاط الاستدعاء الموجودة
+const _titleGuesses={
+  printDailyReport:'تقرير اليومية',printArchiveDay:'تقرير الأرشيف',
+  printInventory:'تقرير الجرد',printItemCardsA4All:'كروت الأصناف',
+  printSingleItemCard:'كارت صنف',printItemsInStock:'شيت الأصناف',
+  printSeha44:'صحة 44',printInvoice:'فاتورة',printPatientHistory:'سجل المريض',
+  printConsumption:'تحليل الاستهلاك'
+};
+function showA4PrintPreview(html,landscape){
+  let title='تقرير';
+  try{const st=new Error().stack||'';for(const[fn,nm]of Object.entries(_titleGuesses)){if(st.includes(fn)){title=nm;break;}}}catch(e){}
+  PM.open(html,title,landscape);
 }
+function showLivePrintPreview(previewHtml,runner){PM.openLive(previewHtml,runner);}
+function confirmPrintFromPreview(){PM.print();}
+function setTempLandscapePage(){/* handled by PM now */}
 
 // ═══════════════════════════════════════════════════════════════
 // ══ CONSUMPTION ANALYSIS & REORDER PLANNING ═════════════════════
@@ -5946,6 +6227,7 @@ document.addEventListener('keydown',e=>{
   if(e.altKey&&e.key==='7')showPage('patients');
   if(e.altKey&&e.key==='8')showPage('backup');
   if(e.ctrlKey&&e.key==='s'){e.preventDefault();manualSave();}
+  if(e.ctrlKey&&e.key==='p'){e.preventDefault();if(document.getElementById('pmModal').classList.contains('open')){PM.print();}else{toast('💡 استخدم أزرار الطباعة في كل صفحة لفتح نظام الطباعة','info');}}
   if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){
     const entryPage=document.getElementById('page-entry');
     if(entryPage&&entryPage.classList.contains('active')){
