@@ -752,37 +752,36 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
 
 /* شبكة كروت الأصناف — 4 كروت بحجم ثابت في كل ورقة A4 (كارت = ربع الورقة) — تصميم احترافي */
 .a4-cards-page{position:relative;width:100%;height:281mm;}
-.a4-cards-slot{position:absolute;width:93mm;height:137mm;}
-.item-print-card{border:1.5px solid #C9A84C;border-radius:10px;box-sizing:border-box;
-  display:flex;flex-direction:column;overflow:hidden;background:#fff;height:100%;
-  box-shadow:0 0 0 1px rgba(11,25,41,0.06);}
-.item-print-card .ipc-head{background:linear-gradient(135deg,#0B1929,#16406B);color:#fff;
-  padding:9px 12px 8px;position:relative;}
-.item-print-card .ipc-icon{position:absolute;left:10px;top:8px;font-size:16px;opacity:0.85;}
-.item-print-card .ipc-name{font-size:15.5px;font-weight:900;line-height:1.25;
-  padding-left:22px;}
-.item-print-card .ipc-unit{font-size:10.5px;color:#C9A84C;font-weight:700;margin-top:3px;}
-.item-print-card .ipc-body{padding:9px 11px;flex:1;display:flex;flex-direction:column;}
-.item-print-card table{width:100%;border-collapse:collapse;font-size:10.5px;flex:1;}
-.item-print-card table th{background:#F2F5F8;color:#16406B;border-bottom:1.5px solid #C9A84C;
-  padding:4px 4px;font-weight:800;}
-.item-print-card table td{border-bottom:1px solid #E5EAF0;padding:4px 4px;text-align:center;color:#222;}
-.item-print-card table tr:nth-child(even) td{background:#FAFBFC;}
+.a4-cards-slot{position:absolute;width:93mm;height:130mm;}
+.ipc-page-hdr{display:flex;justify-content:space-between;align-items:center;padding-bottom:6px;border-bottom:2px solid #C9A84C;margin-bottom:8px;}
+.ipc-page-hdr-title{font-size:13px;font-weight:900;color:#0B1929;font-family:'Cairo',sans-serif;}
+.ipc-page-hdr-meta{font-size:9px;color:#666;text-align:left;}
+/* ── كارت الصنف ── */
+.item-print-card{border:1px solid #D0D7E2;border-radius:7px;box-sizing:border-box;
+  display:flex;flex-direction:column;overflow:hidden;background:#fff;height:100%;}
+/* رأس الكارت — عمودان */
+.item-print-card .ipc-head{background:#0B1929;display:flex;align-items:stretch;min-height:46px;}
+.item-print-card .ipc-head-right{flex:1;padding:8px 10px;display:flex;flex-direction:column;justify-content:center;border-left:1px solid rgba(255,255,255,0.12);}
+.item-print-card .ipc-head-left{padding:7px 10px;display:flex;flex-direction:column;justify-content:center;min-width:68px;text-align:center;}
+.item-print-card .ipc-head-sublbl{font-size:7.5px;color:rgba(255,255,255,0.45);font-weight:600;letter-spacing:.3px;margin-bottom:2px;}
+.item-print-card .ipc-name{font-size:14.5px;font-weight:900;line-height:1.2;color:#fff;}
+.item-print-card .ipc-unit{font-size:8.5px;color:#C9A84C;font-weight:700;margin-top:2px;}
+.item-print-card .ipc-total-val{font-size:14px;font-weight:900;color:#2ECC71;line-height:1.1;white-space:nowrap;}
+.item-print-card .ipc-batch-cnt{font-size:8px;color:rgba(255,255,255,0.5);margin-top:3px;white-space:nowrap;}
+/* جسم الكارت */
+.item-print-card .ipc-body{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.item-print-card table{width:100%;border-collapse:collapse;font-size:9.5px;}
+.item-print-card table th{background:#EBF0F6;color:#16406B;border-bottom:1.5px solid #C9A84C;padding:4px 3px;font-weight:800;text-align:center;}
+.item-print-card table td{border-bottom:1px solid #EEF1F5;padding:4px 3px;text-align:center;color:#1a1a1a;font-size:9.5px;}
+.item-print-card table tr:nth-child(even) td{background:#F8FAFB;}
 .item-print-card table tr.ipc-expired td{background:#FDEEEE;color:#B5302A;font-weight:800;}
 .item-print-card table tr.ipc-soon td{background:#FBF0D0;color:#8a6d1a;font-weight:700;}
-.item-print-card .ipc-total{padding:9px 12px;background:linear-gradient(135deg,#0B1929,#16406B);border-radius:8px;
-  display:flex;justify-content:space-between;align-items:center;margin-top:auto;
-  font-size:13px;font-weight:900;color:#C9A84C;}
-.item-print-card .ipc-total span:last-child{color:#fff;font-size:16px;font-weight:900;}
-.item-print-card .ipc-empty{color:#999;font-size:11px;text-align:center;padding:16px 0;flex:1;
+.item-print-card .ipc-valid{color:#27AE60;font-weight:700;}
+.item-print-card .ipc-empty{color:#aaa;font-size:10px;text-align:center;flex:1;
   display:flex;align-items:center;justify-content:center;}
-.item-print-card .ipc-single{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:10px 8px;}
-.item-print-card .ipc-single-row{display:flex;flex-direction:column;align-items:center;gap:3px;width:100%;}
-.item-print-card .ipc-single-lbl{font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;}
-.item-print-card .ipc-single-val{font-size:22px;font-weight:900;color:#0B1929;line-height:1.1;}
-.item-print-card .ipc-single-row.expired .ipc-single-val{color:#B5302A;}
-.item-print-card .ipc-single-row.soon .ipc-single-val{color:#8a6d1a;}
-.item-print-card .ipc-single-divider{width:60%;height:1.5px;background:linear-gradient(90deg,transparent,#C9A84C,transparent);margin:0 auto;}
+/* فوتر الكارت */
+.item-print-card .ipc-footer{background:#F4F6F8;border-top:1px solid #E0E5EB;
+  padding:3px 8px;font-size:7.5px;color:#999;text-align:center;}
 .item-print-card,.item-print-card *{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
 @media print{
   body *{display:none!important;}
@@ -4596,52 +4595,50 @@ function buildItemCardHtml(it){
   if(!it)return '<div class="item-print-card" style="visibility:hidden;"></div>'; // خانة فاضية (لملء آخر صفحة)
   const batches=(it.batches||[]).filter(b=>(b.qty||0)>0).slice().sort((a,b)=>(a.expiry||'9999').localeCompare(b.expiry||'9999'));
   const today=new Date().toISOString().split('T')[0];
-  let html='<div class="ipc-head"><span class="ipc-icon">💊</span><div class="ipc-name">'+it.name+'</div>';
-  html+='<div class="ipc-unit">'+it.unit+(it.note?' · '+it.note:'')+'</div></div>';
+  const totalQty=it.stock||0;
+  const batchCount=batches.length;
+  // ── رأس الكارت (عمودان)
+  let html='<div class="ipc-head">';
+  // العمود الأيمن — اسم الصنف
+  html+='<div class="ipc-head-right">';
+  html+='<div class="ipc-head-sublbl">نوع الوحدة فردية</div>';
+  html+='<div class="ipc-name">'+it.name+'</div>';
+  html+='<div class="ipc-unit">'+it.unit+(it.note?' · '+it.note:'')+'</div>';
+  html+='</div>';
+  // العمود الأيسر — الإجمالي وعدد التشغيلات
+  html+='<div class="ipc-head-left">';
+  html+='<div class="ipc-head-sublbl">الإجمالي</div>';
+  html+='<div class="ipc-total-val">'+totalQty+' '+it.unit+'</div>';
+  html+='<div class="ipc-batch-cnt">'+batchCount+' تشغيلة</div>';
+  html+='</div>';
+  html+='</div>';
+  // ── جسم الكارت
   html+='<div class="ipc-body">';
-  if(!batches.length){
+  if(!batchCount){
     html+='<div class="ipc-empty">🗂 لا توجد تشغيلات مسجّلة</div>';
-  }else if(batches.length===1){
-    // باتش واحد — عرض كبير في وسط الكارت
-    const b=batches[0];
-    let expiryClass='';
-    let daysLeftTxt='';
-    if(b.expiry){
-      if(b.expiry<today){expiryClass='expired';}
-      else{
-        const dl=Math.round((new Date(b.expiry)-new Date(today))/(1000*60*60*24));
-        if(dl<=90){expiryClass='soon';daysLeftTxt=' ('+dl+' يوم)';}
-      }
-    }
-    html+='<div class="ipc-single">';
-    if(b.batch){
-      html+='<div class="ipc-single-row"><div class="ipc-single-lbl">رقم التشغيلة</div><div class="ipc-single-val">'+b.batch+'</div></div>';
-      html+='<div class="ipc-single-divider"></div>';
-    }
-    html+='<div class="ipc-single-row '+expiryClass+'"><div class="ipc-single-lbl">تاريخ الانتهاء</div><div class="ipc-single-val">'+(b.expiry?fmtDate(b.expiry)+'<span style="font-size:12px;font-weight:700;"> '+daysLeftTxt+'</span>':'—')+'</div></div>';
-    html+='<div class="ipc-single-divider"></div>';
-    html+='<div class="ipc-single-row"><div class="ipc-single-lbl">الكمية</div><div class="ipc-single-val">'+b.qty+' '+it.unit+'</div></div>';
-    html+='</div>';
   }else{
-    html+='<table><thead><tr><th>الباتش</th><th>الانتهاء</th><th>الكمية</th></tr></thead><tbody>';
-    batches.slice(0,6).forEach(function(b){
+    html+='<table><thead><tr><th>رقم التشغيلة</th><th>تاريخ الصلاحية</th><th>الكمية</th></tr></thead><tbody>';
+    batches.slice(0,9).forEach(function(b){
       let rowClass='';
+      let expiryCell=b.expiry?fmtDate(b.expiry):'—';
       if(b.expiry){
-        if(b.expiry<today)rowClass='ipc-expired';
+        if(b.expiry<today){rowClass='ipc-expired';expiryCell+=' ✗';}
         else{
-          const daysLeft=Math.round((new Date(b.expiry)-new Date(today))/(1000*60*60*24));
-          if(daysLeft<=90)rowClass='ipc-soon';
+          const dl=Math.round((new Date(b.expiry)-new Date(today))/(1000*60*60*24));
+          if(dl<=90)rowClass='ipc-soon';
+          else expiryCell='<span class="ipc-valid">'+expiryCell+' ✓</span>';
         }
       }
-      html+='<tr class="'+rowClass+'"><td>'+(b.batch||'—')+'</td><td>'+(b.expiry?fmtDate(b.expiry):'—')+'</td><td>'+b.qty+'</td></tr>';
+      html+='<tr class="'+rowClass+'"><td>'+(b.batch||'—')+'</td><td>'+expiryCell+'</td><td>'+b.qty+'</td></tr>';
     });
-    if(batches.length>6){
-      html+='<tr><td colspan="3" style="color:#999;font-size:9.5px;">+ '+(batches.length-6)+' تشغيلة تانية...</td></tr>';
+    if(batches.length>9){
+      html+='<tr><td colspan="3" style="color:#aaa;font-size:8px;text-align:center;">+ '+(batches.length-9)+' تشغيلة أخرى</td></tr>';
     }
     html+='</tbody></table>';
   }
-  html+='<div class="ipc-total"><span>الإجمالي</span><span>'+(it.stock||0)+' '+it.unit+'</span></div>';
   html+='</div>';
+  // ── فوتر
+  html+='<div class="ipc-footer">نظام إدارة مخازن الأدوية &bull; '+batchCount+' تشغيلة</div>';
   return '<div class="item-print-card">'+html+'</div>';
 }
 
@@ -4650,15 +4647,21 @@ function printItemCardsA4All(){
   if(!items.length){toast('لا توجد أصناف للطباعة','error');return;}
   const pages=[];
   for(let i=0;i<items.length;i+=4){pages.push(items.slice(i,i+4));}
+  const todayStr=new Date().toLocaleDateString('ar-EG',{year:'numeric',month:'long',day:'numeric'});
   let html='';
-  pages.forEach(function(pageItems){
-    let inner='<div class="a4-cards-page">';
+  pages.forEach(function(pageItems,pi){
+    const hdr='<div class="ipc-page-hdr">'
+      +'<div class="ipc-page-hdr-title">🏥 نظام إدارة مخازن الأدوية</div>'
+      +'<div class="ipc-page-hdr-meta">صفحة '+(pi+1)+' من '+pages.length+' &bull; '+todayStr+' &bull; '+items.length+' أصناف</div>'
+      +'</div>';
+    // الكروت في شبكة 2×2 — ارتفاع كل كارت 130mm، فراغ 6mm بين الصفين
+    let inner='<div style="position:relative;width:100%;height:266mm;">';
     inner+='<div class="a4-cards-slot" style="top:0;right:0;">'+buildItemCardHtml(pageItems[0])+'</div>';
-    inner+='<div class="a4-cards-slot" style="top:0;left:0;">'+buildItemCardHtml(pageItems[1])+'</div>';
-    inner+='<div class="a4-cards-slot" style="top:144mm;right:0;">'+buildItemCardHtml(pageItems[2])+'</div>';
-    inner+='<div class="a4-cards-slot" style="top:144mm;left:0;">'+buildItemCardHtml(pageItems[3])+'</div>';
+    inner+='<div class="a4-cards-slot" style="top:0;left:0;">'+buildItemCardHtml(pageItems[1]||null)+'</div>';
+    inner+='<div class="a4-cards-slot" style="top:136mm;right:0;">'+buildItemCardHtml(pageItems[2]||null)+'</div>';
+    inner+='<div class="a4-cards-slot" style="top:136mm;left:0;">'+buildItemCardHtml(pageItems[3]||null)+'</div>';
     inner+='</div>';
-    html+='<div class="a4-page" style="padding:8mm;">'+inner+'</div>';
+    html+='<div class="a4-page" style="padding:8mm 10mm;">'+hdr+inner+'</div>';
   });
   showA4PrintPreview(html);
 }
@@ -4668,7 +4671,7 @@ function printSingleItemCard(id){
   if(!it){toast('الصنف مش موجود','error');return;}
   const cardHtml=buildItemCardHtml(it);
   const html=`<div class="a4-page" style="padding:15mm;display:flex;align-items:center;justify-content:center;">
-    <div style="width:93mm;height:137mm;">${cardHtml}</div>
+    <div style="width:93mm;height:130mm;">${cardHtml}</div>
   </div>`;
   showA4PrintPreview(html);
 }
