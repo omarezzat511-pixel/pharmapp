@@ -306,6 +306,18 @@ body{font-family:'Tajawal',sans-serif;background:var(--navy);min-height:100vh;co
 .backup-area{background:var(--white);border-radius:var(--radius);border:1.5px dashed var(--border);padding:24px;text-align:center;}
 .backup-area:hover{border-color:var(--teal);}
 
+/* مركز الطباعة */
+.pc-section-title{font-size:12.5px;font-weight:800;color:var(--navy);margin:14px 0 8px;}
+.pc-section-title:first-of-type{margin-top:0;}
+.pc-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.pc-card{text-align:right;background:var(--off);border:1.5px solid var(--border);border-radius:10px;
+  padding:12px 14px;cursor:pointer;transition:all .15s;font-family:inherit;}
+.pc-card:hover{border-color:var(--teal);background:var(--white);box-shadow:var(--shadow2);transform:translateY(-1px);}
+.pc-card .pc-icon{font-size:22px;margin-bottom:4px;}
+.pc-card .pc-label{font-size:13px;font-weight:800;color:var(--text1);margin-bottom:3px;}
+.pc-card .pc-desc{font-size:11px;color:var(--text3);line-height:1.5;}
+@media (max-width:640px){.pc-grid{grid-template-columns:1fr;}}
+
 /* تظليل صف بلمسة/دوسة — بيتفعّل بجافاسكريبت onclick على الصف */
 .row-highlighted{background:#ffb3b3!important;}
 .row-highlighted td{background:#ffb3b3!important;}
@@ -882,6 +894,7 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
   <button class="nav-btn" onclick="showPage('inventory')" id="nav-inventory">📊<span class="tip">الجرد الشهري</span></button>
   <button class="nav-btn" onclick="showPage('patients')" id="nav-patients">👥<span class="tip">قاعدة بيانات المرضى</span></button>
   <button class="nav-btn" onclick="showPage('archive')" id="nav-archive">🗄️<span class="tip">الأرشيف</span></button>
+  <button class="nav-btn" onclick="openPrintCenter()" id="nav-printcenter">🖨️<span class="tip">مركز الطباعة</span></button>
   <div style="flex:1"></div>
   <div class="sidebar-sep"></div>
   <button class="nav-btn" onclick="showPage('backup')" id="nav-backup" title="حفظ واسترجاع">💾<span class="tip">حفظ واسترجاع</span></button>
@@ -1550,6 +1563,66 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
     </div>
     <div class="modal-footer">
       <button class="btn btn-sm" style="background:var(--light);color:var(--text2)" onclick="closeModal('itemCardModal')">إغلاق</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ PRINT CENTER (مركز الطباعة الموحّد) ═══ -->
+<div class="modal-overlay" id="printCenterModal">
+  <div class="modal" style="width:640px;">
+    <div class="modal-header" style="background:var(--navy);">
+      <div class="modal-title">🖨️ مركز الطباعة</div>
+      <button class="modal-close" onclick="closeModal('printCenterModal')">✕</button>
+    </div>
+    <div class="modal-body" style="padding:18px;">
+      <div style="font-size:12.5px;color:var(--text3);margin-bottom:16px;">اختار التقرير اللي عايز تطبعه — كل التقارير هتفتحلك معاينة قبل الطباعة الفعلية.</div>
+
+      <div class="pc-section-title">📋 اليومية والصرف</div>
+      <div class="pc-grid">
+        <button class="pc-card" onclick="closeModal('printCenterModal');printAllDaily();">
+          <div class="pc-icon">📋</div><div class="pc-label">يومية اليوم الحالي</div>
+          <div class="pc-desc">كل مرضى اليوم المفتوح حاليًا، بالأصناف</div>
+        </button>
+      </div>
+
+      <div class="pc-section-title">📦 المخزون والأصناف</div>
+      <div class="pc-grid">
+        <button class="pc-card" onclick="closeModal('printCenterModal');printItemsInStock();">
+          <div class="pc-icon">🧾</div><div class="pc-label">شيت الأصناف المتوفرة</div>
+          <div class="pc-desc">كل الأصناف اللي رصيدها أكبر من صفر</div>
+        </button>
+        <button class="pc-card" onclick="closeModal('printCenterModal');printItemCardsA4All();">
+          <div class="pc-icon">🗂️</div><div class="pc-label">كروت الأصناف (الباتشات)</div>
+          <div class="pc-desc">4 كروت في كل ورقة A4، بالتشغيلات وتواريخ الانتهاء</div>
+        </button>
+      </div>
+
+      <div class="pc-section-title">📊 الجرد والتقارير الشهرية</div>
+      <div class="pc-grid">
+        <button class="pc-card" onclick="closeModal('printCenterModal');printMonthlyReportA4();">
+          <div class="pc-icon">📊</div><div class="pc-label">الجرد الشهري الكامل</div>
+          <div class="pc-desc">تقرير الشهر المختار حاليًا في صفحة الجرد</div>
+        </button>
+        <button class="pc-card" onclick="closeModal('printCenterModal');printSeha44();">
+          <div class="pc-icon">📄</div><div class="pc-label">نموذج صحة ٤٤</div>
+          <div class="pc-desc">النموذج الرسمي لجرد الشهر المفتوح حاليًا</div>
+        </button>
+        <button class="pc-card" onclick="closeModal('printCenterModal');printReceiptsA4();">
+          <div class="pc-icon">📥</div><div class="pc-label">سجل الوارد الشهري</div>
+          <div class="pc-desc">كل عمليات الاستلام للشهر المختار في صفحة الوارد</div>
+        </button>
+        <button class="pc-card" onclick="closeModal('printCenterModal');buildConsumptionRows();printConsumptionA4();">
+          <div class="pc-icon">📈</div><div class="pc-label">تحليل الاستهلاك والطلبيات</div>
+          <div class="pc-desc">استهلاك آخر 3 شهور والكمية المقترح طلبها</div>
+        </button>
+      </div>
+
+      <div style="margin-top:14px;padding:10px 12px;background:var(--light);border-radius:8px;font-size:11.5px;color:var(--text3);">
+        💡 تقارير محتاجة تحديد سياق معيّن (زي فاتورة مريض واحد، أو يومية مؤرشفة بعينها) هتلاقيها بجنب كل صف مباشرة في مكانها، مش هنا.
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-sm" style="background:var(--light);color:var(--text2)" onclick="closeModal('printCenterModal')">إغلاق</button>
     </div>
   </div>
 </div>
@@ -4720,6 +4793,11 @@ function buildConsumptionRows(){
       monthKeys:monthKeys
     };
   });
+}
+
+// فتح مركز الطباعة الموحّد
+function openPrintCenter(){
+  document.getElementById('printCenterModal').classList.add('open');
 }
 
 function openConsumptionModal(){
