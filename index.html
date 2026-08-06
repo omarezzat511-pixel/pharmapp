@@ -770,12 +770,19 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
 .item-print-card table tr:nth-child(even) td{background:#FAFBFC;}
 .item-print-card table tr.ipc-expired td{background:#FDEEEE;color:#B5302A;font-weight:800;}
 .item-print-card table tr.ipc-soon td{background:#FBF0D0;color:#8a6d1a;font-weight:700;}
-.item-print-card .ipc-total{margin-top:8px;padding:7px 10px;background:#F7FAFC;border-radius:7px;
-  border:1px solid #E5EAF0;display:flex;justify-content:space-between;align-items:center;
-  font-size:12.5px;font-weight:900;color:#0B1929;}
-.item-print-card .ipc-total span:last-child{color:#16406B;font-size:14px;}
+.item-print-card .ipc-total{padding:9px 12px;background:linear-gradient(135deg,#0B1929,#16406B);border-radius:8px;
+  display:flex;justify-content:space-between;align-items:center;margin-top:auto;
+  font-size:13px;font-weight:900;color:#C9A84C;}
+.item-print-card .ipc-total span:last-child{color:#fff;font-size:16px;font-weight:900;}
 .item-print-card .ipc-empty{color:#999;font-size:11px;text-align:center;padding:16px 0;flex:1;
   display:flex;align-items:center;justify-content:center;}
+.item-print-card .ipc-single{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:10px 8px;}
+.item-print-card .ipc-single-row{display:flex;flex-direction:column;align-items:center;gap:3px;width:100%;}
+.item-print-card .ipc-single-lbl{font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;}
+.item-print-card .ipc-single-val{font-size:22px;font-weight:900;color:#0B1929;line-height:1.1;}
+.item-print-card .ipc-single-row.expired .ipc-single-val{color:#B5302A;}
+.item-print-card .ipc-single-row.soon .ipc-single-val{color:#8a6d1a;}
+.item-print-card .ipc-single-divider{width:60%;height:1.5px;background:linear-gradient(90deg,transparent,#C9A84C,transparent);margin:0 auto;}
 .item-print-card,.item-print-card *{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
 @media print{
   body *{display:none!important;}
@@ -4594,6 +4601,27 @@ function buildItemCardHtml(it){
   html+='<div class="ipc-body">';
   if(!batches.length){
     html+='<div class="ipc-empty">🗂 لا توجد تشغيلات مسجّلة</div>';
+  }else if(batches.length===1){
+    // باتش واحد — عرض كبير في وسط الكارت
+    const b=batches[0];
+    let expiryClass='';
+    let daysLeftTxt='';
+    if(b.expiry){
+      if(b.expiry<today){expiryClass='expired';}
+      else{
+        const dl=Math.round((new Date(b.expiry)-new Date(today))/(1000*60*60*24));
+        if(dl<=90){expiryClass='soon';daysLeftTxt=' ('+dl+' يوم)';}
+      }
+    }
+    html+='<div class="ipc-single">';
+    if(b.batch){
+      html+='<div class="ipc-single-row"><div class="ipc-single-lbl">رقم التشغيلة</div><div class="ipc-single-val">'+b.batch+'</div></div>';
+      html+='<div class="ipc-single-divider"></div>';
+    }
+    html+='<div class="ipc-single-row '+expiryClass+'"><div class="ipc-single-lbl">تاريخ الانتهاء</div><div class="ipc-single-val">'+(b.expiry?fmtDate(b.expiry)+'<span style="font-size:12px;font-weight:700;"> '+daysLeftTxt+'</span>':'—')+'</div></div>';
+    html+='<div class="ipc-single-divider"></div>';
+    html+='<div class="ipc-single-row"><div class="ipc-single-lbl">الكمية</div><div class="ipc-single-val">'+b.qty+' '+it.unit+'</div></div>';
+    html+='</div>';
   }else{
     html+='<table><thead><tr><th>الباتش</th><th>الانتهاء</th><th>الكمية</th></tr></thead><tbody>';
     batches.slice(0,6).forEach(function(b){
