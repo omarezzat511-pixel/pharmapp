@@ -4703,10 +4703,17 @@ const PM={
     pStyle.textContent=`@page{size:${dims.w}mm ${dims.h}mm;margin:0;}`;
 
     this.close();
-    setTimeout(()=>{
-      window.print();
-      root.innerHTML='';root.style.zoom='';pStyle.textContent='';
-    },150);
+    // بنستنى فريمين كاملين من الرسم (مش مجرد وقت ثابت) عشان نتأكد إن المحتوى
+    // اتحط وترسم فعلاً على الشاشة قبل ما نطلب الطباعة — بعض أجهزة أندرويد الأبطأ
+    // كانت بتاخد وقت طباعة قبل ما المحتوى يخلص رسم، فتطلع ورقة فاضية.
+    requestAnimationFrame(()=>{
+      requestAnimationFrame(()=>{
+        setTimeout(()=>{
+          window.print();
+          root.innerHTML='';root.style.zoom='';pStyle.textContent='';
+        },200);
+      });
+    });
   },
 
   // ── تصدير PDF (نفس الطباعة — المستخدم يختار "حفظ كـ PDF")
