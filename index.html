@@ -833,10 +833,8 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
 .pm-range-row{display:flex;align-items:center;gap:6px;font-size:12px;}
 .pm-range-row input[type=number]{width:52px!important;}
 @media print{
-  body *{display:none!important;}
+  .sidebar,.main,.modal-overlay,#loginScreen,#backupReminderBanner{display:none!important;}
   #a4PrintRoot{display:block!important;}
-  #a4PrintRoot *{display:revert!important;}
-  #a4PrintRoot .a4-header,#a4PrintRoot .a4-footer,#a4PrintRoot .a4-sign-row{display:flex!important;}
   .a4-page{box-shadow:none;margin:0;}
   @page{size:A4 portrait;margin:0;}
 }
@@ -4695,8 +4693,9 @@ const PM={
     const html=this._buildPrintHtml();
     const root=document.getElementById('a4PrintRoot');
     root.innerHTML=html;
-    // تطبيق المقياس
-    root.style.zoom=s.fit?'':(s.scale/100);
+    // ملاحظة: خاصية zoom مش موثوقة في محرك طباعة أندرويد (بتطلع صفحة فاضية أحيانًا)،
+    // فبنطبع دايمًا بمقياس 100% طبيعي بدل ما نعتمد عليها.
+    root.style.zoom='';
 
     // ضبط @page
     let pStyle=document.getElementById('pmPageStyle');
