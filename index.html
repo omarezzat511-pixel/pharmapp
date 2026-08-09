@@ -796,45 +796,88 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
 .item-print-card .ipc-footer{background:#F4F6F8;border-top:1px solid #E0E5EB;
   padding:3px 8px;font-size:7.5px;color:#999;text-align:center;}
 .item-print-card,.item-print-card *{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
-/* ══ PRINT MANAGER (سيستم الطباعة الموحد) ══════════════════════ */
-#pmModal{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:10000;display:none;font-family:'Tajawal',sans-serif;}
-#pmModal.open{display:flex;}
-.pm-wrap{display:flex;flex-direction:column;width:100%;height:100%;}
-.pm-topbar{background:#0B1929;color:#fff;padding:9px 18px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-shrink:0;border-bottom:2px solid #C9A84C;}
-.pm-topbar-title{font-family:'Cairo',sans-serif;font-weight:700;font-size:15px;display:flex;align-items:center;gap:8px;}
-.pm-topbar-report{font-size:12px;color:#C9A84C;font-weight:600;flex:1;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.pm-close-btn{background:none;border:none;color:#fff;font-size:22px;cursor:pointer;opacity:.65;transition:opacity .15s;line-height:1;}
-.pm-close-btn:hover{opacity:1;}
+/* ══ مركز الطباعة — تصميم جديد بالكامل ══════════════════════════ */
+@keyframes pmFadeIn{from{opacity:0}to{opacity:1}}
+@keyframes pmSlideUp{from{opacity:0;transform:translateY(14px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+#pmModal{position:fixed;inset:0;background:rgba(6,14,24,.78);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+  z-index:10000;display:none;font-family:'Tajawal',sans-serif;align-items:center;justify-content:center;padding:18px;}
+#pmModal.open{display:flex;animation:pmFadeIn .18s ease;}
+.pm-wrap{display:flex;flex-direction:column;width:100%;height:100%;max-width:1320px;max-height:960px;
+  background:#F4F6F9;border-radius:18px;overflow:hidden;box-shadow:0 30px 90px rgba(0,0,0,.5);animation:pmSlideUp .22s ease;}
+.pm-topbar{background:linear-gradient(135deg,#0B1929,#132D47);color:#fff;padding:13px 22px;display:flex;
+  align-items:center;justify-content:space-between;gap:14px;flex-shrink:0;border-bottom:2px solid var(--gold);}
+.pm-topbar-title{font-family:'Cairo',sans-serif;font-weight:800;font-size:15.5px;display:flex;align-items:center;gap:9px;white-space:nowrap;}
+.pm-topbar-title .pm-tt-ico{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--gold),#8BAFC8);
+  display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
+.pm-topbar-report{font-size:12.5px;color:var(--gold);font-weight:700;flex:1;text-align:center;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap;background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.25);
+  border-radius:20px;padding:5px 16px;}
+.pm-close-btn{background:rgba(255,255,255,.08);border:none;color:#fff;font-size:18px;cursor:pointer;
+  width:32px;height:32px;border-radius:9px;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+  opacity:.8;transition:all .15s;line-height:1;}
+.pm-close-btn:hover{opacity:1;background:rgba(181,48,42,.6);}
 .pm-main{display:flex;flex:1;overflow:hidden;}
-.pm-preview-area{flex:1;overflow:auto;background:#555;padding:24px;display:flex;flex-direction:column;align-items:center;gap:20px;}
-.pm-preview-page-wrap{position:relative;flex-shrink:0;}
-.pm-page-num-badge{position:absolute;bottom:-22px;left:50%;transform:translateX(-50%);font-size:11px;color:#ddd;font-weight:600;white-space:nowrap;}
-.pm-sidebar{width:268px;background:#F8F9FA;border-right:1px solid #E0E5EB;overflow-y:auto;flex-shrink:0;display:flex;flex-direction:column;}
-.pm-section{padding:13px 15px;border-bottom:1px solid #E5EAF0;}
-.pm-section-title{font-size:10.5px;font-weight:800;color:#0B1929;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;}
-.pm-row{display:flex;flex-direction:column;gap:5px;margin-bottom:10px;}
+.pm-preview-area{flex:1;overflow:auto;background:repeating-linear-gradient(135deg,#606a76,#606a76 12px,#5b646f 12px,#5b646f 24px);
+  padding:30px;display:flex;flex-direction:column;align-items:center;gap:26px;}
+.pm-preview-page-wrap{position:relative;flex-shrink:0;transition:transform .15s;}
+.pm-page-num-badge{position:absolute;bottom:-24px;left:50%;transform:translateX(-50%);font-size:11px;color:#eee;
+  font-weight:700;white-space:nowrap;background:rgba(0,0,0,.35);padding:2px 10px;border-radius:10px;}
+.pm-sidebar{width:280px;background:#fff;border-right:1px solid #E5EAF0;overflow-y:auto;flex-shrink:0;
+  display:flex;flex-direction:column;}
+.pm-section{padding:15px 16px;border-bottom:1px solid #EEF1F5;}
+.pm-section-title{font-size:11px;font-weight:800;color:#16406B;text-transform:uppercase;letter-spacing:.6px;
+  margin-bottom:11px;display:flex;align-items:center;gap:6px;}
+.pm-row{display:flex;flex-direction:column;gap:6px;margin-bottom:11px;}
 .pm-row:last-child{margin-bottom:0;}
-.pm-lbl{font-size:11.5px;font-weight:700;color:#555;display:flex;justify-content:space-between;}
-.pm-sidebar select,.pm-sidebar input[type=number]{border:1.5px solid #D0D7E2;border-radius:6px;padding:5px 9px;font-family:'Tajawal',sans-serif;font-size:13px;color:#1a1a1a;background:#fff;outline:none;width:100%;box-sizing:border-box;}
-.pm-stepper{display:flex;align-items:center;gap:6px;}
-.pm-stepper button{width:28px;height:28px;border:1.5px solid #D0D7E2;border-radius:6px;background:#fff;font-size:17px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:700;color:#0B1929;transition:all .15s;flex-shrink:0;}
+.pm-lbl{font-size:12px;font-weight:700;color:#5A6B80;display:flex;justify-content:space-between;}
+.pm-sidebar select,.pm-sidebar input[type=number]{border:1.5px solid #D8E0EA;border-radius:8px;padding:7px 10px;
+  font-family:'Tajawal',sans-serif;font-size:13px;color:#1a1a1a;background:#F9FAFC;outline:none;width:100%;
+  box-sizing:border-box;transition:border-color .15s;}
+.pm-sidebar select:focus,.pm-sidebar input[type=number]:focus{border-color:var(--teal);background:#fff;}
+.pm-stepper{display:flex;align-items:center;gap:7px;}
+.pm-stepper button{width:30px;height:30px;border:1.5px solid #D8E0EA;border-radius:8px;background:#F9FAFC;
+  font-size:17px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  font-weight:700;color:#0B1929;transition:all .15s;flex-shrink:0;}
 .pm-stepper button:hover{background:#0B1929;color:#fff;border-color:#0B1929;}
-.pm-stepper input{width:52px!important;text-align:center;}
-.pm-radio-group{display:flex;gap:8px;flex-wrap:wrap;}
-.pm-radio-group label{font-size:12px;display:flex;align-items:center;gap:4px;cursor:pointer;white-space:nowrap;}
-.pm-queue-item{display:flex;align-items:center;gap:7px;padding:6px 9px;background:#fff;border:1.5px solid #E0E5EB;border-radius:6px;margin-bottom:6px;cursor:pointer;transition:all .15s;}
-.pm-queue-item:hover{border-color:#0B1929;}
-.pm-queue-item.active{border-color:var(--teal);background:#EBF7F5;}
-.pm-queue-item-name{font-size:11.5px;font-weight:600;color:#333;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.pm-queue-del{border:none;background:none;color:#bbb;cursor:pointer;font-size:14px;padding:2px 5px;transition:color .15s;line-height:1;}
-.pm-queue-del:hover{color:#B5302A;}
-.pm-empty-queue{font-size:12px;color:#aaa;text-align:center;padding:12px 0;}
-.pm-bottombar{background:#fff;border-top:2px solid #E0E5EB;padding:11px 20px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
-.pm-page-info{font-size:12px;color:#888;font-weight:600;}
-.pm-range-row{display:flex;align-items:center;gap:6px;font-size:12px;}
-.pm-range-row input[type=number]{width:52px!important;}
+.pm-stepper input{width:54px!important;text-align:center;font-weight:700;}
+.pm-radio-group{display:flex;gap:6px;flex-wrap:wrap;}
+.pm-radio-group label{font-size:11.5px;font-weight:600;display:flex;align-items:center;gap:5px;cursor:pointer;
+  white-space:nowrap;padding:6px 10px;border-radius:7px;border:1.5px solid #D8E0EA;background:#F9FAFC;
+  transition:all .15s;color:#556;}
+.pm-radio-group input{accent-color:var(--teal);}
+.pm-radio-group label:has(input:checked){border-color:var(--teal);background:#EBF7F5;color:#0E6E8C;font-weight:800;}
+.pm-queue-item{display:flex;align-items:center;gap:9px;padding:9px 11px;background:#F9FAFC;border:1.5px solid #EEF1F5;
+  border-radius:10px;margin-bottom:7px;cursor:pointer;transition:all .15s;}
+.pm-queue-item:hover{border-color:#C4D2E0;background:#fff;}
+.pm-queue-item.active{border-color:var(--teal);background:linear-gradient(90deg,#EBF7F5,#F9FAFC);
+  box-shadow:inset 3px 0 0 var(--teal);}
+.pm-queue-item-ico{width:26px;height:26px;border-radius:7px;background:#EDF2F7;display:flex;align-items:center;
+  justify-content:center;font-size:13px;flex-shrink:0;}
+.pm-queue-item.active .pm-queue-item-ico{background:var(--teal);}
+.pm-queue-item-name{font-size:12px;font-weight:700;color:#333;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.pm-queue-del{border:none;background:none;color:#c2c9d1;cursor:pointer;font-size:15px;padding:3px 6px;
+  border-radius:6px;transition:all .15s;line-height:1;}
+.pm-queue-del:hover{color:#B5302A;background:#FDEEEE;}
+.pm-empty-queue{font-size:12px;color:#aaa;text-align:center;padding:16px 0;}
+.pm-bottombar{background:#fff;border-top:1px solid #E5EAF0;padding:13px 22px;display:flex;align-items:center;
+  justify-content:space-between;flex-shrink:0;gap:12px;}
+.pm-page-info{font-size:12.5px;color:#7A92A8;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.pm-range-row{display:flex;align-items:center;gap:7px;font-size:12px;color:#556;}
+.pm-range-row input[type=number]{width:54px!important;}
+.pm-print-btn{background:linear-gradient(135deg,#16406B,#0B1929);color:#fff;border:none;padding:11px 24px;
+  border-radius:10px;font-weight:800;font-size:14px;cursor:pointer;display:flex;align-items:center;gap:8px;
+  box-shadow:0 4px 14px rgba(11,25,41,.35);transition:transform .12s,box-shadow .12s;}
+.pm-print-btn:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(11,25,41,.45);}
+.pm-print-btn:active{transform:translateY(0);}
+@media(max-width:820px){
+  #pmModal{padding:0;}
+  .pm-wrap{border-radius:0;max-width:100%;max-height:100%;}
+  .pm-main{flex-direction:column-reverse;}
+  .pm-sidebar{width:100%;max-height:44vh;border-right:none;border-top:1px solid #E5EAF0;}
+  .pm-preview-area{padding:16px;}
+}
 @media print{
-  .sidebar,.main,.modal-overlay,#loginScreen,#backupReminderBanner{display:none!important;}
+  .sidebar,.main,.modal-overlay,#loginScreen,#backupReminderBanner,#pmModal{display:none!important;}
   #a4PrintRoot{display:block!important;}
   .a4-page{box-shadow:none;margin:0;}
   @page{size:A4 portrait;margin:0;}
@@ -1635,14 +1678,14 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
   <div class="pm-wrap">
     <!-- شريط العنوان -->
     <div class="pm-topbar">
-      <div class="pm-topbar-title">🖨 نظام الطباعة الموحد</div>
+      <div class="pm-topbar-title"><span class="pm-tt-ico">🖨</span> مركز الطباعة</div>
       <div class="pm-topbar-report" id="pmReportName"></div>
-      <button class="pm-close-btn" onclick="PM.close()">✕</button>
+      <button class="pm-close-btn" onclick="PM.close()" title="إغلاق">✕</button>
     </div>
     <!-- المنطقة الرئيسية -->
     <div class="pm-main">
       <!-- منطقة المعاينة -->
-      <div class="pm-preview-area" id="pmPreviewArea"><div style="color:#ccc;margin:auto;">جارٍ التحميل...</div></div>
+      <div class="pm-preview-area" id="pmPreviewArea"><div style="color:#ddd;margin:auto;text-align:center;font-size:13px;">⏳ جارٍ التحميل...</div></div>
       <!-- الشريط الجانبي -->
       <div class="pm-sidebar">
         <!-- الورقة -->
@@ -1717,8 +1760,8 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
       <div class="pm-page-info" id="pmPageInfo"></div>
       <div style="display:flex;gap:9px;align-items:center;">
         <button class="btn btn-sm" style="background:var(--light);color:var(--text2);" onclick="PM.close()">إلغاء</button>
-        <button class="btn btn-sm btn-outline" onclick="PM.exportPdf()">📄 تصدير PDF</button>
-        <button class="btn btn-navy" onclick="PM.print()">🖨 طباعة الآن</button>
+        <button class="btn btn-sm btn-outline" onclick="PM.exportPdf()" title="تنزيل ملف PDF مباشرة بدون المرور على نافذة الطباعة">📄 تصدير PDF</button>
+        <button class="pm-print-btn" onclick="PM.print()">🖨 طباعة الآن</button>
       </div>
     </div>
   </div>
@@ -4575,6 +4618,13 @@ const PM={
   // ── رسم قائمة الانتظار والمعاينة
   _render(){this._renderQueue();this.updatePreview();},
 
+  // أيقونة مناسبة لكل نوع تقرير — بس شكلية، مالهاش أي تأثير وظيفي
+  _icon(title){
+    const map={'اليومية':'📋','الأرشيف':'🗄️','الجرد':'📊','كروت':'🗂️','كارت':'🗂️',
+      'الأصناف':'📦','44':'🩺','فاتورة':'🧾','سجل':'📜','الاستهلاك':'📈','الوارد':'📥'};
+    for(const k in map){if((title||'').includes(k))return map[k];}
+    return '📄';
+  },
   _renderQueue(){
     const el=document.getElementById('pmQueue');
     const empty=document.getElementById('pmQueueEmpty');
@@ -4582,7 +4632,8 @@ const PM={
     empty.style.display='none';
     el.innerHTML=this.queue.map(j=>`
       <div class="pm-queue-item${j.id===this.activeId?' active':''}" onclick="PM.setActive('${j.id}')">
-        <div class="pm-queue-item-name">📄 ${j.title}</div>
+        <div class="pm-queue-item-ico">${this._icon(j.title)}</div>
+        <div class="pm-queue-item-name">${j.title}</div>
         <button class="pm-queue-del" onclick="event.stopPropagation();PM.removeJob('${j.id}')" title="حذف من القائمة">✕</button>
       </div>`).join('');
   },
@@ -4595,7 +4646,7 @@ const PM={
     const s=this._cfg();
     const job=this.queue.find(j=>j.id===this.activeId)||this.queue[0];
     const area=document.getElementById('pmPreviewArea');
-    if(!job){area.innerHTML='<div style="color:#ccc;margin:auto;padding:40px;font-size:14px;">لا توجد تقارير في القائمة</div>';document.getElementById('pmPageInfo').textContent='';return;}
+    if(!job){area.innerHTML='<div style="color:#eee;margin:auto;padding:40px;font-size:14px;text-align:center;">🖨️<br><br>لا توجد تقارير في القائمة</div>';document.getElementById('pmPageInfo').textContent='';return;}
 
     const landscape=s.ori==='auto'?job.landscape:s.ori==='landscape';
     const dims=this._dims(s.paper,landscape);
