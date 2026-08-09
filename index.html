@@ -20,6 +20,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <style>
 :root{--navy:#0B1929;--navy2:#112240;--teal:#0E6E8C;--teal2:#1589AA;--teal3:#64CCC5;--gold:#C9A84C;--gold2:#E8C97E;--gold3:#FBF0D0;--sage:#1A7A4A;--sage2:#2EAD6D;--sage3:#D4F5E5;--crimson:#B5302A;--crim2:#FDEEEE;--white:#FFFFFF;--off:#F7FAFC;--light:#EEF4F8;--border:#D0DCE8;--text1:#0B1929;--text2:#3D5269;--text3:#7A92A8;--shadow:0 4px 24px rgba(11,25,41,0.12);--shadow2:0 2px 8px rgba(11,25,41,0.08);--radius:12px;--radius2:8px;}
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -4716,10 +4717,54 @@ const PM={
     });
   },
 
-  // ── تصدير PDF (نفس الطباعة — المستخدم يختار "حفظ كـ PDF")
+  // ── تصدير PDF مباشر (تنزيل فعلي للملف — من غير المرور على نافذة الطباعة خالص)
   exportPdf(){
-    toast('⬇ في نافذة الطابعة: اختر "Microsoft Print to PDF" أو "Save as PDF"','info');
-    setTimeout(()=>this.print(),900);
+    if(typeof html2pdf==='undefined'){
+      toast('مكتبة تصدير الـ PDF لسه بتتحمّل، جرب تاني بعد ثانيتين','error');
+      return;
+    }
+    const s=this._cfg();
+    const job=this.queue.find(j=>j.id===this.activeId)||this.queue[0];
+    if(!job){toast('لا يوجد تقرير للتصدير','error');return;}
+    const landscape=(s.ori==='auto'?job.landscape:s.ori==='landscape');
+    const html=this._buildPrintHtml();
+    if(!html){toast('لا يوجد محتوى للتصدير','error');return;}
+
+    const container=document.createElement('div');
+    container.innerHTML=html;
+    container.style.position='fixed';
+    container.style.left='-99999px';
+    container.style.top='0';
+    document.body.appendChild(container);
+
+    // نضبط فواصل الصفحات يدويًا (بدل ما نسيب المكتبة تحاول تخمّنها) — بيمنع صفحة أولى فاضية زيادة
+    const pageEls=container.querySelectorAll('.a4-page');
+    pageEls.forEach(function(p,i){
+      p.style.pageBreakBefore=i===0?'avoid':'always';
+      p.style.pageBreakInside='avoid';
+    });
+
+    toast('⏳ جاري تجهيز ملف PDF...','info');
+    this.close();
+
+    const paperFormat=(s.paper||'A4').toLowerCase();
+    const opt={
+      margin:0,
+      filename:(job.title||'تقرير')+'.pdf',
+      image:{type:'jpeg',quality:0.98},
+      html2canvas:{scale:2,useCORS:true,logging:false},
+      jsPDF:{unit:'mm',format:paperFormat,orientation:landscape?'landscape':'portrait'},
+      pagebreak:{mode:'css'}
+    };
+
+    html2pdf().set(opt).from(container).save().then(function(){
+      document.body.removeChild(container);
+      toast('✓ تم تنزيل ملف PDF','success');
+    }).catch(function(err){
+      console.error('PDF export error',err);
+      toast('حصل خطأ أثناء إنشاء ملف الـ PDF','error');
+      if(container.parentNode)document.body.removeChild(container);
+    });
   }
 };
 
