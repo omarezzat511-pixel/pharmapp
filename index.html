@@ -4730,17 +4730,22 @@ const PM={
     const html=this._buildPrintHtml();
     if(!html){toast('لا يوجد محتوى للتصدير','error');return;}
 
+    this.close();
+
+    // شاشة تحميل شفافة بتغطي المحتوى بصريًا وقت الرسم — المحتوى نفسه هيبقى ظاهر وعادي
+    // جوه الصفحة (مش مخفي بأي طريقة) عشان نضمن إن المتصفح يرسمه فعلاً، والشاشة دي بس بتغطيه بصريًا.
+    const overlay=document.createElement('div');
+    overlay.id='pdfLoadingOverlay';
+    overlay.style.cssText='position:fixed;inset:0;z-index:99999;background:#0B1929;display:flex;'
+      +'align-items:center;justify-content:center;color:#fff;font-size:16px;font-family:Tajawal,Arial,sans-serif;'
+      +'flex-direction:column;gap:10px;';
+    overlay.innerHTML='<div style="font-size:32px;">⏳</div><div>جاري تجهيز ملف PDF...</div>';
+    document.body.appendChild(overlay);
+
     const container=document.createElement('div');
+    container.id='pdfExportContainer';
     container.innerHTML=html;
-    // مهم: نخلي العنصر جوه حدود الشاشة (مش برّه تمامًا) عشان محرك الرسم يرسمه فعلاً —
-    // بعض متصفحات الموبايل بتتجاهل رسم أي حاجة موجودة برّه حدود الشاشة تمامًا، فتطلع صورة فاضية.
-    container.style.position='fixed';
-    container.style.left='0';
-    container.style.top='0';
-    container.style.opacity='0.01';
-    container.style.pointerEvents='none';
-    container.style.zIndex='-1';
-    container.style.background='#fff';
+    container.style.cssText='position:fixed;top:0;left:0;right:0;z-index:99998;background:#fff;';
     document.body.appendChild(container);
 
     // نضبط فواصل الصفحات يدويًا (بدل ما نسيب المكتبة تحاول تخمّنها) — بيمنع صفحة أولى فاضية زيادة
@@ -4750,27 +4755,38 @@ const PM={
       p.style.pageBreakInside='avoid';
     });
 
-    toast('⏳ جاري تجهيز ملف PDF...','info');
-    this.close();
+    function cleanup(){
+      if(overlay.parentNode)document.body.removeChild(overlay);
+      if(container.parentNode)document.body.removeChild(container);
+    }
+
+    if(!pageEls.length){
+      cleanup();
+      alert('خطأ: المحتوى المطلوب طباعته فاضي أو مش متكوّن صح. القسم اللي فشل: '+(job.title||'غير معروف'));
+      return;
+    }
 
     const paperFormat=(s.paper||'A4').toLowerCase();
     const opt={
       margin:0,
       filename:(job.title||'تقرير')+'.pdf',
       image:{type:'jpeg',quality:0.98},
-      html2canvas:{scale:2,useCORS:true,logging:false},
+      html2canvas:{scale:2,useCORS:true,logging:false,backgroundColor:'#ffffff'},
       jsPDF:{unit:'mm',format:paperFormat,orientation:landscape?'landscape':'portrait'},
       pagebreak:{mode:'css'}
     };
 
-    html2pdf().set(opt).from(container).save().then(function(){
-      document.body.removeChild(container);
-      toast('✓ تم تنزيل ملف PDF','success');
-    }).catch(function(err){
-      console.error('PDF export error',err);
-      toast('حصل خطأ أثناء إنشاء ملف الـ PDF','error');
-      if(container.parentNode)document.body.removeChild(container);
-    });
+    // تأخير بسيط عشان نضمن إن المتصفح رسم المحتوى فعليًا قبل ما نبدأ نلتقطه كصورة
+    setTimeout(function(){
+      html2pdf().set(opt).from(container).save().then(function(){
+        cleanup();
+        toast('✓ تم تنزيل ملف PDF','success');
+      }).catch(function(err){
+        cleanup();
+        // بنعرض رسالة الخطأ فعليًا على الشاشة (مش بس في الكونسول) عشان تقدر تبعتهالنا
+        alert('حصل خطأ أثناء إنشاء ملف الـ PDF:\n\n'+(err&&err.message?err.message:String(err)));
+      });
+    },300);
   }
 };
 
