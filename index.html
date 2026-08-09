@@ -4684,37 +4684,84 @@ const PM={
   },
 
   // ── طباعة
+  // ملاحظة مهمة: الطباعة بقت بتحصل في نافذة/مستند مستقل تمامًا عن التطبيق
+  // (مش جوه نفس صفحة الـ PWA). ده حل جذري لمشكلة "الصفحة البيضا" اللي كانت
+  // بتحصل خصوصًا لما التطبيق شغّال كـ PWA مثبّت (standalone) على أندرويد/آيفون:
+  // محرك الطباعة في وضع الـ standalone أحيانًا بياخد "لقطة" من الصفحة قبل ما
+  // المحتوى يتحط فعلاً، أو بيتأثر بعناصر تانية في نفس الصفحة (سايدبار، مودالز،
+  // position:fixed...). بفتح مستند طباعة جديد فاضي غير ده كله بيضمن إن اللي
+  // بيتطبع هو بالظبط التقرير المطلوب وبس.
   print(){
     if(this._liveRunner){const r=this._liveRunner;this.close();setTimeout(()=>r(),120);return;}
     const s=this._cfg();
     const job=this.queue.find(j=>j.id===this.activeId)||this.queue[0];
-    const landscape=job?(s.ori==='auto'?job.landscape:s.ori==='landscape'):false;
+    if(!job){toast('لا يوجد تقرير للطباعة','error');return;}
+    const landscape=s.ori==='auto'?job.landscape:s.ori==='landscape';
     const dims=this._dims(s.paper,landscape);
 
     const html=this._buildPrintHtml();
-    const root=document.getElementById('a4PrintRoot');
-    root.innerHTML=html;
-    // ملاحظة: خاصية zoom مش موثوقة في محرك طباعة أندرويد (بتطلع صفحة فاضية أحيانًا)،
-    // فبنطبع دايمًا بمقياس 100% طبيعي بدل ما نعتمد عليها.
-    root.style.zoom='';
+    if(!html){toast('لا يوجد محتوى للطباعة — القسم اللي فشل: '+(job.title||'غير معروف'),'error');return;}
 
-    // ضبط @page
-    let pStyle=document.getElementById('pmPageStyle');
-    if(!pStyle){pStyle=document.createElement('style');pStyle.id='pmPageStyle';document.head.appendChild(pStyle);}
-    pStyle.textContent=`@page{size:${dims.w}mm ${dims.h}mm;margin:0;}`;
+    // لازم نفتح النافذة فورًا وبشكل متزامن (مش جوه setTimeout/rAF) عشان المتصفح
+    // يعتبرها ناتجة عن ضغطة المستخدم مباشرة ومايمنعهاش كـ popup.
+    const printWin=window.open('','_blank','width=900,height=1200');
+    if(!printWin){
+      toast('المتصفح منع فتح نافذة الطباعة — من فضلك اسمح بالنوافذ المنبثقة (Popups) لهذا الموقع من إعدادات المتصفح وجرب تاني','error');
+      return;
+    }
+
+    // بننسخ كل الـ CSS والخطوط المستخدمة في التطبيق لنفس النافذة الجديدة
+    // عشان التقرير يطلع بنفس الشكل والألوان بالظبط.
+    const styles=Array.from(document.querySelectorAll('style,link[rel="stylesheet"]')).map(el=>el.outerHTML).join('\n');
+
+    printWin.document.open();
+    printWin.document.write(`<!DOCTYPE html>
+<html lang="ar" dir="rtl"><head><meta charset="UTF-8">
+<title>طباعة — ${(job.title||'تقرير').replace(/</g,'')}</title>
+${styles}
+<style>
+  @page{size:${dims.w}mm ${dims.h}mm;margin:0;}
+  html,body{margin:0!important;padding:0!important;background:#777!important;height:auto!important;overflow:visible!important;}
+  #a4PrintRoot{display:block!important;background:#777;padding:14px 0;}
+  #a4PrintRoot .a4-page{margin:0 auto 14px;box-shadow:0 4px 18px rgba(0,0,0,.35);}
+  .pm-print-bar{position:sticky;top:0;z-index:999;display:flex;gap:8px;align-items:center;
+    padding:10px 16px;background:#0B1929;font-family:'Tajawal',Arial,sans-serif;}
+  .pm-print-bar span{color:#C9A84C;font-size:13px;font-weight:700;flex:1;}
+  .pm-print-bar button{padding:9px 18px;border:none;border-radius:8px;background:#16406B;color:#fff;
+    font-weight:800;cursor:pointer;font-size:13.5px;font-family:'Tajawal',Arial,sans-serif;}
+  .pm-print-bar button:hover{background:#1E5A8F;}
+  .pm-print-bar button.pm-close{background:#3D5269;}
+  @media print{.pm-print-bar{display:none!important;} html,body,#a4PrintRoot{background:#fff!important;padding:0!important;}
+    #a4PrintRoot .a4-page{box-shadow:none!important;margin:0!important;}}
+</style>
+</head><body>
+<div class="pm-print-bar">
+  <span>معاينة الطباعة — ${(job.title||'تقرير').replace(/</g,'')}</span>
+  <button onclick="window.print()">🖨 اطبع الآن</button>
+  <button class="pm-close" onclick="window.close()">إغلاق</button>
+</div>
+<div id="a4PrintRoot">${html}</div>
+</body></html>`);
+    printWin.document.close();
 
     this.close();
-    // بنستنى فريمين كاملين من الرسم (مش مجرد وقت ثابت) عشان نتأكد إن المحتوى
-    // اتحط وترسم فعلاً على الشاشة قبل ما نطلب الطباعة — بعض أجهزة أندرويد الأبطأ
-    // كانت بتاخد وقت طباعة قبل ما المحتوى يخلص رسم، فتطلع ورقة فاضية.
-    requestAnimationFrame(()=>{
-      requestAnimationFrame(()=>{
-        setTimeout(()=>{
-          window.print();
-          root.innerHTML='';root.style.zoom='';pStyle.textContent='';
-        },200);
-      });
-    });
+
+    // نستنى تحميل الخطوط فعليًا قبل أول محاولة طباعة تلقائية (مش وقت ثابت بس)
+    const triggerAutoPrint=()=>{
+      try{
+        printWin.focus();
+        printWin.print();
+      }catch(e){/* لو المستخدم قفل النافذة أو حصل خطأ، زر "اطبع الآن" لسه شغال */}
+    };
+    printWin.onload=()=>{
+      if(printWin.document.fonts&&printWin.document.fonts.ready){
+        printWin.document.fonts.ready.then(()=>setTimeout(triggerAutoPrint,300));
+      }else{
+        setTimeout(triggerAutoPrint,450);
+      }
+    };
+    // نسخة احتياطية لو onload اتأخر أو مانفعش لأي سبب
+    setTimeout(()=>{if(printWin&&!printWin.closed)triggerAutoPrint();},1400);
   },
 
   // ── تصدير PDF مباشر (تنزيل فعلي للملف — من غير المرور على نافذة الطباعة خالص)
