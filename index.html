@@ -792,6 +792,18 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
 .item-print-card .ipc-valid{color:#27AE60;font-weight:700;}
 .item-print-card .ipc-empty{color:#aaa;font-size:10px;text-align:center;flex:1;
   display:flex;align-items:center;justify-content:center;}
+/* عرض خاص لما يكون فيه تشغيلة واحدة بس — نص الكارت + خط أكبر بدل مساحة فاضية */
+.item-print-card .ipc-single{flex:1;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:11px;padding:4px 8px;}
+.item-print-card .ipc-single-batch{font-size:20px;font-weight:900;color:#16406B;
+  letter-spacing:.3px;background:#EBF0F6;padding:6px 20px;border-radius:9px;border:1.5px solid #C9A84C;}
+.item-print-card .ipc-single-row{display:flex;gap:26px;align-items:center;}
+.item-print-card .ipc-single-item{display:flex;flex-direction:column;align-items:center;gap:3px;}
+.item-print-card .ipc-single-lbl{font-size:9.5px;color:#8a99ab;font-weight:800;}
+.item-print-card .ipc-single-val{font-size:16px;font-weight:900;color:#1a1a1a;}
+.item-print-card .ipc-single-val.ipc-expired{color:#B5302A;}
+.item-print-card .ipc-single-val.ipc-soon{color:#8a6d1a;}
+.item-print-card .ipc-single-val.ipc-valid-txt{color:#27AE60;}
 /* فوتر الكارت */
 .item-print-card .ipc-footer{background:#F4F6F8;border-top:1px solid #E0E5EB;
   padding:3px 8px;font-size:7.5px;color:#999;text-align:center;}
@@ -1368,7 +1380,7 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
     <div class="modal-body">
       <div class="form-group" style="margin-bottom:13px;"><label class="form-label">اسم الصنف</label><input class="form-input" id="newItemName" placeholder="مثال: باراسيتامول 500 مج"></div>
       <div class="form-row">
-        <div class="form-group"><label class="form-label">الوحدة</label><input class="form-input" id="newItemUnit" placeholder="حبة / كبسولة / مل" value="حبة"></div>
+        <div class="form-group"><label class="form-label">الوحدة</label><input class="form-input" id="newItemUnit" placeholder="قرص / كبسولة / مل" value="قرص"></div>
         <div class="form-group"><label class="form-label">الكمية الافتتاحية</label><input class="form-input qty" id="newItemStock" type="number" min="0" value="0" placeholder="0"></div>
       </div>
       <div class="form-row" style="margin-top:13px;">
@@ -1958,24 +1970,24 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
 // ═══════════════════════════════════════════════════════════════
 let S = {
   items:[
-    {id:1,name:"باراسيتامول 500 مج",unit:"حبة",note:"مسكن — خافض للحرارة",stock:100},
+    {id:1,name:"باراسيتامول 500 مج",unit:"قرص",note:"مسكن — خافض للحرارة",stock:100},
     {id:2,name:"أموكسيسيلين 500 مج",unit:"كبسولة",note:"مضاد حيوي",stock:80},
     {id:3,name:"أوميبرازول 20 مج",unit:"كبسولة",note:"للمعدة — قبل الأكل",stock:60},
-    {id:4,name:"ميتفورمين 500 مج",unit:"حبة",note:"لسكر — مع الأكل",stock:120},
-    {id:5,name:"أتورفاستاتين 20 مج",unit:"حبة",note:"لكوليسترول — ليلاً",stock:90},
-    {id:6,name:"أملوديبين 5 مج",unit:"حبة",note:"لضغط الدم",stock:70},
-    {id:7,name:"ميتوبرولول 50 مج",unit:"حبة",note:"للقلب والضغط",stock:55},
-    {id:8,name:"لوسارتان 50 مج",unit:"حبة",note:"لضغط الدم",stock:85},
-    {id:9,name:"سيتريزين 10 مج",unit:"حبة",note:"مضاد للحساسية",stock:40},
-    {id:10,name:"إيبوبروفين 400 مج",unit:"حبة",note:"مسكن — مضاد التهاب",stock:95},
-    {id:11,name:"ميترونيدازول 500 مج",unit:"حبة",note:"مضاد حيوي",stock:50},
-    {id:12,name:"كلوبيدوجريل 75 مج",unit:"حبة",note:"مضاد تخثر",stock:45},
-    {id:13,name:"ليفوثيروكسين 50 مكجم",unit:"حبة",note:"لدرقية — صايم",stock:35},
-    {id:14,name:"جليمبيريد 2 مج",unit:"حبة",note:"لسكر — قبل الأكل",stock:65},
-    {id:15,name:"فيتامين د٣ 1000 وح",unit:"حبة",note:"مكمل غذائي",stock:110},
-    {id:16,name:"أسبرين 81 مج",unit:"حبة",note:"مضاد تخثر — للوقاية",stock:130},
-    {id:17,name:"رامبريل 5 مج",unit:"حبة",note:"لضغط — لحماية الكلى",stock:75},
-    {id:18,name:"فوروسيميد 40 مج",unit:"حبة",note:"مدر للبول",stock:30},
+    {id:4,name:"ميتفورمين 500 مج",unit:"قرص",note:"لسكر — مع الأكل",stock:120},
+    {id:5,name:"أتورفاستاتين 20 مج",unit:"قرص",note:"لكوليسترول — ليلاً",stock:90},
+    {id:6,name:"أملوديبين 5 مج",unit:"قرص",note:"لضغط الدم",stock:70},
+    {id:7,name:"ميتوبرولول 50 مج",unit:"قرص",note:"للقلب والضغط",stock:55},
+    {id:8,name:"لوسارتان 50 مج",unit:"قرص",note:"لضغط الدم",stock:85},
+    {id:9,name:"سيتريزين 10 مج",unit:"قرص",note:"مضاد للحساسية",stock:40},
+    {id:10,name:"إيبوبروفين 400 مج",unit:"قرص",note:"مسكن — مضاد التهاب",stock:95},
+    {id:11,name:"ميترونيدازول 500 مج",unit:"قرص",note:"مضاد حيوي",stock:50},
+    {id:12,name:"كلوبيدوجريل 75 مج",unit:"قرص",note:"مضاد تخثر",stock:45},
+    {id:13,name:"ليفوثيروكسين 50 مكجم",unit:"قرص",note:"لدرقية — صايم",stock:35},
+    {id:14,name:"جليمبيريد 2 مج",unit:"قرص",note:"لسكر — قبل الأكل",stock:65},
+    {id:15,name:"فيتامين د٣ 1000 وح",unit:"قرص",note:"مكمل غذائي",stock:110},
+    {id:16,name:"أسبرين 81 مج",unit:"قرص",note:"مضاد تخثر — للوقاية",stock:130},
+    {id:17,name:"رامبريل 5 مج",unit:"قرص",note:"لضغط — لحماية الكلى",stock:75},
+    {id:18,name:"فوروسيميد 40 مج",unit:"قرص",note:"مدر للبول",stock:30},
   ],
   nextId:19,
   patients:[],
@@ -2326,6 +2338,7 @@ function onDateChange(){
 // ══ NAVIGATION ════════════════════════════════════════════════
 // ═══════════════════════════════════════════════════════════════
 function showPage(n){
+  if(n!=='receipts')_receiptEditingId=null; // لو خرجنا من صفحة الوارد نلغي أي تعديل شغال عشان الرسم يشتغل عادي تاني
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById('page-'+n).classList.add('active');
@@ -2781,7 +2794,12 @@ function clearReceiptForm(){
 // الشهر المختار حالياً لعرض الوارد — افتراضياً الشهر الحالي
 let S_receiptMonth='';
 
+let _receiptEditingId=null; // مفيش قيمة = مفيش تعديل شغال حاليًا
+
 function renderReceipts(){
+  // ── لو المستخدم فاتح تعديل دلوقتي، نتجاهل أي إعادة رسم قادمة من المزامنة السحابية
+  // أو الحفظ التلقائي الدوري، عشان التعديل ميتقفلش لوحده تحت إيده ──
+  if(_receiptEditingId)return;
   const tb=document.getElementById('receiptsBody');
 
   // تحديد الشهر الافتراضي = الشهر الحالي (أول مرة فقط)
@@ -2963,6 +2981,7 @@ function openEditReceipt(id){
   if(!r)return;
   const row=document.getElementById('rcpt-row-'+id);
   if(!row)return;
+  _receiptEditingId=id;
   const itemOptions=S.items.map(it=>`<option value="${it.name}"${it.name===r.itemName?' selected':''}>${it.name}</option>`).join('');
   row.cells[1].innerHTML=`<select id="rcpt-edit-name-${id}" style="width:100%;min-width:150px;padding:5px 7px;border:1.5px solid #D0D7E2;border-radius:6px;font-family:'Tajawal',sans-serif;font-size:13px;">${itemOptions}</select>`;
   row.cells[2].innerHTML=`<input type="number" min="1" value="${r.qty}" id="rcpt-edit-qty-${id}" class="inline-qty" style="width:80px;">`;
@@ -2971,8 +2990,13 @@ function openEditReceipt(id){
   row.cells[5].innerHTML=`<input type="text" value="${(r.orderNo||'').replace(/"/g,'&quot;')}" id="rcpt-edit-orderNo-${id}" style="width:100%;min-width:90px;padding:5px 7px;border:1.5px solid #D0D7E2;border-radius:6px;font-family:'Tajawal',sans-serif;font-size:13px;">`;
   row.cells[6].innerHTML=`<input type="text" value="${(r.batch||'').replace(/"/g,'&quot;')}" id="rcpt-edit-batch-${id}" placeholder="مثال: B2026-045" style="width:100%;min-width:100px;padding:5px 7px;border:1.5px solid #D0D7E2;border-radius:6px;font-family:'Tajawal',sans-serif;font-size:13px;">`;
   row.cells[7].innerHTML=`<input type="date" value="${r.expiry||''}" id="rcpt-edit-expiry-${id}" style="width:100%;min-width:120px;padding:5px 7px;border:1.5px solid #D0D7E2;border-radius:6px;font-family:'Tajawal',sans-serif;font-size:13px;">`;
-  row.cells[9].innerHTML=`<button class="btn btn-sm btn-primary" onclick="saveEditReceipt('${id}')">💾 حفظ</button> <button class="btn btn-sm" style="background:var(--light);color:var(--text2)" onclick="renderReceipts()">إلغاء</button>`;
-  document.getElementById('rcpt-edit-qty-'+id).addEventListener('keydown',e=>{if(e.key==='Enter')saveEditReceipt(id);if(e.key==='Escape')renderReceipts();});
+  row.cells[9].innerHTML=`<button class="btn btn-sm btn-primary" onclick="saveEditReceipt('${id}')">💾 حفظ</button> <button class="btn btn-sm" style="background:var(--light);color:var(--text2)" onclick="cancelEditReceipt()">إلغاء</button>`;
+  document.getElementById('rcpt-edit-qty-'+id).addEventListener('keydown',e=>{if(e.key==='Enter')saveEditReceipt(id);if(e.key==='Escape')cancelEditReceipt();});
+}
+
+function cancelEditReceipt(){
+  _receiptEditingId=null;
+  renderReceipts();
 }
 
 function saveEditReceipt(id){
@@ -3014,6 +3038,7 @@ function saveEditReceipt(id){
   syncItemReceiptEffects(oldName);
   if(newName!==oldName)syncItemReceiptEffects(newName);
 
+  _receiptEditingId=null; // خلصنا تعديل — مسموح للرسم يشتغل تاني عادي
   save();pushReceiptsToCloud();renderReceipts();renderItemsGrid();renderInventory();
   toast(`✓ تم تعديل بيانات الوارد بنجاح`,'success');
 }
@@ -5176,6 +5201,25 @@ function buildItemCardHtml(it){
   html+='<div class="ipc-body">';
   if(!batchCount){
     html+='<div class="ipc-empty">🗂 لا توجد تشغيلات مسجّلة</div>';
+  }else if(batchCount===1){
+    // تشغيلة واحدة بس — نعرضها في نص الكارت بخط أكبر بدل ما تفضل مساحة فاضية تحت جدول شبه فاضي
+    const b=batches[0];
+    let expiryVal=b.expiry?fmtDate(b.expiry):'—';
+    let expiryClass='';
+    if(b.expiry){
+      if(b.expiry<today){expiryClass='ipc-expired';expiryVal+=' ✗';}
+      else{
+        const dl=Math.round((new Date(b.expiry)-new Date(today))/(1000*60*60*24));
+        expiryClass=dl<=90?'ipc-soon':'ipc-valid-txt';
+        if(dl>90)expiryVal+=' ✓';
+      }
+    }
+    html+='<div class="ipc-single">';
+    html+='<div class="ipc-single-batch">🗂 '+(b.batch||'—')+'</div>';
+    html+='<div class="ipc-single-row">';
+    html+='<div class="ipc-single-item"><span class="ipc-single-lbl">تاريخ الصلاحية</span><span class="ipc-single-val '+expiryClass+'">'+expiryVal+'</span></div>';
+    html+='<div class="ipc-single-item"><span class="ipc-single-lbl">الكمية</span><span class="ipc-single-val">'+b.qty+' '+it.unit+'</span></div>';
+    html+='</div></div>';
   }else{
     html+='<table><thead><tr><th>رقم التشغيلة</th><th>تاريخ الصلاحية</th><th>الكمية</th></tr></thead><tbody>';
     batches.slice(0,9).forEach(function(b){
@@ -5291,7 +5335,7 @@ function printItemsInStock(){
 
 function openAddItemModal(){
   document.getElementById('newItemName').value='';
-  document.getElementById('newItemUnit').value='حبة';
+  document.getElementById('newItemUnit').value='قرص';
   document.getElementById('newItemStock').value='0';
   document.getElementById('newItemNote').value='';
   document.getElementById('newItemPrice').value='0';
@@ -5301,7 +5345,7 @@ function openAddItemModal(){
 
 function confirmAddItem(){
   const name=document.getElementById('newItemName').value.trim();
-  const unit=document.getElementById('newItemUnit').value.trim()||'حبة';
+  const unit=document.getElementById('newItemUnit').value.trim()||'قرص';
   const stock=parseFloat(document.getElementById('newItemStock').value)||0;
   const note=document.getElementById('newItemNote').value.trim();
   const price=parseFloat(document.getElementById('newItemPrice').value)||0;
