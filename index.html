@@ -1189,12 +1189,14 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
               <th>الشركة</th>
               <th>إذن التسليم</th>
               <th>أمر التوريد</th>
+              <th>رقم التشغيلة</th>
+              <th>تاريخ الانتهاء</th>
               <th>التاريخ</th>
               <th>إجراءات</th>
             </tr>
           </thead>
           <tbody id="receiptsBody">
-            <tr><td colspan="8"><div class="empty-state"><div class="empty-state-icon">📥</div><div>لا توجد واردات مسجلة</div></div></td></tr>
+            <tr><td colspan="10"><div class="empty-state"><div class="empty-state-icon">📥</div><div>لا توجد واردات مسجلة</div></div></td></tr>
           </tbody>
         </table>
       </div>
@@ -2791,7 +2793,7 @@ function renderReceipts(){
   renderReceiptMonthDropdown();
 
   if(!S.receipts.length){
-    tb.innerHTML=`<tr><td colspan="8"><div class="empty-state"><div class="empty-state-icon">📥</div><div>لا توجد واردات مسجلة</div></div></td></tr>`;
+    tb.innerHTML=`<tr><td colspan="10"><div class="empty-state"><div class="empty-state-icon">📥</div><div>لا توجد واردات مسجلة</div></div></td></tr>`;
     return;
   }
 
@@ -2800,11 +2802,11 @@ function renderReceipts(){
   const sorted=[...filtered].reverse();
 
   if(!sorted.length){
-    tb.innerHTML=`<tr><td colspan="8"><div class="empty-state"><div class="empty-state-icon">📥</div><div>لا توجد واردات في هذا الشهر</div></div></td></tr>`;
+    tb.innerHTML=`<tr><td colspan="10"><div class="empty-state"><div class="empty-state-icon">📥</div><div>لا توجد واردات في هذا الشهر</div></div></td></tr>`;
     return;
   }
 
-  tb.innerHTML=sorted.map((r,i)=>`<tr id="rcpt-row-${r.id}"><td>${i+1}</td><td class="name-cell">${r.itemName}</td><td><span class="qty-badge" id="rcpt-qty-display-${r.id}">${r.qty}</span></td><td>${r.company}</td><td>${r.deliveryNo}</td><td>${r.orderNo}</td><td>${fmtDate(r.date)}</td><td style="text-align:center;white-space:nowrap;"><button class="btn btn-sm btn-warn" onclick="openEditReceipt('${r.id}')" title="تعديل الكمية">✏ تعديل</button> <button class="btn btn-sm btn-danger" onclick="deleteReceipt('${r.id}')" title="حذف">✕ حذف</button></td></tr>`).join('');
+  tb.innerHTML=sorted.map((r,i)=>`<tr id="rcpt-row-${r.id}"><td>${i+1}</td><td class="name-cell" id="rcpt-name-display-${r.id}">${r.itemName}</td><td><span class="qty-badge" id="rcpt-qty-display-${r.id}">${r.qty}</span></td><td id="rcpt-company-display-${r.id}">${r.company}</td><td id="rcpt-deliveryNo-display-${r.id}">${r.deliveryNo}</td><td id="rcpt-orderNo-display-${r.id}">${r.orderNo}</td><td id="rcpt-batch-display-${r.id}">${r.batch||'—'}</td><td id="rcpt-expiry-display-${r.id}">${r.expiry?fmtDate(r.expiry):'—'}</td><td>${fmtDate(r.date)}</td><td style="text-align:center;white-space:nowrap;"><button class="btn btn-sm btn-warn" onclick="openEditReceipt('${r.id}')" title="تعديل كل بيانات الوارد">✏ تعديل</button> <button class="btn btn-sm btn-danger" onclick="deleteReceipt('${r.id}')" title="حذف">✕ حذف</button></td></tr>`).join('');
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -2911,33 +2913,49 @@ function deleteReceipt(id){
   // ── 1. حذف السجل من القائمة ──
   S.receipts.splice(idx,1);
 
-  // ── 2. إعادة حساب in في الجرد من الوارد الفعلي المتبقي (مش طرح مباشر) ──
-  const mk=getMonthKey(r.date);
-  if(S.inventory[mk]){
-    const inv=S.inventory[mk];
-    const invRow=inv.items.find(x=>x.name===r.itemName);
-    if(invRow){
-      // احسب إجمالي الوارد الفعلي للصنف في هذا الشهر من S.receipts المتبقية
-      const realIn=S.receipts
-        .filter(x=>x.itemName===r.itemName && getMonthKey(x.date)===mk)
-        .reduce((s,x)=>s+x.qty,0);
-      invRow.in=realIn;
-      invRow.balance=invRow.opening+invRow.in-invRow.out;
-    }
-  }
-
-  // ── 3. تحديث stock من balance الجرد الأحدث ──
-  const latestMk=Object.keys(S.inventory).sort().pop();
-  if(latestMk && S.inventory[latestMk]){
-    const latestRow=S.inventory[latestMk].items.find(x=>x.name===r.itemName);
-    if(latestRow){
-      const item=S.items.find(i=>i.name===r.itemName);
-      if(item)item.stock=Math.max(0,latestRow.balance);
-    }
-  }
+  // ── 2. إعادة بناء تأثير الوارد بالكامل للصنف (الجرد + الباتشات + المخزون) ──
+  syncItemReceiptEffects(r.itemName);
 
   save();pushReceiptsToCloud();renderReceipts();renderItemsGrid();renderInventory();
   toast(`✓ تم حذف الوارد وإعادة حساب الجرد لـ "${r.itemName}"`,'success');
+}
+
+// إعادة بناء تأثير الوارد على صنف معيّن بالكامل من الصفر (الباتشات + "الوارد" في كل شهر جرد + المخزون)
+// بتتنادى بعد أي تعديل/حذف/إضافة وارد — بتضمن إن كل حاجة متسقة مهما اتغيّر (حتى لو الصنف أو التاريخ نفسه اتغيّر)
+function syncItemReceiptEffects(itemName){
+  const item=S.items.find(i=>i.name===itemName);
+  // 1) إعادة بناء الباتشات بالكامل من الوارد الفعلي المتبقي لهذا الصنف
+  if(item){
+    const batchMap={};
+    S.receipts.filter(r=>r.itemName===itemName && r.batch).forEach(r=>{
+      const key=r.batch.trim().toLowerCase();
+      if(!batchMap[key])batchMap[key]={batch:r.batch,expiry:r.expiry||'',qty:0};
+      batchMap[key].qty+=r.qty;
+      if(r.expiry)batchMap[key].expiry=r.expiry;
+    });
+    item.batches=Object.values(batchMap);
+  }
+  // 2) إعادة حساب "الوارد" في كل شهر جرد له علاقة بالصنف ده (سواء فيه وارد دلوقتي أو كان فيه قبل كده)
+  const months=new Set(S.receipts.filter(r=>r.itemName===itemName).map(r=>getMonthKey(r.date)));
+  Object.keys(S.inventory).forEach(mk=>months.add(mk));
+  months.forEach(mk=>{
+    if(!S.inventory[mk])S.inventory[mk]={items:[],carriedFrom:''};
+    const inv=S.inventory[mk];
+    const row=inv.items.find(x=>x.name===itemName);
+    const realIn=S.receipts.filter(r=>r.itemName===itemName&&getMonthKey(r.date)===mk).reduce((s,r)=>s+r.qty,0);
+    if(row){
+      row.in=realIn;
+      row.balance=row.opening+row.in-row.out;
+    }else{
+      inv.items.push(computeFreshInventoryRow(mk,itemName));
+    }
+  });
+  // 3) تحديث المخزون الحالي من رصيد آخر شهر جرد
+  const latestMk=Object.keys(S.inventory).sort().pop();
+  if(latestMk && S.inventory[latestMk] && item){
+    const latestRow=S.inventory[latestMk].items.find(x=>x.name===itemName);
+    if(latestRow)item.stock=Math.max(0,latestRow.balance);
+  }
 }
 
 function openEditReceipt(id){
@@ -2945,50 +2963,59 @@ function openEditReceipt(id){
   if(!r)return;
   const row=document.getElementById('rcpt-row-'+id);
   if(!row)return;
-  // Replace qty cell with inline input + save/cancel
-  const qtyCell=row.cells[2];
-  const actCell=row.cells[7];
-  qtyCell.innerHTML=`<input type="number" min="1" value="${r.qty}" id="rcpt-edit-qty-${id}" class="inline-qty" style="width:80px;" onkeydown="if(event.key==='Enter')saveEditReceipt('${id}');if(event.key==='Escape')renderReceipts();">`;
-  actCell.innerHTML=`<button class="btn btn-sm btn-primary" onclick="saveEditReceipt('${id}')">💾 حفظ</button> <button class="btn btn-sm" style="background:var(--light);color:var(--text2)" onclick="renderReceipts()">إلغاء</button>`;
-  document.getElementById('rcpt-edit-qty-'+id).focus();
+  const itemOptions=S.items.map(it=>`<option value="${it.name}"${it.name===r.itemName?' selected':''}>${it.name}</option>`).join('');
+  row.cells[1].innerHTML=`<select id="rcpt-edit-name-${id}" style="width:100%;min-width:150px;padding:5px 7px;border:1.5px solid #D0D7E2;border-radius:6px;font-family:'Tajawal',sans-serif;font-size:13px;">${itemOptions}</select>`;
+  row.cells[2].innerHTML=`<input type="number" min="1" value="${r.qty}" id="rcpt-edit-qty-${id}" class="inline-qty" style="width:80px;">`;
+  row.cells[3].innerHTML=`<input type="text" value="${(r.company||'').replace(/"/g,'&quot;')}" id="rcpt-edit-company-${id}" style="width:100%;min-width:110px;padding:5px 7px;border:1.5px solid #D0D7E2;border-radius:6px;font-family:'Tajawal',sans-serif;font-size:13px;">`;
+  row.cells[4].innerHTML=`<input type="text" value="${(r.deliveryNo||'').replace(/"/g,'&quot;')}" id="rcpt-edit-deliveryNo-${id}" style="width:100%;min-width:90px;padding:5px 7px;border:1.5px solid #D0D7E2;border-radius:6px;font-family:'Tajawal',sans-serif;font-size:13px;">`;
+  row.cells[5].innerHTML=`<input type="text" value="${(r.orderNo||'').replace(/"/g,'&quot;')}" id="rcpt-edit-orderNo-${id}" style="width:100%;min-width:90px;padding:5px 7px;border:1.5px solid #D0D7E2;border-radius:6px;font-family:'Tajawal',sans-serif;font-size:13px;">`;
+  row.cells[6].innerHTML=`<input type="text" value="${(r.batch||'').replace(/"/g,'&quot;')}" id="rcpt-edit-batch-${id}" placeholder="مثال: B2026-045" style="width:100%;min-width:100px;padding:5px 7px;border:1.5px solid #D0D7E2;border-radius:6px;font-family:'Tajawal',sans-serif;font-size:13px;">`;
+  row.cells[7].innerHTML=`<input type="date" value="${r.expiry||''}" id="rcpt-edit-expiry-${id}" style="width:100%;min-width:120px;padding:5px 7px;border:1.5px solid #D0D7E2;border-radius:6px;font-family:'Tajawal',sans-serif;font-size:13px;">`;
+  row.cells[9].innerHTML=`<button class="btn btn-sm btn-primary" onclick="saveEditReceipt('${id}')">💾 حفظ</button> <button class="btn btn-sm" style="background:var(--light);color:var(--text2)" onclick="renderReceipts()">إلغاء</button>`;
+  document.getElementById('rcpt-edit-qty-'+id).addEventListener('keydown',e=>{if(e.key==='Enter')saveEditReceipt(id);if(e.key==='Escape')renderReceipts();});
 }
 
 function saveEditReceipt(id){
-  const inp=document.getElementById('rcpt-edit-qty-'+id);
-  if(!inp)return;
-  const newQty=parseInt(inp.value);
-  if(!newQty||newQty<=0){toast('أدخل كمية صحيحة','error');return;}
   const r=S.receipts.find(x=>String(x.id)===String(id));
   if(!r)return;
-  const oldQty=r.qty;
+  const nameInp=document.getElementById('rcpt-edit-name-'+id);
+  const qtyInp=document.getElementById('rcpt-edit-qty-'+id);
+  const companyInp=document.getElementById('rcpt-edit-company-'+id);
+  const deliveryInp=document.getElementById('rcpt-edit-deliveryNo-'+id);
+  const orderInp=document.getElementById('rcpt-edit-orderNo-'+id);
+  const batchInp=document.getElementById('rcpt-edit-batch-'+id);
+  const expiryInp=document.getElementById('rcpt-edit-expiry-'+id);
+  if(!nameInp||!qtyInp)return;
+
+  const newName=nameInp.value;
+  const newQty=parseFloat(qtyInp.value);
+  const newCompany=companyInp.value.trim();
+  const newDeliveryNo=deliveryInp.value.trim();
+  const newOrderNo=orderInp.value.trim();
+  const newBatch=batchInp.value.trim();
+  const newExpiry=expiryInp.value;
+
+  if(!S.items.find(i=>i.name===newName)){toast('هذا الصنف غير موجود','error');return;}
+  if(!newQty||newQty<=0){toast('أدخل كمية صحيحة','error');return;}
+  if(!newCompany){toast('أدخل اسم الشركة الموردة','error');return;}
+  if(!newDeliveryNo){toast('أدخل رقم إذن التسليم','error');return;}
+  if(!newOrderNo){toast('أدخل أمر التوريد','error');return;}
+
+  const oldName=r.itemName;
+  r.itemName=newName;
   r.qty=newQty;
+  r.company=newCompany;
+  r.deliveryNo=newDeliveryNo;
+  r.orderNo=newOrderNo;
+  r.batch=newBatch;
+  r.expiry=newExpiry;
 
-  // ── إعادة حساب in في الجرد من الوارد الفعلي ──
-  const mk=getMonthKey(r.date);
-  if(S.inventory[mk]){
-    const inv=S.inventory[mk];
-    const invRow=inv.items.find(x=>x.name===r.itemName);
-    if(invRow){
-      const realIn=S.receipts
-        .filter(x=>x.itemName===r.itemName && getMonthKey(x.date)===mk)
-        .reduce((s,x)=>s+x.qty,0);
-      invRow.in=realIn;
-      invRow.balance=invRow.opening+invRow.in-invRow.out;
-    }
-  }
-
-  // ── تحديث stock من balance الجرد الأحدث ──
-  const latestMk=Object.keys(S.inventory).sort().pop();
-  if(latestMk && S.inventory[latestMk]){
-    const latestRow=S.inventory[latestMk].items.find(x=>x.name===r.itemName);
-    if(latestRow){
-      const item=S.items.find(i=>i.name===r.itemName);
-      if(item)item.stock=Math.max(0,latestRow.balance);
-    }
-  }
+  // بنعيد بناء تأثير الوارد للصنف القديم والجديد (لو الصنف اتغيّر) عشان كل حاجة تفضل متسقة
+  syncItemReceiptEffects(oldName);
+  if(newName!==oldName)syncItemReceiptEffects(newName);
 
   save();pushReceiptsToCloud();renderReceipts();renderItemsGrid();renderInventory();
-  toast(`✓ تم تعديل كمية "${r.itemName}" من ${oldQty} إلى ${newQty}`,'success');
+  toast(`✓ تم تعديل بيانات الوارد بنجاح`,'success');
 }
 
 function exportReceiptsToExcel(){
@@ -3001,10 +3028,12 @@ function exportReceiptsToExcel(){
     'الشركة':r.company,
     'إذن التسليم':r.deliveryNo,
     'أمر التوريد':r.orderNo,
+    'رقم التشغيلة':r.batch||'',
+    'تاريخ الانتهاء':r.expiry||'',
     'التاريخ':r.date
   }));
   const ws=XLSX.utils.json_to_sheet(data);
-  ws['!cols']=[{wch:30},{wch:10},{wch:25},{wch:18},{wch:18},{wch:15}];
+  ws['!cols']=[{wch:30},{wch:10},{wch:25},{wch:18},{wch:18},{wch:16},{wch:14},{wch:15}];
   const label=rcptMonthLabel(S_receiptMonth);
   XLSX.utils.book_append_sheet(wb,ws,'وارد '+label);
   XLSX.writeFile(wb,'وارد_'+S_receiptMonth+'.xlsx');
