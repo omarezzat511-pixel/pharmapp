@@ -973,6 +973,7 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
     <span>⏰ عدّت فترة كويسة من غير ما تعمل نسخة احتياطية — لو بتنقل البيانات يدوي بين الأجهزة، دي فرصة تعمل واحدة دلوقتي.</span>
     <div style="display:flex;gap:8px;flex-shrink:0;">
       <button class="btn btn-sm btn-navy" onclick="exportBackup()">⬇ صدّر دلوقتي</button>
+      <button class="btn btn-sm" style="background:#25D366;color:#fff;font-weight:800;" onclick="shareBackupWhatsApp()">📤 واتساب</button>
       <button class="btn btn-sm" style="background:rgba(255,255,255,0.5);color:#6a5010;" onclick="snoozeBackupReminder()">تذكرني بعدين</button>
     </div>
   </div>
@@ -1304,6 +1305,7 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
           <div style="font-size:15px;font-weight:700;color:var(--navy);margin-bottom:8px;">تصدير جميع البيانات</div>
           <div style="font-size:13px;color:var(--text3);margin-bottom:20px;">سيتم حفظ ملف JSON يحتوي على كل بيانات النظام</div>
           <button class="btn btn-primary" onclick="exportBackup()" style="width:100%;">⬇ تحميل نسخة احتياطية</button>
+          <button class="btn btn-sm" style="width:100%;margin-top:9px;background:#25D366;color:#fff;font-weight:800;" onclick="shareBackupWhatsApp()">📤 مشاركة عبر واتساب</button>
         </div>
       </div>
 
@@ -5566,6 +5568,43 @@ function exportBackup(){
   try{localStorage.setItem('pharma_lastBackupExport',Date.now().toString());}catch(e){}
   hideBackupReminderBanner();
   toast('✓ تم تصدير النسخة الاحتياطية','success');
+}
+
+// مشاركة النسخة الاحتياطية مباشرة عبر واتساب (أو أي تطبيق تاني) باستخدام شاشة المشاركة
+// الأصلية بتاعة الموبايل. واتساب مش بيسمح بإرسال تلقائي لرقم معيّن من غير تدخل المستخدم،
+// فده أقرب حل ممكن: بضغطة واحدة تختار واتساب وتختار الشخص وتبعت.
+async function shareBackupWhatsApp(){
+  const data=JSON.stringify(S,null,2);
+  const blob=new Blob([data],{type:'application/json'});
+  const d=new Date();
+  const stamp=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')
+    +'_'+String(d.getHours()).padStart(2,'0')+'-'+String(d.getMinutes()).padStart(2,'0');
+  const fileName=`pharmacy_backup_${stamp}.json`;
+  const file=new File([blob],fileName,{type:'application/json'});
+
+  if(navigator.canShare && navigator.canShare({files:[file]})){
+    try{
+      await navigator.share({
+        files:[file],
+        title:'نسخة احتياطية — نظام صرف الأدوية',
+        text:'نسخة احتياطية بتاريخ '+stamp
+      });
+      try{localStorage.setItem('pharma_lastBackupExport',Date.now().toString());}catch(e){}
+      hideBackupReminderBanner();
+      toast('✓ اختر واتساب من قائمة المشاركة وابعتها للرقم اللي عايزه','success');
+    }catch(err){
+      if(err.name!=='AbortError')toast('تعذّرت المشاركة — جرب "تحميل نسخة احتياطية" بدل كده','error');
+    }
+    return;
+  }
+
+  // ── المتصفح ده (غالبًا كمبيوتر مكتبي) مش بيدعم مشاركة الملفات مباشرة ──
+  // بننزّل الملف عادي، وبنفتح واتساب ويب برسالة تفكّر المستخدم يرفق الملف يدوي
+  exportBackup();
+  toast('المتصفح ده مش بيدعم المشاركة المباشرة — الملف اتحمّل، ارفعه يدوي في واتساب اللي هيفتح دلوقتي','error');
+  setTimeout(()=>{
+    window.open('https://wa.me/?text='+encodeURIComponent('نسخة احتياطية من نظام صرف الأدوية بتاريخ '+stamp+' — من فضلك أرفق ملف الـ JSON اللي اتحمّل دلوقتي في نفس المحادثة'),'_blank');
+  },600);
 }
 
 function importBackup(input){
