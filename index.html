@@ -1315,7 +1315,7 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
           <div style="font-size:48px;margin-bottom:12px;">📂</div>
           <div style="font-size:15px;font-weight:700;color:var(--navy);margin-bottom:8px;">استيراد بيانات سابقة</div>
           <div style="font-size:13px;color:var(--text3);margin-bottom:20px;">اختر ملف JSON سابق لاسترجاع جميع البيانات</div>
-          <input type="file" id="backupFile" accept=".json" style="display:none;" onchange="importBackup(this)">
+          <input type="file" id="backupFile" accept=".json,.txt,application/json,text/plain" style="display:none;" onchange="importBackup(this)">
           <button class="btn btn-sage" onclick="document.getElementById('backupFile').click()" style="width:100%;">📂 اختيار ملف واسترجاع</button>
         </div>
       </div>
@@ -5575,13 +5575,19 @@ function exportBackup(){
 // فده أقرب حل ممكن: بضغطة واحدة تختار واتساب وتختار الشخص وتبعت.
 async function shareBackupWhatsApp(){
   const data=JSON.stringify(S,null,2);
-  const blob=new Blob([data],{type:'application/json'});
   const d=new Date();
   const stamp=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')
     +'_'+String(d.getHours()).padStart(2,'0')+'-'+String(d.getMinutes()).padStart(2,'0');
-  const fileName=`pharmacy_backup_${stamp}.json`;
-  const file=new File([blob],fileName,{type:'application/json'});
 
+  // بعض متصفحات الموبايل (خصوصًا كروم أندرويد) بترفض مشاركة ملفات .json تحديدًا
+  // لأنها مش ضمن أنواع الملفات المسموح بمشاركتها عندها، فده كان سبب "تعذّرت المشاركة".
+  // الحل: نشارك نفس المحتوى بامتداد .txt بدل .json — بيتقبل من كل التطبيقات بما فيها
+  // واتساب، وبيترجع يشتغل عادي جدًا لو استوردته تاني في البرنامج (مش بيفحص الامتداد).
+  const fileName=`pharmacy_backup_${stamp}.txt`;
+  const blob=new Blob([data],{type:'text/plain'});
+  const file=new File([blob],fileName,{type:'text/plain'});
+
+  let shared=false;
   if(navigator.canShare && navigator.canShare({files:[file]})){
     try{
       await navigator.share({
@@ -5589,21 +5595,25 @@ async function shareBackupWhatsApp(){
         title:'نسخة احتياطية — نظام صرف الأدوية',
         text:'نسخة احتياطية بتاريخ '+stamp
       });
-      try{localStorage.setItem('pharma_lastBackupExport',Date.now().toString());}catch(e){}
-      hideBackupReminderBanner();
-      toast('✓ اختر واتساب من قائمة المشاركة وابعتها للرقم اللي عايزه','success');
+      shared=true;
     }catch(err){
-      if(err.name!=='AbortError')toast('تعذّرت المشاركة — جرب "تحميل نسخة احتياطية" بدل كده','error');
+      if(err.name==='AbortError')return; // المستخدم لغى المشاركة بنفسه — من غير رسالة خطأ
+      // أي خطأ تاني (حتى لو canShare قال آه) — هننزل على الخطة البديلة تحت من غير ما نوقف هنا
     }
+  }
+
+  if(shared){
+    try{localStorage.setItem('pharma_lastBackupExport',Date.now().toString());}catch(e){}
+    hideBackupReminderBanner();
+    toast('✓ اختر واتساب من قائمة المشاركة وابعتها للرقم اللي عايزه','success');
     return;
   }
 
-  // ── المتصفح ده (غالبًا كمبيوتر مكتبي) مش بيدعم مشاركة الملفات مباشرة ──
-  // بننزّل الملف عادي، وبنفتح واتساب ويب برسالة تفكّر المستخدم يرفق الملف يدوي
+  // ── خطة بديلة: تنزيل الملف + فتح واتساب برسالة جاهزة (شغالة دايمًا حتى لو المشاركة المباشرة فشلت) ──
   exportBackup();
-  toast('المتصفح ده مش بيدعم المشاركة المباشرة — الملف اتحمّل، ارفعه يدوي في واتساب اللي هيفتح دلوقتي','error');
+  toast('المشاركة المباشرة مش متاحة — تم تحميل الملف، ارفعه يدوي في واتساب اللي هيفتح دلوقتي','error');
   setTimeout(()=>{
-    window.open('https://wa.me/?text='+encodeURIComponent('نسخة احتياطية من نظام صرف الأدوية بتاريخ '+stamp+' — من فضلك أرفق ملف الـ JSON اللي اتحمّل دلوقتي في نفس المحادثة'),'_blank');
+    window.open('https://wa.me/?text='+encodeURIComponent('نسخة احتياطية من نظام صرف الأدوية بتاريخ '+stamp+' — من فضلك أرفق الملف اللي اتحمّل دلوقتي في نفس المحادثة'),'_blank');
   },600);
 }
 
