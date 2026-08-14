@@ -765,8 +765,8 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
 
 /* شبكة كروت الأصناف — 4 كروت بحجم ثابت في كل ورقة A4 (كارت = ربع الورقة) — تصميم احترافي */
 .a4-cards-page{position:relative;width:100%;height:281mm;}
-.a4-cards-slot{position:absolute;width:93mm;height:130mm;}
-.ipc-page-hdr{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:8px;border-bottom:2px solid #16406B;margin-bottom:10px;}
+.a4-cards-slot{position:absolute;width:93mm;height:124mm;}
+.ipc-page-hdr{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:4px;border-bottom:2px solid #16406B;margin-bottom:5px;}
 .ipc-page-hdr-title{font-size:14.5px;font-weight:900;color:#0B1929;font-family:'Cairo',sans-serif;}
 .ipc-page-hdr-sub{font-size:9px;color:#8a99ab;font-weight:700;margin-top:3px;}
 .ipc-page-hdr-meta{font-size:9px;color:#8a99ab;text-align:left;font-weight:600;}
@@ -5236,14 +5236,14 @@ function printItemCardsA4All(){
         +'<div class="ipc-page-hdr-sub">كروت تعريف الأصناف الدوائية</div>'
       +'</div>'
       +'</div>';
-    // الكروت في شبكة 2×2 — ارتفاع كل كارت 130mm، فراغ 6mm بين الصفين
-    let inner='<div style="position:relative;width:100%;height:266mm;">';
+    // الكروت في شبكة 2×2 — ارتفاع كل كارت 124mm، فراغ 5mm بين الصفين
+    let inner='<div style="position:relative;width:100%;height:253mm;">';
     inner+='<div class="a4-cards-slot" style="top:0;right:0;">'+buildItemCardHtml(pageItems[0])+'</div>';
     inner+='<div class="a4-cards-slot" style="top:0;left:0;">'+buildItemCardHtml(pageItems[1]||null)+'</div>';
-    inner+='<div class="a4-cards-slot" style="top:136mm;right:0;">'+buildItemCardHtml(pageItems[2]||null)+'</div>';
-    inner+='<div class="a4-cards-slot" style="top:136mm;left:0;">'+buildItemCardHtml(pageItems[3]||null)+'</div>';
+    inner+='<div class="a4-cards-slot" style="top:129mm;right:0;">'+buildItemCardHtml(pageItems[2]||null)+'</div>';
+    inner+='<div class="a4-cards-slot" style="top:129mm;left:0;">'+buildItemCardHtml(pageItems[3]||null)+'</div>';
     inner+='</div>';
-    html+='<div class="a4-page" style="padding:8mm 10mm;">'+hdr+inner+'</div>';
+    html+='<div class="a4-page" style="padding:7mm 10mm;overflow:hidden;">'+hdr+inner+'</div>';
   });
   showA4PrintPreview(html);
 }
