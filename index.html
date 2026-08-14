@@ -2728,7 +2728,10 @@ function transferToDaily(){
   // Deduct from stock
   Object.entries(obj).forEach(([itemName,qty])=>{
     const it=S.items.find(i=>i.name===itemName);
-    if(it)it.stock=Math.max(0,(it.stock||0)-qty);
+    if(it){
+      it.stock=Math.max(0,(it.stock||0)-qty);
+      deductBatchesFIFO(it,qty); // خصم نفس الكمية من التشغيلات (الأقرب صلاحية الأول) عشان كارت الصنف يفضل مطابق للمخزون الفعلي
+    }
   });
 
   save();
@@ -2966,6 +2969,22 @@ function deleteReceipt(id){
 
 // إعادة بناء تأثير الوارد على صنف معيّن بالكامل من الصفر (الباتشات + "الوارد" في كل شهر جرد + المخزون)
 // بتتنادى بعد أي تعديل/حذف/إضافة وارد — بتضمن إن كل حاجة متسقة مهما اتغيّر (حتى لو الصنف أو التاريخ نفسه اتغيّر)
+// خصم كمية من تشغيلات الصنف بنظام FIFO (الأقرب لتاريخ الصلاحية بينخصم منه الأول)،
+// بيتنادى مع كل عملية صرف عشان جدول التشغيلات في كارت الصنف يفضل مطابق لرصيد الصنف الحقيقي.
+function deductBatchesFIFO(item,qty){
+  if(!item.batches||!item.batches.length||!qty||qty<=0)return;
+  let remaining=qty;
+  const sorted=item.batches.slice().sort((a,b)=>(a.expiry||'9999').localeCompare(b.expiry||'9999'));
+  for(let i=0;i<sorted.length&&remaining>0;i++){
+    const b=sorted[i];
+    if((b.qty||0)<=0)continue;
+    const take=Math.min(b.qty,remaining);
+    b.qty-=take;
+    remaining-=take;
+  }
+  item.batches=item.batches.filter(b=>(b.qty||0)>0); // شيل التشغيلات اللي خلصت خالص
+}
+
 function syncItemReceiptEffects(itemName){
   const item=S.items.find(i=>i.name===itemName);
   // 1) إعادة بناء الباتشات بالكامل من الوارد الفعلي المتبقي لهذا الصنف
