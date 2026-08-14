@@ -2150,9 +2150,18 @@ function buildDocPayload(fields){
   return payload;
 }
 
+// كاش لآخر نسخة اتبعتت فعليًا لكل مستند — عشان لو "save()" حصل بسبب تعديل في قسم
+// (زي المرضى مثلاً) منبعتش تاني مستندات تانية (زي الأصناف) لسه زي ما هي من غير تغيير.
+// ده اللي بيبطّئ المزامنة فعليًا: كل save() كان بيبعت كل الأقسام بالكامل حتى لو معدلش فيها حاجة.
+let _lastPushedJSON={};
 function pushDocToCloud(key,fields){
   if(!_fbReady||_applyingRemote)return;
-  fbColl.doc(key).set(buildDocPayload(fields)).catch(function(){
+  const payload=buildDocPayload(fields);
+  const cmp=JSON.stringify(fields.map(function(f){return payload[f];}));
+  if(_lastPushedJSON[key]===cmp)return; // القسم ده متغيرش فعلاً — متبعتش حاجة
+  fbColl.doc(key).set(payload).then(function(){
+    _lastPushedJSON[key]=cmp;
+  }).catch(function(){
     // هتتخزن محلياً وتتبعت تلقائي لما يرجع الاتصال — الحالة الحقيقية بتتحدث من onSnapshot
   });
 }
@@ -2291,6 +2300,9 @@ function startCloudSync(){
       }
       _applyingRemote=true;
       applyDocData(d.fields,data);
+      try{
+        _lastPushedJSON[d.key]=JSON.stringify(d.fields.map(function(f){return data[f];}));
+      }catch(e){}
       try{localStorage.setItem('pharm_v4',JSON.stringify(buildSyncPayload()));}catch(e){}
       renderAll();
       _applyingRemote=false;
