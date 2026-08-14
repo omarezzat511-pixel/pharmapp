@@ -1607,7 +1607,25 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
       </div>
       <div id="itemCardNoBatches" style="display:none;text-align:center;padding:24px;color:var(--text3);">
         <div style="font-size:32px;margin-bottom:6px;">🗂</div>
-        <div>مفيش باتشات مسجّلة لهذا الصنف لسه — هتتضاف تلقائي أول ما تسجّل وارد جديد ليه مع رقم الباتش</div>
+        <div>مفيش باتشات مسجّلة لهذا الصنف لسه — ضيف تشغيلة من تحت</div>
+      </div>
+      <div style="margin-top:14px;padding:12px;background:var(--off);border-radius:8px;">
+        <div style="font-size:12.5px;font-weight:700;color:var(--text2);margin-bottom:8px;">➕ إضافة تشغيلة جديدة لهذا الصنف:</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+          <div>
+            <label style="font-size:11px;color:var(--text3);">رقم التشغيلة (الباتش)</label>
+            <input class="form-input" id="itemCardNewBatch" placeholder="مثال: B2026-045">
+          </div>
+          <div>
+            <label style="font-size:11px;color:var(--text3);">الكمية</label>
+            <input class="form-input qty" id="itemCardNewQty" type="number" min="1" placeholder="0">
+          </div>
+          <div>
+            <label style="font-size:11px;color:var(--text3);">تاريخ الانتهاء</label>
+            <input class="form-input" id="itemCardNewExpiry" type="date">
+          </div>
+        </div>
+        <button class="btn btn-sm btn-navy" style="margin-top:10px;width:100%;" onclick="addItemBatchDirect()">➕ إضافة التشغيلة للصنف</button>
       </div>
       <div style="margin-top:14px;padding-top:12px;border-top:2px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
         <span style="font-weight:700;color:var(--text2);">الإجمالي الكلي:</span>
@@ -4562,6 +4580,40 @@ function removeItemBatch(sortedIdx){
   it.batches.splice(realIdx,1);
   save();renderItemCardBatches();renderItemsGrid();
   toast('تم حذف التشغيلة','success');
+}
+
+// إضافة تشغيلة (باتش) مباشرة من جوه كارت الصنف — من غير المرور على شاشة الوارد
+function addItemBatchDirect(){
+  const it=S.items.find(i=>String(i.id)===String(_itemCardId));
+  if(!it)return;
+  const batch=document.getElementById('itemCardNewBatch').value.trim();
+  const qty=parseFloat(document.getElementById('itemCardNewQty').value);
+  const expiry=document.getElementById('itemCardNewExpiry').value;
+
+  if(!qty||qty<=0){toast('أدخل كمية صحيحة','error');return;}
+
+  if(!it.batches)it.batches=[];
+  if(batch){
+    const existing=it.batches.find(b=>b.batch.trim().toLowerCase()===batch.toLowerCase());
+    if(existing){
+      existing.qty=(existing.qty||0)+qty;
+      if(expiry)existing.expiry=expiry;
+    }else{
+      it.batches.push({batch:batch,expiry:expiry||'',qty:qty});
+    }
+  }else{
+    it.batches.push({batch:'',expiry:expiry||'',qty:qty});
+  }
+  // ملاحظة: إضافة التشغيلة هنا بتسجّل بيانات الباتش بس (رقمه، تاريخ انتهاؤه، وكميته الخاصة به)
+  // من غير ما تزوّد إجمالي رصيد الصنف — ده بيتغير بس من شاشة الوارد أو الصرف.
+
+  save();
+  document.getElementById('itemCardNewBatch').value='';
+  document.getElementById('itemCardNewQty').value='';
+  document.getElementById('itemCardNewExpiry').value='';
+  renderItemCardBatches();
+  renderItemsGrid();
+  toast('✓ تم إضافة التشغيلة للصنف','success');
 }
 
 function renderItemsGrid(query=''){
