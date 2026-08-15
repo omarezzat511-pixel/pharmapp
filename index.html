@@ -2238,18 +2238,42 @@ function appendItemToCloud(item){
   });
 }
 
-// بيسجل امتى آخر تعديل محلي حصل لكل قسم — عشان لو رد فعل قديم من السحابة وصل متأخر
-// (بسبب تأخير في النت مثلاً)، مايكتبش فوق تعديل محلي أحدث لسه ما اتبعتش
+// بيسجل امتى آخر تعديل محلي حصل فعليًا لكل قسم — عشان لو رد فعل قديم من السحابة وصل متأخر
+// (بسبب تأخير في النت مثلاً)، مايكتبش فوق تعديل محلي أحدث لسه ما اتبعتش.
+// ملحوظة مهمة: كانت الدالة دي قبل كده بتحدّث "كل" الأقسام السبعة بتاريخ دلوقتي، في كل مرة
+// save() بتتنفذ — وده بيتنفذ كل 30 ثانية تلقائي (setInterval) حتى لو مفيش أي تعديل حصل فعلاً!
+// ده كان بيخلي localTs لأي قسم يفضل "حديث" على طول، فأي بيانات جايه من جهاز تاني عن طريق
+// السحابة كانت بتتقارن بتاريخ محلي حديث بشكل مصطنع وبالتالي بترفض/تتأخر تطبيقها — وده بالظبط
+// اللي بيحصل بشكل واضح لما ترجع أونلاين بعد فترة اشتغال أوفلاين (كل الأقسام "حديثة" مصطنعياً،
+// فأي تحديثات حقيقية جايه من السحابة بتتأخر أو متتطبقش فورًا).
 let _localDirtySince={};
 function markAllDirty(){
   const now=Date.now();
-  SYNC_DOCS.forEach(function(d){_localDirtySince[d.key]=now;});
+  SYNC_DOCS.forEach(function(d){
+    // نحدّث تاريخ القسم بس لو فعلاً اتغيّر عن آخر نسخة اتبعتت للسحابة — مش كل الأقسام السبعة
+    const payload=buildDocPayload(d.fields);
+    const cmp=JSON.stringify(d.fields.map(function(f){return payload[f];}));
+    if(_lastPushedJSON[d.key]!==cmp){
+      _localDirtySince[d.key]=now;
+    }
+  });
 }
 
 function applyDocData(fields,data){
   fields.forEach(function(f){
     if(data[f]!==undefined)S[f]=data[f];
   });
+}
+
+// دمج إضافي آمن: بيرجّع نفس المصفوفة المحلية من غير تغيير لو مفيش عناصر جديدة،
+// أو نسخة جديدة فيها العناصر المحلية + أي عنصر موجود بس في المصفوفة التانية (من السحابة)
+// ومش موجود محليًا — من غير ما يلمس أو يمسح أي عنصر محلي موجود بالفعل (تعديل أو حذف).
+function mergeAdditiveEntries(localArr,remoteArr,keyFn){
+  if(!Array.isArray(remoteArr)||!remoteArr.length)return localArr;
+  const localKeys=new Set((localArr||[]).map(keyFn));
+  const additions=remoteArr.filter(function(r){return !localKeys.has(keyFn(r));});
+  if(!additions.length)return localArr;
+  return (localArr||[]).concat(additions);
 }
 
 function updateAggregateStatus(){
@@ -2295,6 +2319,23 @@ function startCloudSync(){
       // لو البيانات القادمة من السيرفر أقدم من آخر تعديل محلي عندي ولسه ما اتأكدش إنه وصل،
       // تجاهلها عشان ميحصلش استرجاع لبيانات قديمة فوق تعديل جديد
       if(remoteTs<localTs && !doc.metadata.hasPendingWrites){
+        // حتى لو رفضنا التحديث الكامل (عشان مايكتبش فوق تعديل محلي لسه ما اتبعتش)،
+        // لازم ندمج أي "عناصر جديدة" (صنف جديد / مريض جديد) اتضافت من جهاز تاني في نفس الوقت تقريبًا —
+        // عشان حماية arrayUnion بتاعة الإضافة متتلغيش لما جهازنا يبعت نسخته الكاملة بعد كده.
+        // ده بيضيف بس، ومش بيعدّل ولا بيمسح أي عنصر محلي موجود.
+        if(d.key==='items'&&Array.isArray(data.items)){
+          const merged=mergeAdditiveEntries(S.items,data.items,function(x){return String(x.id);});
+          if(merged!==S.items){
+            S.items=merged;renderAll();
+            try{localStorage.setItem('pharm_v4',JSON.stringify(buildSyncPayload()));}catch(e){}
+          }
+        }else if(d.key==='patients'&&Array.isArray(data.patients)){
+          const merged=mergeAdditiveEntries(S.patients,data.patients,function(x){return x.id?('id:'+x.id):('name:'+x.name);});
+          if(merged!==S.patients){
+            S.patients=merged;renderAll();
+            try{localStorage.setItem('pharm_v4',JSON.stringify(buildSyncPayload()));}catch(e){}
+          }
+        }
         updateAggregateStatus();
         return;
       }
