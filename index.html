@@ -75,6 +75,26 @@ body{font-family:'Tajawal',sans-serif;background:var(--navy);min-height:100vh;co
 .form-input:read-only{background:var(--light);color:var(--text3);}
 
 .autocomplete-wrap{position:relative;}
+/* ══ الأوامر الصوتية ══ */
+.mic-btn{position:absolute;left:5px;top:50%;transform:translateY(-50%);width:30px;height:30px;border-radius:50%;border:none;background:var(--teal3);color:var(--teal);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;transition:all .2s;z-index:5;padding:0;}
+.mic-btn:hover{background:var(--teal);color:#fff;}
+.mic-btn.listening{background:var(--crimson);color:#fff;animation:micPulse 1.2s infinite;}
+@keyframes micPulse{0%{box-shadow:0 0 0 0 rgba(181,48,42,0.5);}70%{box-shadow:0 0 0 9px rgba(181,48,42,0);}100%{box-shadow:0 0 0 0 rgba(181,48,42,0);}}
+.voice-orb{width:100px;height:100px;border-radius:50%;background:linear-gradient(135deg,var(--teal),var(--teal3));display:flex;align-items:center;justify-content:center;font-size:40px;margin:6px auto 16px;cursor:pointer;transition:all .25s;box-shadow:0 4px 18px rgba(14,110,140,0.35);color:#fff;user-select:none;}
+.voice-orb.listening{background:linear-gradient(135deg,var(--crimson),#e0736c);animation:orbPulse 1.3s infinite;}
+.voice-orb.disabled{opacity:.5;cursor:not-allowed;}
+@keyframes orbPulse{0%{box-shadow:0 0 0 0 rgba(181,48,42,0.45);}70%{box-shadow:0 0 0 20px rgba(181,48,42,0);}100%{box-shadow:0 0 0 0 rgba(181,48,42,0);}}
+.voice-status{text-align:center;font-weight:800;font-size:15px;color:var(--navy);margin-bottom:4px;}
+.voice-transcript{text-align:center;min-height:20px;font-size:13px;color:var(--teal);font-weight:600;margin-bottom:12px;}
+.voice-hint{background:var(--light);border-radius:10px;padding:10px 14px;font-size:12px;color:var(--text2);line-height:1.85;margin-bottom:12px;}
+.voice-items-list{max-height:170px;overflow:auto;margin-bottom:10px;}
+.voice-item-row{display:flex;align-items:center;justify-content:space-between;background:var(--light);border-radius:8px;padding:8px 12px;margin-bottom:6px;font-size:13px;}
+.voice-item-row .via{font-weight:700;color:var(--text1);}
+.voice-item-row .vqty{background:var(--teal);color:#fff;border-radius:20px;padding:2px 10px;font-size:12px;font-weight:700;margin-right:8px;}
+.voice-candidates{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;justify-content:center;}
+.voice-candidate-btn{background:var(--white);border:1.5px solid var(--teal3);color:var(--teal);border-radius:20px;padding:6px 12px;font-size:12.5px;cursor:pointer;font-weight:700;}
+.voice-candidate-btn:hover{background:var(--teal);color:#fff;}
+.voice-name-preview{text-align:center;font-size:14px;font-weight:700;color:var(--navy);background:var(--gold3);border-radius:8px;padding:8px 10px;margin-bottom:12px;}
 .form-group{position:relative;z-index:1;}
 .form-group:focus-within{z-index:9000 !important;isolation:isolate;}
 .form-row{position:relative;overflow:visible;}
@@ -976,6 +996,7 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
     <div class="page-header">
       <div><div class="page-title">إدخال بيانات المريض</div><div class="page-subtitle">أدخل بيانات المريض والأصناف ثم ارحّل إلى اليومية</div></div>
       <div class="header-actions">
+        <button class="btn" onclick="openVoiceWizard()" style="padding:10px 18px;font-size:14px;background:var(--teal);color:#fff;" id="voiceWizardBtn">🎙 إدخال صوتي كامل</button>
         <button class="btn btn-danger" onclick="clearPatientEntry()" style="padding:10px 18px;font-size:14px;background:var(--crim2);color:var(--crimson);border:1.5px solid rgba(181,48,42,0.25);">🗑 حذف المريض من السيستم</button>
         <button class="btn btn-gold" onclick="transferToDaily()" style="width:auto;font-size:14px;padding:10px 22px;">⬆ ترحيل إلى اليومية</button>
       </div>
@@ -988,7 +1009,8 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
           <div class="form-group">
             <label class="form-label">اسم المريض</label>
             <div class="autocomplete-wrap">
-              <input class="form-input" id="patientName" placeholder="ابدأ الكتابة أو أدخل الرقم القومي..." oninput="onPatientNameInput()" onkeydown="onPatientKeydown(event)">
+              <input class="form-input" id="patientName" style="padding-left:38px;" placeholder="ابدأ الكتابة أو أدخل الرقم القومي..." oninput="onPatientNameInput()" onkeydown="onPatientKeydown(event)">
+              <button type="button" class="mic-btn" id="micBtnName" onclick="dictateField('name')" title="نطق اسم المريض بالصوت">🎤</button>
               <div class="autocomplete-list" id="nameDropdown"></div>
             </div>
           </div>
@@ -1010,7 +1032,8 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
           <div class="form-group">
             <label class="form-label">اسم الصنف</label>
             <div class="autocomplete-wrap">
-              <input class="form-input" id="itemSearch" placeholder="اكتب أول حرفين للبحث..." oninput="onItemSearch()" onkeydown="onItemKeydown(event)">
+              <input class="form-input" id="itemSearch" style="padding-left:38px;" placeholder="اكتب أول حرفين للبحث..." oninput="onItemSearch()" onkeydown="onItemKeydown(event)">
+              <button type="button" class="mic-btn" id="micBtnItem" onclick="dictateField('item')" title="نطق اسم الصنف والكمية بالصوت — مثال: باراسيتامول اتنين">🎤</button>
               <div class="autocomplete-list" id="itemDropdown"></div>
             </div>
           </div>
@@ -1971,6 +1994,39 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
       <div style="display:flex;gap:8px;">
         <button class="btn btn-sm" style="background:var(--light);color:var(--text2)" onclick="closeModal('editAllOpeningModal')">إلغاء</button>
         <button class="btn btn-primary" onclick="saveAllOpeningEdits()" style="padding:9px 22px;">💾 حفظ جميع التعديلات</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="voiceWizardModal">
+  <div class="modal">
+    <div class="modal-header" style="background:var(--teal);">
+      <div class="modal-title">🎙 الإدخال الصوتي الكامل</div>
+      <button class="modal-close" onclick="closeVoiceWizard()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="voiceUnsupported" style="display:none;background:#FDEEEE;border:1.5px solid var(--crimson);color:var(--crimson);border-radius:8px;padding:12px 14px;font-size:13px;font-weight:600;line-height:1.8;margin-bottom:10px;">
+        ⚠️ المتصفح ده مش بيدعم التعرف على الصوت. جرّب افتح الصفحة من متصفح Chrome على الموبايل أو الكمبيوتر.
+      </div>
+      <div id="voiceWizardBody">
+        <div class="voice-orb" id="voiceOrb" onclick="voiceOrbTap()">🎤</div>
+        <div class="voice-status" id="voiceStatus">اضغط الميكروفون وقول اسم المريض</div>
+        <div class="voice-transcript" id="voiceTranscript">&nbsp;</div>
+        <div class="voice-name-preview" id="voiceNamePreview" style="display:none;"></div>
+        <div class="voice-candidates" id="voiceCandidates" style="display:none;"></div>
+        <div class="voice-items-list" id="voiceItemsList"></div>
+        <div class="voice-hint" id="voiceHint">
+          💡 قول اسم المريض أولاً. بعد كده قول اسم كل صنف والكمية، مثلاً: <strong>"باراسيتامول اتنين"</strong>. لما تخلص قول <strong>"خلصت"</strong>، وتقدر تقول <strong>"رحّل"</strong> عشان يترحّل مباشرة لليومية.
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer" style="justify-content:space-between;flex-wrap:wrap;gap:8px;">
+      <button class="btn btn-sm" style="background:var(--light);color:var(--text2)" onclick="closeVoiceWizard()">إلغاء</button>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-sm btn-warn" id="voiceRestartBtn" onclick="restartVoiceWizard()" style="display:none;">↺ إعادة من اسم المريض</button>
+        <button class="btn btn-primary" id="voiceFinishBtn" onclick="finishVoiceAndReview()" style="display:none;">✓ خلصت — راجع البيانات</button>
+        <button class="btn btn-gold" id="voiceTransferBtn" onclick="transferFromVoiceWizard()" style="display:none;">⬆ ترحيل إلى اليومية</button>
       </div>
     </div>
   </div>
@@ -6751,6 +6807,382 @@ function updateDmButton(isDark){
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>{
     navigator.serviceWorker.register('./sw.js').catch(()=>{ /* لو فشل، التطبيق يفضل شغال عادي أونلاين */ });
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ══ الأوامر الصوتية (Voice Commands) ════════════════════════════
+// إدخال المريض والأصناف والكميات بالصوت — يعمل في متصفحات Chrome
+// (على الموبايل والكمبيوتر) التي تدعم Web Speech API
+// ═══════════════════════════════════════════════════════════════
+const VoiceEngine=(()=>{
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  const supported=!!SR;
+  const LANG='ar-EG';
+  function speak(text){
+    try{
+      if(!('speechSynthesis' in window))return;
+      window.speechSynthesis.cancel();
+      const u=new SpeechSynthesisUtterance(text);
+      u.lang='ar-SA';u.rate=1;
+      window.speechSynthesis.speak(u);
+    }catch(e){}
+  }
+  function listenOnce({onInterim,onError,onEnd}){
+    if(!supported){onError&&onError('unsupported');return null;}
+    const rec=new SR();
+    rec.lang=LANG;rec.interimResults=true;rec.maxAlternatives=1;rec.continuous=false;
+    let finalTranscript='';
+    rec.onresult=(e)=>{
+      let interim='';
+      for(let i=e.resultIndex;i<e.results.length;i++){
+        const t=e.results[i][0].transcript;
+        if(e.results[i].isFinal)finalTranscript+=t;
+        else interim+=t;
+      }
+      if(onInterim)onInterim(interim||finalTranscript);
+    };
+    rec.onerror=(e)=>{onError&&onError(e.error);};
+    rec.onend=()=>{onEnd&&onEnd(finalTranscript.trim());};
+    try{rec.start();}catch(e){onError&&onError('start-failed');return null;}
+    return rec;
+  }
+  return {supported,speak,listenOnce};
+})();
+
+// ── تطبيع النص العربي للمقارنة ──
+function normalizeArabic(s){
+  if(!s)return'';
+  return s.trim()
+    .replace(/[\u064B-\u0652\u0670]/g,'')
+    .replace(/[إأآا]/g,'ا')
+    .replace(/ى/g,'ي')
+    .replace(/ة/g,'ه')
+    .replace(/ؤ/g,'و')
+    .replace(/ئ/g,'ي')
+    .replace(/[^\u0600-\u06FF0-9a-zA-Z\s]/g,' ')
+    .replace(/\s+/g,' ')
+    .trim().toLowerCase();
+}
+function stripAlPrefix(s){
+  return s.split(' ').map(w=>(w.startsWith('ال')&&w.length>3)?w.slice(2):w).join(' ');
+}
+function canonArabic(s){return stripAlPrefix(normalizeArabic(s));}
+
+function convertArabicDigits(s){
+  const map={'٠':'0','١':'1','٢':'2','٣':'3','٤':'4','٥':'5','٦':'6','٧':'7','٨':'8','٩':'9'};
+  return s.replace(/[٠-٩]/g,d=>map[d]);
+}
+
+// ── كلمات الأرقام بالعامية المصرية/الفصحى ──
+const ARABIC_NUM_WORDS={
+  'صفر':0,'واحد':1,'واحده':1,'وحدة':1,'حبه':1,'حبة':1,
+  'اتنين':2,'إثنين':2,'اثنين':2,'اتنان':2,'إتنين':2,'زوج':2,
+  'تلاته':3,'تلاتة':3,'ثلاثه':3,'ثلاثة':3,
+  'اربعه':4,'اربعة':4,'أربعة':4,
+  'خمسه':5,'خمسة':5,
+  'سته':6,'ستة':6,
+  'سبعه':7,'سبعة':7,
+  'تمانيه':8,'ثمانية':8,'تمانية':8,
+  'تسعه':9,'تسعة':9,
+  'عشره':10,'عشرة':10,
+  'حداشر':11,'إحداشر':11,
+  'اتناشر':12,'إتناشر':12,
+  'تلتاشر':13,
+  'اربتاشر':14,
+  'خمستاشر':15,
+  'ستاشر':16,
+  'سبعتاشر':17,
+  'تمنتاشر':18,
+  'تسعتاشر':19,
+  'عشرين':20
+};
+
+// ── استخراج الكمية واسم الصنف من عبارة واحدة ──
+function extractQtyAndText(rawText){
+  let t=convertArabicDigits(rawText.trim());
+  const digitMatch=t.match(/\d+(\.\d+)?/);
+  let qty=null,itemText=t;
+  if(digitMatch){
+    qty=parseFloat(digitMatch[0]);
+    itemText=(t.slice(0,digitMatch.index)+' '+t.slice(digitMatch.index+digitMatch[0].length)).trim();
+  } else {
+    const norm=normalizeArabic(t);
+    const words=norm.split(' ');
+    for(let i=words.length-1;i>=0;i--){
+      if(ARABIC_NUM_WORDS.hasOwnProperty(words[i])){
+        qty=ARABIC_NUM_WORDS[words[i]];
+        itemText=words.slice(0,i).concat(words.slice(i+1)).join(' ');
+        break;
+      }
+    }
+  }
+  itemText=itemText.replace(/\s+/g,' ').trim();
+  return {qty,itemText};
+}
+
+// ── تشابه نصي بين عبارتين (Dice coefficient على bigrams) ──
+function bigrams(s){
+  const n=canonArabic(s).replace(/\s+/g,'');
+  const arr=[];
+  for(let i=0;i<n.length-1;i++)arr.push(n.substr(i,2));
+  return arr;
+}
+function textSimilarity(a,b){
+  const ba=bigrams(a),bb=bigrams(b);
+  if(!ba.length||!bb.length)return canonArabic(a)===canonArabic(b)?1:0;
+  const mapB={};
+  bb.forEach(g=>mapB[g]=(mapB[g]||0)+1);
+  let matches=0;
+  ba.forEach(g=>{if(mapB[g]>0){matches++;mapB[g]--;}});
+  return (2*matches)/(ba.length+bb.length);
+}
+function findBestItemMatches(text,limit=4){
+  const q=canonArabic(text);
+  if(!q)return [];
+  const scored=S.items.map(it=>{
+    const n=canonArabic(it.name);
+    let score=textSimilarity(q,n);
+    if(n.includes(q)||q.includes(n))score=Math.max(score,0.72);
+    const qFirst=q.split(' ')[0],nFirst=n.split(' ')[0];
+    if(qFirst&&nFirst&&qFirst===nFirst)score+=0.08;
+    return {item:it,score};
+  }).sort((a,b)=>b.score-a.score);
+  return scored.slice(0,limit).filter(s=>s.score>0.28);
+}
+
+const VOICE_STOP_WORDS=['خلصت','خلاص','كفايه','كفاية','انتهيت','خلصنا','تمام كده'];
+const VOICE_TRANSFER_WORDS=['رحل','رحّل','ترحيل','رحله','رحلها'];
+function containsStopWord(norm){return VOICE_STOP_WORDS.some(w=>norm.includes(normalizeArabic(w)));}
+function containsTransferWord(norm){return VOICE_TRANSFER_WORDS.some(w=>norm.includes(normalizeArabic(w)));}
+function isTransferOnlyCommand(norm){return VOICE_TRANSFER_WORDS.some(w=>norm===normalizeArabic(w));}
+
+// ── حالة معالج الإدخال الصوتي الكامل ──
+let voiceWizard={step:'idle',active:false,currentRec:null,pendingCandidates:null,pendingQty:null};
+
+function openVoiceWizard(){
+  if(!VoiceEngine.supported){
+    document.getElementById('voiceUnsupported').style.display='block';
+    document.getElementById('voiceWizardBody').style.display='none';
+  } else {
+    document.getElementById('voiceUnsupported').style.display='none';
+    document.getElementById('voiceWizardBody').style.display='block';
+  }
+  resetVoiceWizardUI();
+  document.getElementById('voiceWizardModal').classList.add('open');
+}
+function closeVoiceWizard(){
+  stopVoiceListening();
+  document.getElementById('voiceWizardModal').classList.remove('open');
+}
+function resetVoiceWizardUI(){
+  const existingName=(document.getElementById('patientName').value||'').trim();
+  voiceWizard={step:existingName?'item':'name',active:false,currentRec:null,pendingCandidates:null,pendingQty:null};
+  document.getElementById('voiceOrb').classList.remove('listening','disabled');
+  document.getElementById('voiceStatus').textContent=existingName?'قول اسم الصنف والكمية، أو قول "خلصت" للإنهاء':'اضغط الميكروفون وقول اسم المريض';
+  document.getElementById('voiceTranscript').innerHTML='&nbsp;';
+  if(existingName){
+    document.getElementById('voiceNamePreview').style.display='block';
+    document.getElementById('voiceNamePreview').textContent='👤 '+existingName;
+  } else {
+    document.getElementById('voiceNamePreview').style.display='none';
+  }
+  document.getElementById('voiceCandidates').style.display='none';
+  document.getElementById('voiceCandidates').innerHTML='';
+  renderVoiceItemsList();
+  document.getElementById('voiceHint').style.display='block';
+  document.getElementById('voiceRestartBtn').style.display=existingName?'inline-flex':'none';
+  document.getElementById('voiceFinishBtn').style.display=existingName?'inline-flex':'none';
+  document.getElementById('voiceTransferBtn').style.display=(existingName&&S.currentItems.length)?'inline-flex':'none';
+}
+function restartVoiceWizard(){
+  document.getElementById('patientName').value='';
+  document.getElementById('patientId').value='';
+  clearPatientFieldErrors();
+  S.currentItems=[];renderCurrentItems();
+  resetVoiceWizardUI();
+}
+function stopVoiceListening(){
+  if(voiceWizard.currentRec){try{voiceWizard.currentRec.abort();}catch(e){}}
+  voiceWizard.currentRec=null;voiceWizard.active=false;
+  const orb=document.getElementById('voiceOrb');
+  if(orb)orb.classList.remove('listening');
+}
+function voiceOrbTap(){
+  if(!VoiceEngine.supported)return;
+  if(voiceWizard.active){stopVoiceListening();document.getElementById('voiceStatus').textContent='تم الإيقاف — اضغط للاستمرار';return;}
+  if(voiceWizard.step==='idle')voiceWizard.step='name';
+  startVoiceTurn();
+}
+function startVoiceTurn(){
+  if(!document.getElementById('voiceWizardModal').classList.contains('open'))return;
+  voiceWizard.active=true;
+  const orb=document.getElementById('voiceOrb');
+  orb.classList.add('listening');
+  document.getElementById('voiceTranscript').innerHTML='&nbsp;';
+  document.getElementById('voiceStatus').textContent=voiceWizard.step==='name'?'🎤 بيسمعك... قول اسم المريض':'🎤 بيسمعك... قول اسم الصنف والكمية';
+  voiceWizard.currentRec=VoiceEngine.listenOnce({
+    onInterim:(txt)=>{document.getElementById('voiceTranscript').textContent=txt;},
+    onError:(err)=>{
+      orb.classList.remove('listening');voiceWizard.active=false;
+      if(err==='no-speech')document.getElementById('voiceStatus').textContent='معنديش صوت... اضغط للمحاولة تاني';
+      else if(err==='not-allowed'||err==='service-not-allowed')document.getElementById('voiceStatus').textContent='محتاج إذن استخدام الميكروفون من المتصفح';
+      else if(err!=='aborted')document.getElementById('voiceStatus').textContent='حصل خطأ، اضغط للمحاولة تاني';
+    },
+    onEnd:(finalText)=>{
+      orb.classList.remove('listening');voiceWizard.active=false;
+      if(finalText)handleVoiceTranscript(finalText);
+    }
+  });
+}
+function handleVoiceTranscript(text){
+  document.getElementById('voiceTranscript').textContent=text;
+  if(voiceWizard.step==='name')handleVoiceName(text);
+  else if(voiceWizard.step==='item')handleVoiceItemPhrase(text);
+}
+function handleVoiceName(text){
+  const name=text.trim().replace(/^(اسم المريض|المريض)\s*/,'').trim();
+  if(!name){document.getElementById('voiceStatus').textContent='معرفتش أسمع الاسم، اضغط وحاول تاني';return;}
+  document.getElementById('patientName').value=name;
+  onPatientNameInput();
+  document.getElementById('voiceNamePreview').style.display='block';
+  document.getElementById('voiceNamePreview').textContent='👤 '+name;
+  VoiceEngine.speak('تمام، دلوقتي قول اسم الصنف والكمية');
+  voiceWizard.step='item';
+  document.getElementById('voiceStatus').textContent='قول اسم الصنف والكمية، أو قول "خلصت" للإنهاء';
+  document.getElementById('voiceFinishBtn').style.display='inline-flex';
+  document.getElementById('voiceRestartBtn').style.display='inline-flex';
+  setTimeout(()=>startVoiceTurn(),700);
+}
+function handleVoiceItemPhrase(text){
+  const norm=normalizeArabic(text);
+  if(containsStopWord(norm)){
+    finishVoiceAndReview();
+    if(containsTransferWord(norm))setTimeout(()=>transferFromVoiceWizard(),400);
+    return;
+  }
+  if(isTransferOnlyCommand(norm)){
+    finishVoiceAndReview();
+    setTimeout(()=>transferFromVoiceWizard(),400);
+    return;
+  }
+  const {qty,itemText}=extractQtyAndText(text);
+  if(!itemText){document.getElementById('voiceStatus').textContent='مسمعتش اسم صنف واضح، قول تاني';setTimeout(()=>startVoiceTurn(),600);return;}
+  const matches=findBestItemMatches(itemText);
+  if(!matches.length){
+    document.getElementById('voiceStatus').textContent='مفيش صنف قريب من "'+itemText+'" في القايمة';
+    VoiceEngine.speak('الصنف ده مش موجود في القايمة');
+    setTimeout(()=>startVoiceTurn(),1200);
+    return;
+  }
+  const best=matches[0],second=matches[1];
+  const confident=best.score>=0.55&&(!second||best.score-second.score>=0.12);
+  const finalQty=qty&&qty>0?qty:1;
+  if(confident){
+    addVoiceItem(best.item.name,finalQty);
+    document.getElementById('voiceStatus').textContent='قول الصنف التاني، أو قول "خلصت"';
+    setTimeout(()=>startVoiceTurn(),900);
+  } else {
+    voiceWizard.pendingQty=finalQty;
+    voiceWizard.pendingCandidates=matches;
+    showVoiceCandidates(matches);
+  }
+}
+function showVoiceCandidates(matches){
+  const wrap=document.getElementById('voiceCandidates');
+  document.getElementById('voiceStatus').textContent='مش متأكد من الصنف — اختار الصح:';
+  wrap.style.display='flex';
+  wrap.innerHTML=matches.map(m=>`<button class="voice-candidate-btn" onclick="pickVoiceCandidate('${ec(m.item.name)}')">${m.item.name}</button>`).join('')
+    +`<button class="voice-candidate-btn" style="border-color:var(--crimson);color:var(--crimson);" onclick="cancelVoiceCandidate()">✕ ولا واحد فيهم</button>`;
+}
+function pickVoiceCandidate(name){
+  const d=dc(name);
+  addVoiceItem(d,voiceWizard.pendingQty||1);
+  document.getElementById('voiceCandidates').style.display='none';
+  document.getElementById('voiceCandidates').innerHTML='';
+  voiceWizard.pendingCandidates=null;voiceWizard.pendingQty=null;
+  document.getElementById('voiceStatus').textContent='قول الصنف التاني، أو قول "خلصت"';
+  setTimeout(()=>startVoiceTurn(),700);
+}
+function cancelVoiceCandidate(){
+  document.getElementById('voiceCandidates').style.display='none';
+  document.getElementById('voiceCandidates').innerHTML='';
+  voiceWizard.pendingCandidates=null;voiceWizard.pendingQty=null;
+  document.getElementById('voiceStatus').textContent='حاول قول اسم الصنف بشكل تاني';
+  setTimeout(()=>startVoiceTurn(),600);
+}
+function addVoiceItem(itemName,qty){
+  lastQtyMap[itemName]=qty;saveLastQtyMap();
+  const ex=S.currentItems.findIndex(i=>i.itemName===itemName);
+  if(ex>=0)S.currentItems[ex].qty+=qty;else S.currentItems.push({itemName,qty});
+  renderCurrentItems();
+  renderVoiceItemsList();
+  VoiceEngine.speak('تمت إضافة '+itemName);
+  toast(`🎤 تمت إضافة "${itemName}" × ${qty}`,'success');
+}
+function renderVoiceItemsList(){
+  const wrap=document.getElementById('voiceItemsList');
+  if(!wrap)return;
+  if(!S.currentItems.length){wrap.innerHTML='';return;}
+  wrap.innerHTML=S.currentItems.map((it,i)=>`<div class="voice-item-row"><span class="via">${it.itemName}</span><span><span class="vqty">${it.qty}</span><button class="btn btn-sm btn-danger" style="padding:3px 8px;font-size:11px;" onclick="removeCurrItem(${i});renderVoiceItemsList();">✕</button></span></div>`).join('');
+}
+function finishVoiceAndReview(){
+  stopVoiceListening();
+  document.getElementById('voiceStatus').textContent=S.currentItems.length?'✓ خلصت — راجع البيانات واضغط ترحيل':'محتاج تضيف صنف واحد على الأقل';
+  document.getElementById('voiceHint').style.display='none';
+  document.getElementById('voiceCandidates').style.display='none';
+  document.getElementById('voiceFinishBtn').style.display='none';
+  if(S.currentItems.length)document.getElementById('voiceTransferBtn').style.display='inline-flex';
+}
+function transferFromVoiceWizard(){
+  const name=document.getElementById('patientName').value.trim();
+  if(!name){toast('محتاج اسم المريض الأول','error');voiceWizard.step='name';document.getElementById('voiceStatus').textContent='قول اسم المريض';return;}
+  if(!S.currentItems.length){toast('أضف صنف واحد على الأقل','error');return;}
+  transferToDaily();
+  VoiceEngine.speak('تم الترحيل بنجاح');
+  closeVoiceWizard();
+}
+
+// ── نطق سريع لحقل واحد (زر الميكروفون بجانب اسم المريض أو اسم الصنف) ──
+let dictateRec=null;
+function dictateField(which){
+  if(!VoiceEngine.supported){toast('المتصفح لا يدعم التعرف على الصوت — جرّب Chrome','error');return;}
+  const btn=document.getElementById(which==='name'?'micBtnName':'micBtnItem');
+  if(dictateRec){try{dictateRec.abort();}catch(e){}dictateRec=null;btn.classList.remove('listening');return;}
+  btn.classList.add('listening');
+  dictateRec=VoiceEngine.listenOnce({
+    onInterim:(txt)=>{
+      if(which==='name')document.getElementById('patientName').value=txt;
+      else document.getElementById('itemSearch').value=txt;
+    },
+    onError:(err)=>{
+      btn.classList.remove('listening');dictateRec=null;
+      if(err!=='aborted'&&err!=='no-speech')toast('تعذّر التعرف على الصوت','error');
+    },
+    onEnd:(finalText)=>{
+      btn.classList.remove('listening');dictateRec=null;
+      if(!finalText)return;
+      if(which==='name'){
+        document.getElementById('patientName').value=finalText.trim();
+        onPatientNameInput();
+        document.getElementById('itemSearch').focus();
+      } else {
+        const {qty,itemText}=extractQtyAndText(finalText);
+        const matches=findBestItemMatches(itemText||finalText);
+        if(matches.length&&matches[0].score>=0.55){
+          document.getElementById('itemSearch').value=matches[0].item.name;
+          selItem=matches[0].item.name;
+          document.getElementById('itemDropdown').classList.remove('open');
+          document.getElementById('itemQty').value=qty&&qty>0?qty:(lastQtyMap[selItem]||'');
+          if(qty&&qty>0)addItem();else document.getElementById('itemQty').focus();
+        } else {
+          document.getElementById('itemSearch').value=itemText||finalText;
+          onItemSearch();
+          if(qty)document.getElementById('itemQty').value=qty;
+          toast('اختار الصنف الصح من القايمة اللي ظهرت','info');
+        }
+      }
+    }
   });
 }
 
