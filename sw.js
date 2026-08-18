@@ -1,6 +1,6 @@
 // Service worker لنظام صرف الأدوية
 // ملاحظة: هذا الملف إضافي فقط ولا يغيّر أي منطق داخل التطبيق نفسه.
-const CACHE_NAME = 'pharma-cache-v4';
+const CACHE_NAME = 'pharma-cache-v5';
 const APP_SHELL = [
   './',
   './index.html',
