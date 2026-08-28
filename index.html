@@ -1654,6 +1654,7 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
         <span style="font-weight:700;color:var(--text2);">الإجمالي الكلي:</span>
         <span id="itemCardTotal" style="font-size:17px;font-weight:900;color:var(--navy);"></span>
       </div>
+      <div id="itemCardMismatchWarn" style="display:none;margin-top:8px;background:#FDF6E3;border:1.5px solid #C99A1F;color:#8a6d1a;border-radius:8px;padding:8px 12px;font-size:12px;font-weight:700;text-align:center;"></div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-sm" style="background:var(--light);color:var(--text2)" onclick="closeModal('itemCardModal')">إغلاق</button>
@@ -2816,20 +2817,20 @@ function transferToDaily(){
   else{const ex=S.patients.findIndex(p=>p.name===name);if(ex<0)S.patients.push({name,id:''});}
   if(!S.daily[date])S.daily[date]=[];
   const obj={};S.currentItems.forEach(i=>{obj[i.itemName]=(obj[i.itemName]||0)+i.qty;});
-  const newDailyRow={patientName:name,patientId:id,items:obj};
-  S.daily[date].push(newDailyRow);
-
-  // Update inventory
-  updateInventoryOut(date, obj);
-
+  const batchAllocations={};
   // Deduct from stock
   Object.entries(obj).forEach(([itemName,qty])=>{
     const it=S.items.find(i=>i.name===itemName);
     if(it){
       it.stock=Math.max(0,(it.stock||0)-qty);
-      deductBatchesFIFO(it,qty); // خصم نفس الكمية من التشغيلات (الأقرب صلاحية الأول) عشان كارت الصنف يفضل مطابق للمخزون الفعلي
+      batchAllocations[itemName]=deductBatchesFIFO(it,qty); // خصم نفس الكمية من التشغيلات (الأقرب صلاحية الأول) + تسجيل التفاصيل عشان نقدر نرجعها لو المريض اتحذف بعدين
     }
   });
+  const newDailyRow={patientName:name,patientId:id,items:obj,batchAllocations:batchAllocations};
+  S.daily[date].push(newDailyRow);
+
+  // Update inventory
+  updateInventoryOut(date, obj);
 
   save();
   appendDailyRowToCloud(date,newDailyRow);
@@ -2887,13 +2888,16 @@ function addReceipt(){
     // ── تحديث كارت الصنف (الباتشات) ──
     if(batch){
       if(!item.batches)item.batches=[];
-      const existing=item.batches.find(b=>b.batch.trim().toLowerCase()===batch.toLowerCase());
+      if(!item.batchReceivedTotals)item.batchReceivedTotals={};
+      const key=batch.trim().toLowerCase();
+      const existing=item.batches.find(b=>b.batch.trim().toLowerCase()===key);
       if(existing){
         existing.qty=(existing.qty||0)+qty;
         if(expiry)existing.expiry=expiry; // لو دخلت تاريخ جديد لنفس الباتش، حدّثه
       }else{
         item.batches.push({batch:batch,expiry:expiry||'',qty:qty});
       }
+      item.batchReceivedTotals[key]=(item.batchReceivedTotals[key]||0)+qty; // نفس الرقم اللي هيتحسب بعدين وقت المزامنة
     }
   }
 
@@ -3068,8 +3072,11 @@ function deleteReceipt(id){
 // بتتنادى بعد أي تعديل/حذف/إضافة وارد — بتضمن إن كل حاجة متسقة مهما اتغيّر (حتى لو الصنف أو التاريخ نفسه اتغيّر)
 // خصم كمية من تشغيلات الصنف بنظام FIFO (الأقرب لتاريخ الصلاحية بينخصم منه الأول)،
 // بيتنادى مع كل عملية صرف عشان جدول التشغيلات في كارت الصنف يفضل مطابق لرصيد الصنف الحقيقي.
+// بيرجّع مصفوفة بالتفاصيل اللي اتخصمت فعلاً (الباتش + الكمية + الصلاحية) عشان نقدر نرجعها بالظبط
+// لو المريض اتحذف أو الصنف اتشال من اليومية بعد كده (بدل ما الباتشات تفضل ناقصة للأبد).
 function deductBatchesFIFO(item,qty){
-  if(!item.batches||!item.batches.length||!qty||qty<=0)return;
+  const allocations=[];
+  if(!item.batches||!item.batches.length||!qty||qty<=0)return allocations;
   let remaining=qty;
   const sorted=item.batches.slice().sort((a,b)=>(a.expiry||'9999').localeCompare(b.expiry||'9999'));
   for(let i=0;i<sorted.length&&remaining>0;i++){
@@ -3078,22 +3085,65 @@ function deductBatchesFIFO(item,qty){
     const take=Math.min(b.qty,remaining);
     b.qty-=take;
     remaining-=take;
+    allocations.push({batch:b.batch||'',expiry:b.expiry||'',qty:take});
   }
   item.batches=item.batches.filter(b=>(b.qty||0)>0); // شيل التشغيلات اللي خلصت خالص
+  return allocations;
+}
+
+// عكس عملية الخصم أعلاه — بترجع كل كمية لباتشها الأصلي (وتعيد إنشاء الباتش لو كان اتشال خالص).
+// بتتنادى لما نحذف مريض من اليومية أو نعدّل كمية صنف اتصرفت له قبل كده.
+function restoreBatchAllocations(item,allocations){
+  if(!item||!allocations||!allocations.length)return;
+  if(!item.batches)item.batches=[];
+  allocations.forEach(a=>{
+    const key=(a.batch||'').trim().toLowerCase();
+    let entry=item.batches.find(b=>(b.batch||'').trim().toLowerCase()===key);
+    if(entry){
+      entry.qty=(entry.qty||0)+a.qty;
+      if(a.expiry&&!entry.expiry)entry.expiry=a.expiry;
+    }else{
+      item.batches.push({batch:a.batch||'',expiry:a.expiry||'',qty:a.qty});
+    }
+  });
 }
 
 function syncItemReceiptEffects(itemName){
   const item=S.items.find(i=>i.name===itemName);
-  // 1) إعادة بناء الباتشات بالكامل من الوارد الفعلي المتبقي لهذا الصنف
+  // 1) تحديث الباتشات بالفرق فقط (delta) من إجمالي الوارد الفعلي — مش استبدال كامل،
+  //    عشان محافظين على أي كمية اتصرفت فعلاً (FIFO) أو أي باتش مضاف يدوياً من كارت الصنف
   if(item){
-    const batchMap={};
+    if(!item.batchReceivedTotals)item.batchReceivedTotals={};
+    if(!item.batches)item.batches=[];
+    const newTotals={};
+    const expiryByKey={};
     S.receipts.filter(r=>r.itemName===itemName && r.batch).forEach(r=>{
       const key=r.batch.trim().toLowerCase();
-      if(!batchMap[key])batchMap[key]={batch:r.batch,expiry:r.expiry||'',qty:0};
-      batchMap[key].qty+=r.qty;
-      if(r.expiry)batchMap[key].expiry=r.expiry;
+      newTotals[key]=(newTotals[key]||0)+r.qty;
+      if(r.expiry)expiryByKey[key]={batch:r.batch,expiry:r.expiry};
+      else if(!expiryByKey[key])expiryByKey[key]={batch:r.batch,expiry:''};
     });
-    item.batches=Object.values(batchMap);
+    const allKeys=new Set([...Object.keys(newTotals),...Object.keys(item.batchReceivedTotals)]);
+    allKeys.forEach(key=>{
+      const newTotal=newTotals[key]||0;
+      const oldTotal=item.batchReceivedTotals[key]||0;
+      const delta=newTotal-oldTotal;
+      let entry=item.batches.find(b=>(b.batch||'').trim().toLowerCase()===key);
+      if(delta===0){
+        if(entry&&expiryByKey[key]&&expiryByKey[key].expiry)entry.expiry=expiryByKey[key].expiry;
+        return;
+      }
+      if(entry){
+        entry.qty=Math.max(0,(entry.qty||0)+delta);
+        if(expiryByKey[key]&&expiryByKey[key].expiry)entry.expiry=expiryByKey[key].expiry;
+      }else if(delta>0){
+        const meta=expiryByKey[key]||{batch:key,expiry:''};
+        item.batches.push({batch:meta.batch,expiry:meta.expiry||'',qty:delta});
+      }
+      // لو الدلتا سالبة والباتش مش موجود أصلاً (كان اتشال يدوي قبل كده) — متعملش حاجة، عشان منرجعوش بكمية غلط
+    });
+    item.batches=item.batches.filter(b=>(b.qty||0)>0);
+    item.batchReceivedTotals=newTotals;
   }
   // 2) إعادة حساب "الوارد" في كل شهر جرد له علاقة بالصنف ده (سواء فيه وارد دلوقتي أو كان فيه قبل كده)
   const months=new Set(S.receipts.filter(r=>r.itemName===itemName).map(r=>getMonthKey(r.date)));
@@ -4104,8 +4154,26 @@ function savePatientEdit(){
   updateInventoryOut(editCtx.day, oldRow.items, true); // revert
   updateInventoryOut(editCtx.day, obj);
 
-  S.daily[editCtx.day][editCtx.idx]={patientName:name,patientId:document.getElementById('editPatientId').value.trim(),items:obj};
-  save();pushDailyDayToCloud(editCtx.day);renderDaily();updateStats();renderInventory();closeModal('editPatientModal');toast('تم حفظ التعديلات ✓','success');
+  // ── إرجاع الرصيد والباتشات القديمة، ثم خصم الرصيد والباتشات الجديدة ──
+  // (بدل ما رصيد الصنف يفضل زي ما هو غلط لحد ما تعمل "إعادة الحساب الشاملة")
+  Object.entries(oldRow.items).forEach(([itemName,qty])=>{
+    const it=S.items.find(i=>i.name===itemName);
+    if(it){
+      it.stock=(it.stock||0)+qty;
+      if(oldRow.batchAllocations&&oldRow.batchAllocations[itemName])restoreBatchAllocations(it,oldRow.batchAllocations[itemName]);
+    }
+  });
+  const newBatchAllocations={};
+  Object.entries(obj).forEach(([itemName,qty])=>{
+    const it=S.items.find(i=>i.name===itemName);
+    if(it){
+      it.stock=Math.max(0,(it.stock||0)-qty);
+      newBatchAllocations[itemName]=deductBatchesFIFO(it,qty);
+    }
+  });
+
+  S.daily[editCtx.day][editCtx.idx]={patientName:name,patientId:document.getElementById('editPatientId').value.trim(),items:obj,batchAllocations:newBatchAllocations};
+  save();pushDailyDayToCloud(editCtx.day);renderDaily();updateStats();renderInventory();renderItemsGrid();closeModal('editPatientModal');toast('تم حفظ التعديلات ✓','success');
 }
 function deletePatientRow(){
   if(!confirm('حذف هذا المريض من اليومية نهائياً؟'))return;
@@ -4121,10 +4189,13 @@ function deletePatientRow(){
     toast('تم الحذف من الأرشيف','success');return;
   }
   const row=S.daily[editCtx.day][editCtx.idx];
-  // Restore stock
+  // Restore stock + الباتشات اللي كانت اتخصمت منها وقت الصرف
   Object.entries(row.items).forEach(([itemName,qty])=>{
     const it=S.items.find(i=>i.name===itemName);
-    if(it)it.stock=(it.stock||0)+qty;
+    if(it){
+      it.stock=(it.stock||0)+qty;
+      if(row.batchAllocations&&row.batchAllocations[itemName])restoreBatchAllocations(it,row.batchAllocations[itemName]);
+    }
   });
   updateInventoryOut(editCtx.day, row.items, true);
   S.daily[editCtx.day].splice(editCtx.idx,1);
@@ -4692,6 +4763,18 @@ function renderItemCardBatches(){
     }).join('');
   }
   document.getElementById('itemCardTotal').textContent=(it.stock||0)+' '+it.unit;
+  const totalBatches=(it.batches||[]).reduce((s,b)=>s+(b.qty||0),0);
+  const warnEl=document.getElementById('itemCardMismatchWarn');
+  if(Math.abs(totalBatches-(it.stock||0))>0.001){
+    warnEl.style.display='block';
+    if(totalBatches>it.stock){
+      warnEl.textContent=`⚠️ مجموع التشغيلات (${totalBatches}) أكبر من رصيد الصنف (${it.stock||0}) — استخدم "إعادة الحساب الشاملة" من صفحة الأصناف لتصحيحه`;
+    }else{
+      warnEl.textContent=`ℹ️ فيه ${(it.stock-totalBatches).toFixed(2)*1} ${it.unit} من الرصيد مش مسجّل على أي تشغيلة (غالباً وارد اتسجل من غير رقم باتش)`;
+    }
+  }else{
+    warnEl.style.display='none';
+  }
 }
 
 // حذف تشغيلة (باتش) بعينها من كارت الصنف — بينقص كميتها من إجمالي رصيد الصنف كمان
@@ -5660,6 +5743,23 @@ function recalculateAll(){
       if(row)it.stock=Math.max(0,row.balance);
     });
   }
+
+  // ── 3. تصحيح أي تضارب متراكم بين إجمالي الباتشات ورصيد الصنف الكلي ──
+  // (لو مجموع التشغيلات أكبر من الرصيد الفعلي لأي سبب قديم، بنقصّه بالأقدم صلاحية أولاً
+  //  عشان جدول الباتشات في كارت الصنف يفضل متوافق مع الرصيد الحقيقي دايماً)
+  S.items.forEach(it=>{
+    if(!it.batches||!it.batches.length)return;
+    const totalBatches=it.batches.reduce((s,b)=>s+(b.qty||0),0);
+    let excess=totalBatches-(it.stock||0);
+    if(excess<=0)return;
+    const sorted=it.batches.slice().sort((a,b)=>(b.expiry||'9999').localeCompare(a.expiry||'9999')); // الأبعد صلاحية الأول (أقل أولوية)
+    for(let i=0;i<sorted.length&&excess>0;i++){
+      const take=Math.min(sorted[i].qty||0,excess);
+      sorted[i].qty-=take;
+      excess-=take;
+    }
+    it.batches=it.batches.filter(b=>(b.qty||0)>0);
+  });
 
   save();renderItemsGrid();renderInventory();renderReceipts();updateStats();
   toast('✓ تمت إعادة الحساب الشاملة وتصحيح جميع الكميات','success');
