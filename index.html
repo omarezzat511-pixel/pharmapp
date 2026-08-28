@@ -17,9 +17,7 @@
 
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;900&family=Cairo:wght@300;400;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<!-- Firebase SDK تم تعطيلها (المزامنة السحابية ملغاة — البرنامج بيشتغل محلي بالكامل عن طريق localStorage) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <style>
 :root{--navy:#0B1929;--navy2:#112240;--teal:#0E6E8C;--teal2:#1589AA;--teal3:#64CCC5;--gold:#C9A84C;--gold2:#E8C97E;--gold3:#FBF0D0;--sage:#1A7A4A;--sage2:#2EAD6D;--sage3:#D4F5E5;--crimson:#B5302A;--crim2:#FDEEEE;--white:#FFFFFF;--off:#F7FAFC;--light:#EEF4F8;--border:#D0DCE8;--text1:#0B1929;--text2:#3D5269;--text3:#7A92A8;--shadow:0 4px 24px rgba(11,25,41,0.12);--shadow2:0 2px 8px rgba(11,25,41,0.08);--radius:12px;--radius2:8px;}
@@ -933,7 +931,7 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
 <body>
 
 <!-- ═══ LOGIN SCREEN (حماية بكلمة سر — Firebase Auth) ═══ -->
-<div id="loginScreen" style="position:fixed;inset:0;z-index:9999;background:linear-gradient(180deg,#0B1929,#112240);display:flex;align-items:center;justify-content:center;padding:20px;direction:rtl;font-family:'Tajawal',sans-serif;">
+<div id="loginScreen" style="position:fixed;inset:0;z-index:9999;background:linear-gradient(180deg,#0B1929,#112240);display:none;align-items:center;justify-content:center;padding:20px;direction:rtl;font-family:'Tajawal',sans-serif;">
   <div style="background:#fff;border-radius:16px;padding:32px 26px;width:100%;max-width:360px;box-shadow:0 20px 60px rgba(0,0,0,0.4);">
     <div style="text-align:center;margin-bottom:20px;">
       <div style="font-size:40px;">💊</div>
@@ -967,7 +965,6 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
   <div class="sidebar-sep"></div>
   <button class="nav-btn" onclick="showPage('backup')" id="nav-backup" title="حفظ واسترجاع">💾<span class="tip">حفظ واسترجاع</span></button>
   <button class="nav-btn" onclick="manualSave()" title="حفظ يدوي">💾<span class="tip">حفظ (Ctrl+S)</span></button>
-  <button class="nav-btn" onclick="doLogout()" title="تسجيل الخروج">🚪<span class="tip">تسجيل الخروج</span></button>
 </nav>
 
 <div class="main">
@@ -976,7 +973,7 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
     <div class="topbar-right">
       <button class="dm-toggle" onclick="openPrintCenter()" title="مركز الطباعة">🖨️ <span>طباعة</span></button>
       <div class="save-badge" id="saveBadge"><div class="save-dot"></div><span id="saveText">محفوظ تلقائياً</span></div>
-      <div class="save-badge" id="syncBadge" style="background:var(--light);color:var(--text3);"><span id="syncText">⏳ جاري الاتصال بالمزامنة...</span></div>
+      <div class="save-badge" id="syncBadge" style="display:none;background:var(--light);color:var(--text3);"><span id="syncText"></span></div>
       <button class="dm-toggle" id="dmToggle" onclick="toggleDarkMode()" title="الوضع الليلي">🌙 <span id="dmLabel">ليلي</span></button>
       <span class="date-label">📅</span>
       <input type="date" class="date-input" id="globalDate" onchange="onDateChange()">
@@ -2089,108 +2086,22 @@ try{
 }catch(e){}
 
 // ═══════════════════════════════════════════════════════════════
-// ══ CLOUD SYNC (Firebase Firestore) — مزامنة لحظية بين الأجهزة ══
+// ══ CLOUD SYNC — تم إلغاء المزامنة نهائياً ══
+// البرنامج بيشتغل الآن محلي بالكامل عن طريق localStorage بس، من غير أي اتصال بالإنترنت
+// أو Firebase. الدوال تحت اتسابت بنفس الأسماء (بدون أي تأثير حقيقي) عشان أي جزء تاني في
+// الكود بينادي عليها يفضل شغال عادي من غير أي تعديل أو كسر في باقي النظام.
 // ═══════════════════════════════════════════════════════════════
-const firebaseConfig={
-  apiKey:"AIzaSyAZTAuBYkg1SLBuEgm5rhu-WwW06BGP20c",
-  authDomain:"pharmacy-app-2026-1.firebaseapp.com",
-  projectId:"pharmacy-app-2026-1",
-  storageBucket:"pharmacy-app-2026-1.firebasestorage.app",
-  messagingSenderId:"14490151067",
-  appId:"1:14490151067:web:4a544bafa3f108bbb2be3e"
-};
 let fbDb=null, fbColl=null, fbOldDocRef=null, _fbReady=false, _applyingRemote=false, _fbSaveTimer=null;
-
-const SYNC_DOCS=[
-  {key:'daily',fields:['daily']},
-  {key:'archive',fields:['archive']},
-  {key:'items',fields:['items','nextId']},
-  {key:'patients',fields:['patients']},
-  {key:'receipts',fields:['receipts']},
-  {key:'inventory',fields:['inventory','activeInvMonth','archiveInventory']},
-  {key:'planning',fields:['orderPlanningOverrides']}
-];
-let _docStatus={};
-
-function setSyncStatus(text,bg,color){
-  const badge=document.getElementById('syncBadge');
-  const t=document.getElementById('syncText');
-  if(!badge||!t)return;
-  t.textContent=text;
-  badge.style.background=bg;badge.style.color=color;
-}
-
 let fbAuth=null, _cloudStarted=false;
+let _docStatus={};
+let _lastPushedJSON={};
+let _localDirtySince={};
 
-try{
-  firebase.initializeApp(firebaseConfig);
-  fbDb=firebase.firestore();
-  fbDb.enablePersistence({synchronizeTabs:true}).catch(function(){});
-  fbColl=fbDb.collection('pharmacy_data');
-  fbOldDocRef=fbDb.collection('pharmacy').doc('main'); // التصميم القديم (مستند واحد) — بيتستخدم مرة واحدة بس للترحيل
-  fbAuth=firebase.auth();
-  _fbReady=true;
+function setSyncStatus(){ /* المزامنة ملغاة — مفيش حاجة تتعرض */ }
 
-  // لو الجهاز أوفلاين ولسه فيه إشارة إن آخر تسجيل دخول كان ناجح على نفس الجهاز ده،
-  // منستناش استجابة Firebase (ممكن تتأخر أو متوصلش وهو أوفلاين) — نفتح التطبيق على طول،
-  // وبرضو بنسجل مستمع onAuthStateChanged عادي عشان يصحح الحالة أول ما ينجح يتأكد فعلياً.
-  if(!navigator.onLine && localStorage.getItem('pharma_lastLoginOk')==='1'){
-    document.getElementById('loginScreen').style.display='none';
-    if(!_cloudStarted){_cloudStarted=true;startCloudSync();}
-  }
+function doLogin(){ /* شاشة الدخول ملغاة مع إلغاء المزامنة */ }
 
-  fbAuth.onAuthStateChanged(function(user){
-    const screen=document.getElementById('loginScreen');
-    if(user){
-      try{localStorage.setItem('pharma_lastLoginOk','1');}catch(e){}
-      screen.style.display='none';
-      if(!_cloudStarted){_cloudStarted=true;startCloudSync();}
-    }else{
-      // لو إحنا أوفلاين، متلغيش الشاشة فورًا اعتمادًا على "مفيش مستخدم" —
-      // ده ممكن يكون بس لأن Firebase لسه مقدرش يتأكد من الجلسة القديمة بسبب انقطاع النت
-      if(navigator.onLine){
-        try{localStorage.removeItem('pharma_lastLoginOk');}catch(e){}
-        screen.style.display='flex';
-      }else if(localStorage.getItem('pharma_lastLoginOk')!=='1'){
-        screen.style.display='flex';
-      }
-    }
-  });
-}catch(e){
-  console.error('Firebase init failed',e);
-  setSyncStatus('⚠️ المزامنة غير متاحة','var(--crim2)','var(--crimson)');
-}
-
-function doLogin(){
-  const email=document.getElementById('loginEmail').value.trim();
-  const pass=document.getElementById('loginPassword').value;
-  const errBox=document.getElementById('loginError');
-  const btn=document.getElementById('loginBtn');
-  errBox.style.display='none';
-  if(!email||!pass){
-    errBox.textContent='برجاء إدخال الإيميل وكلمة المرور';
-    errBox.style.display='block';
-    return;
-  }
-  btn.disabled=true;btn.textContent='جاري الدخول...';
-  fbAuth.signInWithEmailAndPassword(email,pass).then(function(){
-    try{localStorage.setItem('pharma_lastLoginOk','1');}catch(e){}
-  }).catch(function(err){
-    let msg='بيانات الدخول غير صحيحة';
-    if(err.code==='auth/invalid-email')msg='صيغة الإيميل غير صحيحة';
-    if(err.code==='auth/too-many-requests')msg='محاولات كتير غلط — حاول تاني بعد شوية';
-    errBox.textContent=msg;
-    errBox.style.display='block';
-  }).finally(function(){
-    btn.disabled=false;btn.textContent='تسجيل الدخول';
-  });
-}
-
-function doLogout(){
-  if(!confirm('تسجيل الخروج من النظام؟'))return;
-  try{localStorage.removeItem('pharma_lastLoginOk');}catch(e){}
-  fbAuth.signOut();
-}
+function doLogout(){ /* شاشة الدخول ملغاة مع إلغاء المزامنة */ }
 
 function buildSyncPayload(){
   return{
@@ -2207,217 +2118,24 @@ function buildDocPayload(fields){
   return payload;
 }
 
-// كاش لآخر نسخة اتبعتت فعليًا لكل مستند — عشان لو "save()" حصل بسبب تعديل في قسم
-// (زي المرضى مثلاً) منبعتش تاني مستندات تانية (زي الأصناف) لسه زي ما هي من غير تغيير.
-// ده اللي بيبطّئ المزامنة فعليًا: كل save() كان بيبعت كل الأقسام بالكامل حتى لو معدلش فيها حاجة.
-let _lastPushedJSON={};
-function pushDocToCloud(key,fields){
-  if(!_fbReady||_applyingRemote)return;
-  const payload=buildDocPayload(fields);
-  const cmp=JSON.stringify(fields.map(function(f){return payload[f];}));
-  if(_lastPushedJSON[key]===cmp)return; // القسم ده متغيرش فعلاً — متبعتش حاجة
-  fbColl.doc(key).set(payload).then(function(){
-    _lastPushedJSON[key]=cmp;
-  }).catch(function(){
-    // هتتخزن محلياً وتتبعت تلقائي لما يرجع الاتصال — الحالة الحقيقية بتتحدث من onSnapshot
-  });
-}
-
-// كل استدعاء لـ save() بيبعت كل الأقسام ماعدا "اليومية" و"الوارد" — لأنهم بيدخل عليهم أكتر من جهاز
-// في نفس اللحظة عادةً، فبنستخدم لهم عمليات ذرية مخصصة (تحت) بدل الكتابة فوق القائمة بالكامل.
-function pushToCloud(){
-  SYNC_DOCS.forEach(function(d){
-    if(d.key==='daily'||d.key==='receipts')return;
-    pushDocToCloud(d.key,d.fields);
-  });
-}
-
-// إضافة مريض جديد لليومية — عملية ذرية (arrayUnion) بتضيف الصف من غير ما تلمس أي صفوف تانية،
-// فلو جهازين ضافوا مريضين مختلفين لنفس اليوم في نفس اللحظة بالظبط، الاتنين بيتسجلوا صح من غير ما أي حد يمسح التاني.
-// ملاحظة فنية: بنستخدم update() مش set(merge:true) لأن مسارات النقاط (dot-path) بتشتغل صح مع update() بس
-// — set() مع merge:true بيكتب فوق الحقل بالكامل لو استخدمنا معاه مسار منقط.
-function appendDailyRowToCloud(day,row){
-  if(!_fbReady)return;
-  const payload={_updatedAt:Date.now()};
-  payload['daily.'+day]=firebase.firestore.FieldValue.arrayUnion(row);
-  fbColl.doc('daily').update(payload).catch(function(err){
-    if(err && err.code==='not-found'){
-      const initPayload={_updatedAt:Date.now(),daily:{}};
-      initPayload.daily[day]=[row];
-      fbColl.doc('daily').set(initPayload,{merge:true}).catch(function(){});
-    }
-  });
-}
-
-// تعديل/حذف صف موجود في اليومية — بيكتب فوق يوم واحد بس (مش كل الأيام)، فمفيش تأثير على أيام تانية أو أقسام تانية
-function pushDailyDayToCloud(day){
-  if(!_fbReady)return;
-  const payload={_updatedAt:Date.now()};
-  payload['daily.'+day]=S.daily[day]||[];
-  fbColl.doc('daily').update(payload).catch(function(err){
-    if(err && err.code==='not-found'){
-      const initPayload={_updatedAt:Date.now(),daily:{}};
-      initPayload.daily[day]=S.daily[day]||[];
-      fbColl.doc('daily').set(initPayload,{merge:true}).catch(function(){});
-    }
-  });
-}
-
-// إضافة وارد جديد — عملية ذرية (arrayUnion) بنفس فكرة اليومية، عشان لو جهازين سجّلوا وارد مختلف في نفس اللحظة
-function appendReceiptToCloud(receipt){
-  if(!_fbReady)return;
-  fbColl.doc('receipts').update({
-    receipts:firebase.firestore.FieldValue.arrayUnion(receipt),
-    _updatedAt:Date.now()
-  }).catch(function(err){
-    if(err && err.code==='not-found'){
-      fbColl.doc('receipts').set({receipts:[receipt],_updatedAt:Date.now()},{merge:true}).catch(function(){});
-    }
-  });
-}
-
-// تعديل/حذف وارد موجود — بيكتب فوق قائمة الوارد بالكامل (نادر التزامن، عكس الإضافة)
-function pushReceiptsToCloud(){
-  pushDocToCloud('receipts',['receipts']);
-}
-
-// إضافة صنف جديد — تقوية إضافية سريعة بجانب المزامنة العادية لأصناف،
-// لتقليل احتمالية إن إضافة صنفين مختلفين من جهازين في نفس اللحظة يمسح حد التاني قبل ما تتزامن الكميات العادية
-function appendItemToCloud(item){
-  if(!_fbReady)return;
-  fbColl.doc('items').update({
-    items:firebase.firestore.FieldValue.arrayUnion(item),
-    _updatedAt:Date.now()
-  }).catch(function(err){
-    if(err && err.code==='not-found'){
-      fbColl.doc('items').set({items:[item],nextId:S.nextId,_updatedAt:Date.now()},{merge:true}).catch(function(){});
-    }
-  });
-}
-
-// بيسجل امتى آخر تعديل محلي حصل فعليًا لكل قسم — عشان لو رد فعل قديم من السحابة وصل متأخر
-// (بسبب تأخير في النت مثلاً)، مايكتبش فوق تعديل محلي أحدث لسه ما اتبعتش.
-// ملحوظة مهمة: كانت الدالة دي قبل كده بتحدّث "كل" الأقسام السبعة بتاريخ دلوقتي، في كل مرة
-// save() بتتنفذ — وده بيتنفذ كل 30 ثانية تلقائي (setInterval) حتى لو مفيش أي تعديل حصل فعلاً!
-// ده كان بيخلي localTs لأي قسم يفضل "حديث" على طول، فأي بيانات جايه من جهاز تاني عن طريق
-// السحابة كانت بتتقارن بتاريخ محلي حديث بشكل مصطنع وبالتالي بترفض/تتأخر تطبيقها — وده بالظبط
-// اللي بيحصل بشكل واضح لما ترجع أونلاين بعد فترة اشتغال أوفلاين (كل الأقسام "حديثة" مصطنعياً،
-// فأي تحديثات حقيقية جايه من السحابة بتتأخر أو متتطبقش فورًا).
-let _localDirtySince={};
-function markAllDirty(){
-  const now=Date.now();
-  SYNC_DOCS.forEach(function(d){
-    // نحدّث تاريخ القسم بس لو فعلاً اتغيّر عن آخر نسخة اتبعتت للسحابة — مش كل الأقسام السبعة
-    const payload=buildDocPayload(d.fields);
-    const cmp=JSON.stringify(d.fields.map(function(f){return payload[f];}));
-    if(_lastPushedJSON[d.key]!==cmp){
-      _localDirtySince[d.key]=now;
-    }
-  });
-}
-
-function applyDocData(fields,data){
-  fields.forEach(function(f){
-    if(data[f]!==undefined)S[f]=data[f];
-  });
-}
-
-// دمج إضافي آمن: بيرجّع نفس المصفوفة المحلية من غير تغيير لو مفيش عناصر جديدة،
-// أو نسخة جديدة فيها العناصر المحلية + أي عنصر موجود بس في المصفوفة التانية (من السحابة)
-// ومش موجود محليًا — من غير ما يلمس أو يمسح أي عنصر محلي موجود بالفعل (تعديل أو حذف).
-function mergeAdditiveEntries(localArr,remoteArr,keyFn){
-  if(!Array.isArray(remoteArr)||!remoteArr.length)return localArr;
-  const localKeys=new Set((localArr||[]).map(keyFn));
-  const additions=remoteArr.filter(function(r){return !localKeys.has(keyFn(r));});
-  if(!additions.length)return localArr;
-  return (localArr||[]).concat(additions);
-}
-
-function updateAggregateStatus(){
-  const vals=Object.values(_docStatus);
-  if(!vals.length)return;
-  if(vals.indexOf('pending')!==-1){setSyncStatus('🔄 جاري الحفظ في السحابة...','var(--gold3)','#8a6d1a');}
-  else if(vals.indexOf('cache')!==-1){setSyncStatus('📴 غير متصل — هيتزامن لما يرجع النت','var(--gold3)','#8a6d1a');}
-  else{setSyncStatus('☁️ متزامن (تأكد من السيرفر)','var(--sage3)','var(--sage2)');}
-}
+function pushDocToCloud(){ /* المزامنة ملغاة */ }
+function pushToCloud(){ /* المزامنة ملغاة */ }
+function appendDailyRowToCloud(){ /* المزامنة ملغاة */ }
+function pushDailyDayToCloud(){ /* المزامنة ملغاة */ }
+function appendReceiptToCloud(){ /* المزامنة ملغاة */ }
+function pushReceiptsToCloud(){ /* المزامنة ملغاة */ }
+function appendItemToCloud(){ /* المزامنة ملغاة */ }
+function markAllDirty(){ /* المزامنة ملغاة */ }
+function applyDocData(){ /* المزامنة ملغاة */ }
+function mergeAdditiveEntries(localArr){ return localArr; }
+function updateAggregateStatus(){ /* المزامنة ملغاة */ }
 
 function renderAll(){
   renderItemsGrid();renderDaily();renderArchive();renderReceipts();renderInventory();
   updateStats();updateBackupStats();renderPatientsDB();renderStockAlertBanner();
 }
 
-function startCloudSync(){
-  setSyncStatus('⏳ جاري الاتصال بالمزامنة...','var(--light)','var(--text3)');
-
-  // ترحيل تلقائي لمرة واحدة من التصميم القديم (مستند واحد) لو الأقسام الجديدة لسه فاضية
-  fbOldDocRef.get().then(function(oldDoc){
-    if(!oldDoc.exists)return;
-    const oldData=oldDoc.data();
-    SYNC_DOCS.forEach(function(d){
-      fbColl.doc(d.key).get().then(function(newDoc){
-        if(newDoc.exists)return;
-        const payload={_updatedAt:Date.now()};
-        d.fields.forEach(function(f){if(oldData[f]!==undefined)payload[f]=oldData[f];});
-        fbColl.doc(d.key).set(payload).catch(function(){});
-      });
-    });
-  }).catch(function(){});
-
-  SYNC_DOCS.forEach(function(d){
-    _docStatus[d.key]='pending';
-    fbColl.doc(d.key).onSnapshot({includeMetadataChanges:true},function(doc){
-      if(!doc.exists){
-        pushDocToCloud(d.key,d.fields);
-        return;
-      }
-      const data=doc.data();
-      const remoteTs=data._updatedAt||0;
-      const localTs=_localDirtySince[d.key]||0;
-      // لو البيانات القادمة من السيرفر أقدم من آخر تعديل محلي عندي ولسه ما اتأكدش إنه وصل،
-      // تجاهلها عشان ميحصلش استرجاع لبيانات قديمة فوق تعديل جديد
-      if(remoteTs<localTs && !doc.metadata.hasPendingWrites){
-        // حتى لو رفضنا التحديث الكامل (عشان مايكتبش فوق تعديل محلي لسه ما اتبعتش)،
-        // لازم ندمج أي "عناصر جديدة" (صنف جديد / مريض جديد) اتضافت من جهاز تاني في نفس الوقت تقريبًا —
-        // عشان حماية arrayUnion بتاعة الإضافة متتلغيش لما جهازنا يبعت نسخته الكاملة بعد كده.
-        // ده بيضيف بس، ومش بيعدّل ولا بيمسح أي عنصر محلي موجود.
-        if(d.key==='items'&&Array.isArray(data.items)){
-          const merged=mergeAdditiveEntries(S.items,data.items,function(x){return String(x.id);});
-          if(merged!==S.items){
-            S.items=merged;renderAll();
-            try{localStorage.setItem('pharm_v4',JSON.stringify(buildSyncPayload()));}catch(e){}
-          }
-        }else if(d.key==='patients'&&Array.isArray(data.patients)){
-          const merged=mergeAdditiveEntries(S.patients,data.patients,function(x){return x.id?('id:'+x.id):('name:'+x.name);});
-          if(merged!==S.patients){
-            S.patients=merged;renderAll();
-            try{localStorage.setItem('pharm_v4',JSON.stringify(buildSyncPayload()));}catch(e){}
-          }
-        }
-        updateAggregateStatus();
-        return;
-      }
-      _applyingRemote=true;
-      applyDocData(d.fields,data);
-      try{
-        _lastPushedJSON[d.key]=JSON.stringify(d.fields.map(function(f){return data[f];}));
-      }catch(e){}
-      try{localStorage.setItem('pharm_v4',JSON.stringify(buildSyncPayload()));}catch(e){}
-      renderAll();
-      _applyingRemote=false;
-
-      if(doc.metadata.hasPendingWrites)_docStatus[d.key]='pending';
-      else if(doc.metadata.fromCache)_docStatus[d.key]='cache';
-      else _docStatus[d.key]='synced';
-      updateAggregateStatus();
-    },function(err){
-      console.error('Cloud sync error ('+d.key+')',err);
-      setSyncStatus('⚠️ خطأ في المزامنة','var(--crim2)','var(--crimson)');
-    });
-  });
-}
-
-window.addEventListener('online',function(){setSyncStatus('☁️ رجع النت — بيتزامن...','var(--sage3)','var(--sage2)');pushToCloud();});
-window.addEventListener('offline',function(){setSyncStatus('📴 غير متصل — هيتزامن لما يرجع النت','var(--gold3)','#8a6d1a');});
+function startCloudSync(){ /* المزامنة ملغاة — البرنامج بيعتمد بالكامل على localStorage */ }
 
 function save(){
   try{

@@ -1,18 +1,16 @@
 // Service worker لنظام صرف الأدوية
 // ملاحظة: هذا الملف إضافي فقط ولا يغيّر أي منطق داخل التطبيق نفسه.
-const CACHE_NAME = 'pharma-cache-v7';
+const CACHE_NAME = 'pharma-cache-v8';
 const APP_SHELL = [
   './',
   './index.html',
   './manifest.json',
   './icon-192.png',
   './icon-512.png',
-  // مكتبات خارجية ضرورية عشان تسجيل الدخول والمزامنة والطباعة يشتغلوا حتى لو الجهاز أوفلاين
+  // مكتبات خارجية ضرورية عشان التصدير والطباعة يشتغلوا حتى لو الجهاز أوفلاين
+  // (المزامنة السحابية اتلغت، فمكتبات Firebase مبقتش لازمة هنا)
   'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js',
-  'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js',
-  'https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js',
-  'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js',
-  'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js'
+  'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js'
 ];
 
 self.addEventListener('install', (event) => {
