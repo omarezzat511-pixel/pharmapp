@@ -755,6 +755,16 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
 .a4-sign-row{display:flex;justify-content:space-between;margin-top:40px;}
 .a4-sign-box{text-align:center;font-size:11px;color:#333;width:30%;}
 .a4-sign-box .a4-sign-line{border-top:1.5px solid #333;margin-top:36px;padding-top:4px;}
+/* شيت الأصناف المبسط (اسم الصنف + الوحدة فقط) — أعمدة جنب بعض في نفس الصفحة */
+.a4-multicol-wrap{display:flex;gap:10px;direction:rtl;align-items:flex-start;}
+.a4-multicol-wrap .a4-col-table{flex:1;min-width:0;}
+.a4-multicol-wrap .a4-col-table th{background:#0B1929;color:#fff;padding:5px 4px;text-align:center;font-weight:900;font-size:9px;border:1px solid #333;}
+.a4-multicol-wrap .a4-col-table th.a4-name-col{text-align:right;}
+.a4-multicol-wrap .a4-col-table td{padding:3.5px 5px;border:1px solid #999;font-weight:700;color:#111;font-size:10px;}
+.a4-multicol-wrap .a4-col-table td.a4-name-cell{text-align:right;font-weight:800;}
+.a4-multicol-wrap .a4-col-table td.a4-unit-cell{text-align:center;width:34%;}
+.a4-multicol-wrap .a4-col-table{border-collapse:collapse;width:100%;}
+.a4-multicol-wrap .a4-col-table tr:nth-child(even) td{background:#F2F5F8;}
 /* نسخة أبيض وأسود بسيطة — تستخدم لطباعة اليومية بدون أي ألوان */
 .a4-page-bw .a4-header{border-bottom:3px double #000;}
 .a4-page-bw .a4-header h1{color:#000;}
@@ -5243,26 +5253,25 @@ function printItemsInStock(){
   const inStock=S.items.filter(it=>(it.stock||0)>0);
   if(!inStock.length){toast('لا توجد أصناف برصيد متاح للطباعة','error');return;}
   const sorted=[...inStock].sort((a,b)=>a.name.localeCompare(b.name,'ar'));
-  const ROWS_PER_PAGE=32;
+  const COLS=3;            // عدد الأعمدة جنب بعض في نفس الصفحة
+  const ROWS_PER_COL=32;   // أقصى عدد أصناف في كل عمود قبل ما نحتاج صفحة تانية
+  const ITEMS_PER_PAGE=COLS*ROWS_PER_COL;
   const pages=[];
-  for(let i=0;i<sorted.length;i+=ROWS_PER_PAGE){pages.push(sorted.slice(i,i+ROWS_PER_PAGE));}
+  for(let i=0;i<sorted.length;i+=ITEMS_PER_PAGE){pages.push(sorted.slice(i,i+ITEMS_PER_PAGE));}
   if(!pages.length)pages.push([]);
-  const fmtNum=function(v){return (v||0).toLocaleString('ar-EG',{minimumFractionDigits:2,maximumFractionDigits:2});};
   const today=new Date().toLocaleDateString('ar-EG');
   let html='';
-  pages.forEach(function(pageRows,pageIdx){
+  pages.forEach(function(pageItems,pageIdx){
     const isLastPage=pageIdx===pages.length-1;
-    const rowsHtml=pageRows.map(function(it,i){
-      const stk=it.stock||0;
-      const balColor=stk<=LOW_STOCK_THRESHOLD?'#B7950B':'#1A7A4A';
-      let tr='<tr>';
-      tr+='<td>'+(pageIdx*ROWS_PER_PAGE+i+1)+'</td>';
-      tr+='<td class="a4-name-cell">'+it.name+'</td>';
-      tr+='<td>'+it.unit+'</td>';
-      tr+='<td class="a4-bal" style="color:'+balColor+';">'+stk+'</td>';
-      tr+='<td>'+(it.price>0?fmtNum(it.price):'\u2014')+'</td>';
-      tr+='</tr>';
-      return tr;
+    // نقسم أصناف الصفحة على الأعمدة: أول ROWS_PER_COL صنف في العمود الأول، وبعدين يكمل في اللي جنبه
+    const columns=[];
+    for(let c=0;c<COLS;c++){columns.push(pageItems.slice(c*ROWS_PER_COL,(c+1)*ROWS_PER_COL));}
+    const colsHtml=columns.map(function(colItems){
+      if(!colItems.length)return '<div class="a4-col-table"></div>';
+      const rows=colItems.map(function(it){
+        return '<tr><td class="a4-name-cell">'+it.name+'</td><td class="a4-unit-cell">'+it.unit+'</td></tr>';
+      }).join('');
+      return '<table class="a4-col-table"><thead><tr><th class="a4-name-col">اسم الصنف</th><th>الوحدة</th></tr></thead><tbody>'+rows+'</tbody></table>';
     }).join('');
     let signHtml='';
     if(isLastPage){
@@ -5277,13 +5286,7 @@ function printItemsInStock(){
     page+='<div class="a4-sub">نظام صرف الأدوية | تاريخ الطباعة: '+today+'</div></div>';
     page+='<div class="a4-page-num">صفحة '+(pageIdx+1)+' من '+pages.length+'</div>';
     page+='</div>';
-    page+='<table class="a4-table"><thead><tr>';
-    page+='<th style="width:28px;">#</th>';
-    page+='<th class="a4-name-col">اسم الصنف</th>';
-    page+='<th>الوحدة</th>';
-    page+='<th>الرصيد الحالي</th>';
-    page+='<th>سعر الوحدة</th>';
-    page+='</tr></thead><tbody>'+rowsHtml+'</tbody></table>';
+    page+='<div class="a4-multicol-wrap">'+colsHtml+'</div>';
     page+=signHtml;
     page+='<div class="a4-footer"><span>عدد الأصناف المتوفرة: '+sorted.length+'</span><span>'+today+'</span></div>';
     page+='</div>';
