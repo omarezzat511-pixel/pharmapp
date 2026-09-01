@@ -755,16 +755,18 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
 .a4-sign-row{display:flex;justify-content:space-between;margin-top:40px;}
 .a4-sign-box{text-align:center;font-size:11px;color:#333;width:30%;}
 .a4-sign-box .a4-sign-line{border-top:1.5px solid #333;margin-top:36px;padding-top:4px;}
-/* شيت الأصناف المبسط (اسم الصنف + الوحدة فقط) — أعمدة جنب بعض في نفس الصفحة */
-.a4-multicol-wrap{display:flex;gap:10px;direction:rtl;align-items:flex-start;}
-.a4-multicol-wrap .a4-col-table{flex:1;min-width:0;}
-.a4-multicol-wrap .a4-col-table th{background:#0B1929;color:#fff;padding:5px 4px;text-align:center;font-weight:900;font-size:9px;border:1px solid #333;}
-.a4-multicol-wrap .a4-col-table th.a4-name-col{text-align:right;}
-.a4-multicol-wrap .a4-col-table td{padding:3.5px 5px;border:1px solid #999;font-weight:700;color:#111;font-size:10px;}
-.a4-multicol-wrap .a4-col-table td.a4-name-cell{text-align:right;font-weight:800;}
-.a4-multicol-wrap .a4-col-table td.a4-unit-cell{text-align:center;width:34%;}
-.a4-multicol-wrap .a4-col-table{border-collapse:collapse;width:100%;}
-.a4-multicol-wrap .a4-col-table tr:nth-child(even) td{background:#F2F5F8;}
+/* شيت الأصناف المبسط (اسم الصنف + الوحدة فقط) — أعمدة جنب بعض، بتمطط تلقائي عشان تملى الورقة كلها */
+.a4-page.a4-fill{height:297mm;min-height:auto;display:flex;flex-direction:column;overflow:hidden;}
+.a4-multicol-wrap{display:flex;gap:10px;direction:rtl;flex:1;min-height:0;}
+.a4-col-flex{flex:1;min-width:0;display:flex;flex-direction:column;border:1px solid #333;}
+.a4-col-flex .a4-col-head{display:flex;background:#0B1929;color:#fff;font-weight:900;font-size:9.5px;flex-shrink:0;}
+.a4-col-flex .a4-col-head>div{flex:1.8;padding:6px 4px;text-align:center;border-left:1px solid rgba(255,255,255,.25);}
+.a4-col-flex .a4-col-head>div:last-child{flex:1;border-left:none;}
+.a4-col-flex .a4-col-body{flex:1;display:flex;flex-direction:column;min-height:0;}
+.a4-col-flex .a4-row{flex:1;display:flex;border-top:1px solid #999;align-items:center;min-height:0;}
+.a4-col-flex .a4-row:nth-child(even){background:#F2F5F8;}
+.a4-col-flex .a4-row .a4-name-cell{flex:1.8;padding:2px 6px;text-align:right;font-weight:800;font-size:10.5px;color:#111;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.a4-col-flex .a4-row .a4-unit-cell{flex:1;padding:2px 6px;text-align:center;font-weight:700;font-size:10.5px;color:#111;border-right:1px solid #ccc;height:100%;display:flex;align-items:center;justify-content:center;}
 /* نسخة أبيض وأسود بسيطة — تستخدم لطباعة اليومية بدون أي ألوان */
 .a4-page-bw .a4-header{border-bottom:3px double #000;}
 .a4-page-bw .a4-header h1{color:#000;}
@@ -2148,18 +2150,30 @@ function renderAll(){
 function startCloudSync(){ /* المزامنة ملغاة — البرنامج بيعتمد بالكامل على localStorage */ }
 
 function save(){
+  let ok=true,failReason='';
   try{
     localStorage.setItem('pharm_v4',JSON.stringify(buildSyncPayload()));
-  }catch(e){}
+  }catch(e){
+    ok=false;
+    failReason=(e&&e.name==='QuotaExceededError')?'مساحة التخزين في المتصفح ممتلئة':'خطأ غير متوقع';
+    console.error('save() failed:',e);
+  }
   markAllDirty();
   if(!_applyingRemote){
     clearTimeout(_fbSaveTimer);
     _fbSaveTimer=setTimeout(pushToCloud,400); // تجميع التحديثات المتقاربة في طلب واحد
   }
   const b=document.getElementById('saveBadge');
-  b.style.background='var(--sage3)';b.style.color='var(--sage2)';
-  document.getElementById('saveText').textContent='تم الحفظ ✓';
-  setTimeout(()=>{document.getElementById('saveText').textContent='محفوظ تلقائياً';},2000);
+  if(ok){
+    b.style.background='var(--sage3)';b.style.color='var(--sage2)';
+    document.getElementById('saveText').textContent='تم الحفظ ✓';
+    setTimeout(()=>{document.getElementById('saveText').textContent='محفوظ تلقائياً';},2000);
+  }else{
+    b.style.background='var(--crim2)';b.style.color='var(--crimson)';
+    document.getElementById('saveText').textContent='⚠️ فشل الحفظ!';
+    toast('فشل حفظ التعديل: '+failReason+' — التعديل ده لسه مش محفوظ، حاول تفضي مساحة أو استخدم متصفح تاني','error');
+  }
+  return ok;
 }
 function manualSave(){save();toast('تم الحفظ ✓','success');}
 setInterval(save,30000);
@@ -2546,12 +2560,15 @@ function transferToDaily(){
   if(!S.daily[date])S.daily[date]=[];
   const obj={};S.currentItems.forEach(i=>{obj[i.itemName]=(obj[i.itemName]||0)+i.qty;});
   const batchAllocations={};
+  const unmatchedItems=[];
   // Deduct from stock
   Object.entries(obj).forEach(([itemName,qty])=>{
     const it=S.items.find(i=>i.name===itemName);
     if(it){
       it.stock=Math.max(0,(it.stock||0)-qty);
       batchAllocations[itemName]=deductBatchesFIFO(it,qty); // خصم نفس الكمية من التشغيلات (الأقرب صلاحية الأول) + تسجيل التفاصيل عشان نقدر نرجعها لو المريض اتحذف بعدين
+    }else{
+      unmatchedItems.push(itemName); // الصنف ده مش موجود في قائمة الأصناف — الصرف اتسجل بس رصيده مش هيتنقص!
     }
   });
   const newDailyRow={patientName:name,patientId:id,items:obj,batchAllocations:batchAllocations};
@@ -2570,6 +2587,9 @@ function transferToDaily(){
   S.currentItems=[];renderCurrentItems();updateStats();
   document.getElementById('patientName').focus();
   toast(`✓ تم ترحيل "${name}" إلى يومية ${date}`,'success');
+  if(unmatchedItems.length){
+    toast('⚠️ تنبيه: الصنف "'+unmatchedItems.join('، ')+'" مش موجود في قائمة الأصناف الحالية — الصرف اتسجل في اليومية بس رصيد الصنف مش هيتنقص! راجع اسم الصنف من صفحة الأصناف.','error');
+  }
   // Check stock after transfer
   const affectedItems=Object.keys(obj).map(n=>S.items.find(i=>i.name===n)).filter(Boolean);
   checkAndAlertStock(affectedItems);
@@ -3892,16 +3912,22 @@ function savePatientEdit(){
     }
   });
   const newBatchAllocations={};
+  const unmatchedEditItems=[];
   Object.entries(obj).forEach(([itemName,qty])=>{
     const it=S.items.find(i=>i.name===itemName);
     if(it){
       it.stock=Math.max(0,(it.stock||0)-qty);
       newBatchAllocations[itemName]=deductBatchesFIFO(it,qty);
+    }else{
+      unmatchedEditItems.push(itemName);
     }
   });
 
   S.daily[editCtx.day][editCtx.idx]={patientName:name,patientId:document.getElementById('editPatientId').value.trim(),items:obj,batchAllocations:newBatchAllocations};
   save();pushDailyDayToCloud(editCtx.day);renderDaily();updateStats();renderInventory();renderItemsGrid();closeModal('editPatientModal');toast('تم حفظ التعديلات ✓','success');
+  if(unmatchedEditItems.length){
+    toast('⚠️ تنبيه: الصنف "'+unmatchedEditItems.join('، ')+'" مش موجود في قائمة الأصناف الحالية — رصيده مش هيتنقص!','error');
+  }
 }
 function deletePatientRow(){
   if(!confirm('حذف هذا المريض من اليومية نهائياً؟'))return;
@@ -4453,11 +4479,13 @@ function exportDayXL(day,data){
 // ══ ITEM CARD (كارت الصنف — الباتشات وتواريخ الانتهاء) ═══════════
 // ═══════════════════════════════════════════════════════════════
 let _itemCardId=null;
+let _itemCardEditingIdx=null; // الفهرس (في الترتيب المعروض) بتاع التشغيلة اللي بتتعدل دلوقتي، لو فيه
 
 function openItemCardModal(id){
   const it=S.items.find(i=>String(i.id)===String(id));
   if(!it)return;
   _itemCardId=id;
+  _itemCardEditingIdx=null;
   document.getElementById('itemCardName').textContent=it.name;
   document.getElementById('itemCardUnit').textContent='الوحدة: '+it.unit+(it.note?' · '+it.note:'');
   renderItemCardBatches();
@@ -4478,6 +4506,14 @@ function renderItemCardBatches(){
   }else{
     noData.style.display='none';
     body.innerHTML=batches.map(function(b,i){
+      if(i===_itemCardEditingIdx){
+        return '<tr>'
+          +'<td><input class="form-input" id="itemCardEditBatch" value="'+(b.batch||'').replace(/"/g,'&quot;')+'" placeholder="مثال: B2026-045" style="padding:5px 7px;font-size:12.5px;"></td>'
+          +'<td><input class="form-input" id="itemCardEditExpiry" type="date" value="'+(b.expiry||'')+'" style="padding:5px 7px;font-size:12.5px;"></td>'
+          +'<td><input class="form-input qty" id="itemCardEditQty" type="number" min="0.01" step="any" value="'+b.qty+'" style="padding:5px 7px;font-size:12.5px;"></td>'
+          +'<td style="text-align:center;white-space:nowrap;"><button class="btn btn-sm btn-primary" onclick="saveItemBatchEdit('+i+')" title="حفظ">✓</button> <button class="btn btn-sm" style="background:var(--light);color:var(--text2)" onclick="cancelItemBatchEdit()" title="إلغاء">✕</button></td>'
+          +'</tr>';
+      }
       let expiryStyle='';
       if(b.expiry){
         if(b.expiry<today)expiryStyle='color:var(--crimson);font-weight:900;';
@@ -4487,7 +4523,7 @@ function renderItemCardBatches(){
         }
       }
       return '<tr><td class="a4-name-cell">'+(b.batch||'—')+'</td><td style="'+expiryStyle+'">'+(b.expiry?fmtDate(b.expiry):'—')+'</td><td>'+b.qty+'</td>'
-        +'<td style="text-align:center;"><button class="btn btn-sm btn-danger" onclick="removeItemBatch('+i+')" title="حذف هذه التشغيلة">✕</button></td></tr>';
+        +'<td style="text-align:center;white-space:nowrap;"><button class="btn btn-sm btn-warn" onclick="editItemBatchRow('+i+')" title="تعديل هذه التشغيلة">✏</button> <button class="btn btn-sm btn-danger" onclick="removeItemBatch('+i+')" title="حذف هذه التشغيلة">✕</button></td></tr>';
     }).join('');
   }
   document.getElementById('itemCardTotal').textContent=(it.stock||0)+' '+it.unit;
@@ -4521,7 +4557,42 @@ function removeItemBatch(sortedIdx){
   toast('تم حذف التشغيلة','success');
 }
 
-// إضافة تشغيلة (باتش) مباشرة من جوه كارت الصنف — من غير المرور على شاشة الوارد
+// بدء تعديل تشغيلة (باتش) معينة — بيفتح حقول التعديل جوه الصف نفسه
+function editItemBatchRow(sortedIdx){
+  _itemCardEditingIdx=sortedIdx;
+  renderItemCardBatches();
+}
+
+function cancelItemBatchEdit(){
+  _itemCardEditingIdx=null;
+  renderItemCardBatches();
+}
+
+// حفظ تعديل تشغيلة (باتش) — بيعدّل رقم الباتش وتاريخ الانتهاء والكمية، وبيضبط رصيد الصنف على الفرق في الكمية
+function saveItemBatchEdit(sortedIdx){
+  const it=S.items.find(i=>String(i.id)===String(_itemCardId));
+  if(!it||!it.batches)return;
+  const batches=it.batches.filter(b=>(b.qty||0)>0).slice().sort((a,b)=>(a.expiry||'9999').localeCompare(b.expiry||'9999'));
+  const target=batches[sortedIdx];
+  if(!target)return;
+  const realIdx=it.batches.indexOf(target);
+  if(realIdx<0)return;
+
+  const newBatch=document.getElementById('itemCardEditBatch').value.trim();
+  const newExpiry=document.getElementById('itemCardEditExpiry').value;
+  const newQty=parseFloat(document.getElementById('itemCardEditQty').value);
+  if(!newQty||newQty<=0){toast('أدخل كمية صحيحة','error');return;}
+
+  const qtyDiff=newQty-(target.qty||0); // الفرق بين الكمية الجديدة والقديمة بيتضاف/بيتنقص من رصيد الصنف عشان يفضل متسق
+  it.stock=Math.max(0,(it.stock||0)+qtyDiff);
+  it.batches[realIdx]={batch:newBatch,expiry:newExpiry||'',qty:newQty};
+
+  _itemCardEditingIdx=null;
+  save();renderItemCardBatches();renderItemsGrid();
+  toast('✓ تم تعديل التشغيلة','success');
+}
+
+
 function addItemBatchDirect(){
   const it=S.items.find(i=>String(i.id)===String(_itemCardId));
   if(!it)return;
@@ -5253,7 +5324,7 @@ function printItemsInStock(){
   const inStock=S.items.filter(it=>(it.stock||0)>0);
   if(!inStock.length){toast('لا توجد أصناف برصيد متاح للطباعة','error');return;}
   const sorted=[...inStock].sort((a,b)=>a.name.localeCompare(b.name,'ar'));
-  const COLS=3;            // عدد الأعمدة جنب بعض في نفس الصفحة
+  const COLS=3;            // أقصى عدد أعمدة جنب بعض في نفس الصفحة
   const ROWS_PER_COL=32;   // أقصى عدد أصناف في كل عمود قبل ما نحتاج صفحة تانية
   const ITEMS_PER_PAGE=COLS*ROWS_PER_COL;
   const pages=[];
@@ -5263,15 +5334,17 @@ function printItemsInStock(){
   let html='';
   pages.forEach(function(pageItems,pageIdx){
     const isLastPage=pageIdx===pages.length-1;
-    // نقسم أصناف الصفحة على الأعمدة: أول ROWS_PER_COL صنف في العمود الأول، وبعدين يكمل في اللي جنبه
+    // بنستخدم بس عدد الأعمدة اللي محتاجينه فعلاً، وبنوزّع الأصناف بالتساوي عليهم
+    // عشان كل عمود يمتلئ ويمطط لآخر الصفحة (بدل ما يمتلي عمود ويسيب اللي بعده فاضي)
+    const activeCols=Math.min(COLS,Math.max(1,Math.ceil(pageItems.length/ROWS_PER_COL)));
+    const perCol=Math.ceil(pageItems.length/activeCols)||1;
     const columns=[];
-    for(let c=0;c<COLS;c++){columns.push(pageItems.slice(c*ROWS_PER_COL,(c+1)*ROWS_PER_COL));}
+    for(let c=0;c<activeCols;c++){columns.push(pageItems.slice(c*perCol,(c+1)*perCol));}
     const colsHtml=columns.map(function(colItems){
-      if(!colItems.length)return '<div class="a4-col-table"></div>';
       const rows=colItems.map(function(it){
-        return '<tr><td class="a4-name-cell">'+it.name+'</td><td class="a4-unit-cell">'+it.unit+'</td></tr>';
+        return '<div class="a4-row"><div class="a4-name-cell">'+it.name+'</div><div class="a4-unit-cell">'+it.unit+'</div></div>';
       }).join('');
-      return '<table class="a4-col-table"><thead><tr><th class="a4-name-col">اسم الصنف</th><th>الوحدة</th></tr></thead><tbody>'+rows+'</tbody></table>';
+      return '<div class="a4-col-flex"><div class="a4-col-head"><div>اسم الصنف</div><div>الوحدة</div></div><div class="a4-col-body">'+rows+'</div></div>';
     }).join('');
     let signHtml='';
     if(isLastPage){
@@ -5280,7 +5353,7 @@ function printItemsInStock(){
       signHtml+='<div class="a4-sign-box"><div class="a4-sign-line">مدير الصيادلة</div></div>';
       signHtml+='</div>';
     }
-    let page='<div class="a4-page">';
+    let page='<div class="a4-page a4-fill">';
     page+='<div class="a4-header">';
     page+='<div><h1>📋 شيت الأصناف المتوفرة بالصيدلية</h1>';
     page+='<div class="a4-sub">نظام صرف الأدوية | تاريخ الطباعة: '+today+'</div></div>';
@@ -5457,13 +5530,25 @@ function recalculateAll(){
 
   // ── 2. إعادة حساب stock لكل صنف من الجرد ──
   const latestMk=Object.keys(S.inventory).sort().pop();
-  if(latestMk){
-    const inv=S.inventory[latestMk];
-    S.items.forEach(it=>{
-      const row=inv.items.find(r=>r.name===it.name);
-      if(row)it.stock=Math.max(0,row.balance);
-    });
-  }
+  const inv=latestMk?S.inventory[latestMk]:null;
+  S.items.forEach(it=>{
+    const row=inv?inv.items.find(r=>r.name===it.name):null;
+    if(row){
+      it.stock=Math.max(0,row.balance);
+    }else{
+      // الصنف ده مش موجود في آخر شهر جرد (مثلاً اتضاف بعد إقفال الجرد) —
+      // بنحسب رصيده من إجمالي الوارد ناقص إجمالي المصروف من كل السجلات بدل ما نسيبه زي ما هو غلط
+      const totalIn=S.receipts.filter(r=>r.itemName===it.name).reduce((s,r)=>s+(r.qty||0),0);
+      let totalOut=0;
+      const allDaysAll={...S.daily,...S.archive};
+      Object.values(allDaysAll).forEach(dayRows=>{
+        (dayRows||[]).forEach(pat=>{
+          totalOut+=(pat.items&&pat.items[it.name])||0;
+        });
+      });
+      it.stock=Math.max(0,totalIn-totalOut);
+    }
+  });
 
   // ── 3. تصحيح أي تضارب متراكم بين إجمالي الباتشات ورصيد الصنف الكلي ──
   // (لو مجموع التشغيلات أكبر من الرصيد الفعلي لأي سبب قديم، بنقصّه بالأقدم صلاحية أولاً
