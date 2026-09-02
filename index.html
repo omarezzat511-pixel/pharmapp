@@ -4548,10 +4548,9 @@ function removeItemBatch(sortedIdx){
   const batches=it.batches.filter(b=>(b.qty||0)>0).slice().sort((a,b)=>(a.expiry||'9999').localeCompare(b.expiry||'9999'));
   const target=batches[sortedIdx];
   if(!target)return;
-  if(!confirm('حذف تشغيلة "'+(target.batch||'بدون رقم')+'" (الكمية: '+target.qty+')؟\nهيتنقص من إجمالي رصيد الصنف كمان.'))return;
+  if(!confirm('حذف تشغيلة "'+(target.batch||'بدون رقم')+'" (الكمية: '+target.qty+')؟\nملحوظة: ده هيشيل التشغيلة من التقسيم بس، ومش هيأثر على إجمالي رصيد الصنف.'))return;
   const realIdx=it.batches.indexOf(target);
   if(realIdx<0)return;
-  it.stock=Math.max(0,(it.stock||0)-target.qty);
   it.batches.splice(realIdx,1);
   save();renderItemCardBatches();renderItemsGrid();
   toast('تم حذف التشغيلة','success');
@@ -4568,7 +4567,7 @@ function cancelItemBatchEdit(){
   renderItemCardBatches();
 }
 
-// حفظ تعديل تشغيلة (باتش) — بيعدّل رقم الباتش وتاريخ الانتهاء والكمية، وبيضبط رصيد الصنف على الفرق في الكمية
+// حفظ تعديل تشغيلة (باتش) — بيعدّل رقم الباتش وتاريخ الانتهاء والكمية بتاعتها بس (تقسيم داخلي للرصيد الحالي)، من غير ما يأثر على إجمالي رصيد الصنف
 function saveItemBatchEdit(sortedIdx){
   const it=S.items.find(i=>String(i.id)===String(_itemCardId));
   if(!it||!it.batches)return;
@@ -4583,8 +4582,6 @@ function saveItemBatchEdit(sortedIdx){
   const newQty=parseFloat(document.getElementById('itemCardEditQty').value);
   if(!newQty||newQty<=0){toast('أدخل كمية صحيحة','error');return;}
 
-  const qtyDiff=newQty-(target.qty||0); // الفرق بين الكمية الجديدة والقديمة بيتضاف/بيتنقص من رصيد الصنف عشان يفضل متسق
-  it.stock=Math.max(0,(it.stock||0)+qtyDiff);
   it.batches[realIdx]={batch:newBatch,expiry:newExpiry||'',qty:newQty};
 
   _itemCardEditingIdx=null;
