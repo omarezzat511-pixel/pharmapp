@@ -1578,8 +1578,14 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
     </div>
     <div class="modal-body" style="padding:16px;">
       <div style="font-size:12.5px;color:var(--text3);margin-bottom:10px;line-height:1.7;">
-        الحسابات مبنية على استهلاك آخر 3 شهور، والكمية المطلوبة محسوبة عشان تغطي <b>5 شهور</b> استهلاك بناءً على المتوسط.
+        اختار أي 3 شهور تحب تحلل استهلاكهم، والكمية المطلوبة محسوبة عشان تغطي <b>5 شهور</b> استهلاك بناءً على متوسط الشهور اللي اخترتها.
         تقدر تعدّل أي رقم في الجدول يدوي — التعديل هنا للتخطيط بس ومبيأثرش على بيانات النظام الفعلية.
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:flex-end;">
+        <div><label style="font-size:11px;color:var(--text3);display:block;">الشهر الأول</label><input class="form-input" type="month" id="consMonthPick1" style="padding:6px 8px;"></div>
+        <div><label style="font-size:11px;color:var(--text3);display:block;">الشهر الثاني</label><input class="form-input" type="month" id="consMonthPick2" style="padding:6px 8px;"></div>
+        <div><label style="font-size:11px;color:var(--text3);display:block;">الشهر الثالث</label><input class="form-input" type="month" id="consMonthPick3" style="padding:6px 8px;"></div>
+        <button class="btn btn-sm btn-navy" onclick="applyConsumptionMonths()">✓ تطبيق الشهور المختارة</button>
       </div>
       <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
         <input class="form-input" id="consumptionSearch" placeholder="بحث عن صنف..." style="flex:1;min-width:160px;" oninput="renderConsumptionTable(this.value)">
@@ -5055,13 +5061,13 @@ function computeMonthlyConsumption(monthKeys){
   return result;
 }
 
-function buildConsumptionRows(){
-  const monthKeys=getLastNMonthKeys(MONTHS_HISTORY);
+function buildConsumptionRows(monthKeys){
+  monthKeys=monthKeys||getLastNMonthKeys(MONTHS_HISTORY);
   const consumption=computeMonthlyConsumption(monthKeys);
   const sortedItems=[...S.items].sort((a,b)=>a.name.localeCompare(b.name,'ar'));
   _consumptionRows=sortedItems.map(it=>{
     const months=monthKeys.map(mk=>consumption[mk][it.name]||0);
-    const avg=months.reduce((s,v)=>s+v,0)/MONTHS_HISTORY;
+    const avg=months.reduce((s,v)=>s+v,0)/monthKeys.length;
     const stock=it.stock||0;
     const toOrder=Math.max(0,Math.ceil(avg*MONTHS_COVERAGE-stock));
     return{
@@ -5083,8 +5089,11 @@ function openPrintCenter(){
 
 function openConsumptionModal(){
   if(!S.items.length){toast('لا توجد أصناف مسجلة بعد','error');return;}
-  buildConsumptionRows();
-  const mks=_consumptionRows.length?_consumptionRows[0].monthKeys:getLastNMonthKeys(MONTHS_HISTORY);
+  const mks=getLastNMonthKeys(MONTHS_HISTORY);
+  document.getElementById('consMonthPick1').value=mks[0];
+  document.getElementById('consMonthPick2').value=mks[1];
+  document.getElementById('consMonthPick3').value=mks[2];
+  buildConsumptionRows(mks);
   document.getElementById('consMonth1Label').textContent=monthKeyLabel(mks[0]);
   document.getElementById('consMonth2Label').textContent=monthKeyLabel(mks[1]);
   document.getElementById('consMonth3Label').textContent=monthKeyLabel(mks[2]);
@@ -5093,8 +5102,26 @@ function openConsumptionModal(){
   document.getElementById('consumptionModal').classList.add('open');
 }
 
+// بيطبق الـ3 شهور اللي المستخدم اختارهم من الـ month pickers ويعيد حساب الجدول عليهم
+function applyConsumptionMonths(){
+  const m1=document.getElementById('consMonthPick1').value;
+  const m2=document.getElementById('consMonthPick2').value;
+  const m3=document.getElementById('consMonthPick3').value;
+  if(!m1||!m2||!m3){toast('اختار الثلاث شهور الأول','error');return;}
+  const set=new Set([m1,m2,m3]);
+  if(set.size<3){toast('اختار 3 شهور مختلفة عن بعض','error');return;}
+  const mks=[m1,m2,m3].sort(); // من الأقدم للأحدث
+  buildConsumptionRows(mks);
+  document.getElementById('consMonth1Label').textContent=monthKeyLabel(mks[0]);
+  document.getElementById('consMonth2Label').textContent=monthKeyLabel(mks[1]);
+  document.getElementById('consMonth3Label').textContent=monthKeyLabel(mks[2]);
+  renderConsumptionTable(document.getElementById('consumptionSearch').value||'');
+  toast('✓ اتحسب الاستهلاك على الشهور المختارة','success');
+}
+
 function recalcConsumptionAll(){
-  buildConsumptionRows();
+  const mks=(_consumptionRows.length?_consumptionRows[0].monthKeys:null)||getLastNMonthKeys(MONTHS_HISTORY);
+  buildConsumptionRows(mks);
   renderConsumptionTable(document.getElementById('consumptionSearch').value||'');
   toast('✓ تم إعادة الحساب من بيانات النظام الحالية','success');
 }
@@ -5128,7 +5155,7 @@ function renderConsumptionTable(q){
 
 function recalcRowDerived(idx){
   const r=_consumptionRows[idx];
-  r.avg=r.months.reduce((s,v)=>s+v,0)/MONTHS_HISTORY;
+  r.avg=r.months.reduce((s,v)=>s+v,0)/(r.months.length||MONTHS_HISTORY);
   r.toOrder=Math.max(0,Math.ceil(r.avg*MONTHS_COVERAGE-r.stock));
 }
 
@@ -5212,7 +5239,8 @@ function printConsumptionA4(){
     let page='<div class="a4-page a4-page-bw" style="width:auto;min-width:277mm;min-height:0;">';
     page+='<div class="a4-header">';
     page+='<div><h1>📈 تحليل الاستهلاك وطلب الأصناف</h1>';
-    page+='<div class="a4-sub">نظام صرف الأدوية | استهلاك آخر '+MONTHS_HISTORY+' شهور | تغطية '+MONTHS_COVERAGE+' شهور | تاريخ الطباعة: '+today+'</div></div>';
+    const monthsUsed=_consumptionRows.length?_consumptionRows[0].monthKeys.map(monthKeyLabel).join(' / '):'';
+    page+='<div class="a4-sub">نظام صرف الأدوية | استهلاك شهور: '+monthsUsed+' | تغطية '+MONTHS_COVERAGE+' شهور | تاريخ الطباعة: '+today+'</div></div>';
     page+='<div class="a4-page-num">صفحة '+(pageIdx+1)+' من '+pages.length+'</div>';
     page+='</div>';
     page+='<table class="a4-table a4-table-bw"><thead><tr>';
