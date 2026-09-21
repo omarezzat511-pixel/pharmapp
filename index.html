@@ -15,7 +15,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="صرف الأدوية">
 
-<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;900&family=Cairo:wght@300;400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;900&family=Cairo:wght@300;400;600;700&family=Aref+Ruqaa:wght@400;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <!-- Firebase SDK تم تعطيلها (المزامنة السحابية ملغاة — البرنامج بيشتغل محلي بالكامل عن طريق localStorage) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -774,6 +774,9 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
 .a4-table-bw td{color:#000!important;border:1px solid #555!important;background:#fff!important;font-weight:700;}
 .a4-table-bw tr:nth-child(even) td{background:#eee!important;}
 .a4-table-bw tr.a4-total-row td{background:#ddd!important;border-top:2px solid #000!important;font-weight:900!important;}
+.a4-daily-handwriting,.a4-daily-handwriting *{font-family:'Aref Ruqaa','Tajawal',sans-serif!important;}
+.a4-daily-handwriting .a4-daily-band h1{font-size:26px;}
+.a4-daily-handwriting td,.a4-daily-handwriting th{font-size:15px;}
 
 /* تصميم طباعة اليومية بشكل النموذج المرجعي: شريط عنوان أزرق فاتح + أسماء أصناف رأسية */
 .a4-daily-band{background:#DCE8F5;border:2px solid #16406B;border-radius:6px;padding:10px 16px;
@@ -2369,7 +2372,7 @@ function onItemSearch(){
   closeAllLists();
   const v=document.getElementById('itemSearch').value.trim();const dd=document.getElementById('itemDropdown');selItem='';
   if(v.length<2){dd.classList.remove('open');return;}
-  const m=S.items.filter(i=>i.name.includes(v)).slice(0,8);
+  const m=S.items.filter(i=>i.name.includes(v)&&(i.stock||0)>0).slice(0,8);
   if(!m.length){dd.classList.remove('open');return;}
   dd.innerHTML=m.map(it=>`<div class="autocomplete-item" onmousedown="event.preventDefault();selItm('${ec(it.name)}')">${hl(it.name,v)}<span style="color:var(--text3);font-size:11px;margin-right:6px;">${it.unit}</span></div>`).join('');
   dd.classList.add('open');iIdx=-1;
@@ -2436,7 +2439,7 @@ function onEditItemSearch(){
   closeAllLists();
   const v=document.getElementById('editNewItem').value.trim();const dd=document.getElementById('editItemDropdown');selEditItem='';
   if(v.length<2){dd.classList.remove('open');return;}
-  const m=S.items.filter(i=>i.name.includes(v)).slice(0,8);
+  const m=S.items.filter(i=>i.name.includes(v)&&(i.stock||0)>0).slice(0,8);
   if(!m.length){dd.classList.remove('open');return;}
   dd.innerHTML=m.map(it=>`<div class="autocomplete-item" onclick="selEditItm('${ec(it.name)}')">${hl(it.name,v)}</div>`).join('');
   dd.classList.add('open');eIdx=-1;
@@ -2481,7 +2484,9 @@ function addItem(){
   const name=(selItem||document.getElementById('itemSearch').value).trim();
   const qty=parseFloat(document.getElementById('itemQty').value);
   if(!name){toast('أدخل اسم الصنف','error');document.getElementById('itemSearch').focus();return;}
-  if(!S.items.find(i=>i.name===name)){toast('هذا الصنف غير موجود — اختر من قائمة الأصناف فقط','error');document.getElementById('itemSearch').focus();return;}
+  const matchedItem=S.items.find(i=>i.name===name);
+  if(!matchedItem){toast('هذا الصنف غير موجود — اختر من قائمة الأصناف فقط','error');document.getElementById('itemSearch').focus();return;}
+  if((matchedItem.stock||0)<=0){toast('نفد رصيد هذا الصنف — غير متاح للصرف','error');document.getElementById('itemSearch').value='';selItem='';document.getElementById('itemSearch').focus();return;}
   if(!qty||qty<=0){toast('أدخل كمية صحيحة','error');document.getElementById('itemQty').focus();return;}
   // احفظ الكمية للتنبؤ في المريض الجديد
   lastQtyMap[name]=qty;saveLastQtyMap();
@@ -3876,7 +3881,9 @@ function addEditItem(){
   const name=(selEditItem||document.getElementById('editNewItem').value).trim();
   const qty=parseFloat(document.getElementById('editNewQty').value);
   if(!name){toast('أدخل اسم الصنف','error');return;}
-  if(!S.items.find(i=>i.name===name)){toast('هذا الصنف غير موجود — اختر من قائمة الأصناف فقط','error');document.getElementById('editNewItem').focus();return;}
+  const matchedEditItem=S.items.find(i=>i.name===name);
+  if(!matchedEditItem){toast('هذا الصنف غير موجود — اختر من قائمة الأصناف فقط','error');document.getElementById('editNewItem').focus();return;}
+  if((matchedEditItem.stock||0)<=0){toast('نفد رصيد هذا الصنف — غير متاح للصرف','error');document.getElementById('editNewItem').value='';selEditItem='';document.getElementById('editNewItem').focus();return;}
   if(!qty||qty<=0){toast('أدخل كمية صحيحة','error');return;}
   const ex=editItems.findIndex(i=>i.name===name);
   if(ex>=0)editItems[ex].qty+=qty;else editItems.push({name,qty});
@@ -6657,7 +6664,7 @@ function printAllDaily(){
       signHtml+='<span>الختم:</span>';
       signHtml+='</div>';
     }
-    let page='<div class="a4-page a4-page-bw" style="width:auto;min-width:277mm;min-height:0;">';
+    let page='<div class="a4-page a4-page-bw a4-daily-handwriting" style="width:auto;min-width:277mm;min-height:0;">';
     page+='<div class="a4-daily-band"><div class="icon-badge">💊</div><h1>يومية صرف صيدلية</h1></div>';
     page+='<div class="a4-daily-meta-row"><span>التاريخ: '+dateLabel+'</span><span>'+PHARMACY_LABEL+'</span></div>';
     page+='<table class="a4-table a4-table-bw a4-table-vertical"><thead><tr>';
@@ -6871,7 +6878,7 @@ function textSimilarity(a,b){
 function findBestItemMatches(text,limit=4){
   const q=canonArabic(text);
   if(!q)return [];
-  const scored=S.items.map(it=>{
+  const scored=S.items.filter(it=>(it.stock||0)>0).map(it=>{
     const n=canonArabic(it.name);
     let score=textSimilarity(q,n);
     if(n.includes(q)||q.includes(n))score=Math.max(score,0.72);
