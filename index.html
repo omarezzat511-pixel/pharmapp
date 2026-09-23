@@ -5402,7 +5402,7 @@ function renderAnnualNeedsTable(q){
     tr+='<td><input type="number" min="0" step="1" value="'+r.stock+'" style="width:65px;text-align:center;border:1px solid var(--border);border-radius:4px;padding:3px;" onchange="onAnnualStockEdit('+realIdx+',this.value)"></td>';
     tr+='<td style="background:var(--gold3);"><input type="number" min="0" step="1" value="'+r.toOrder+'" style="width:70px;text-align:center;border:1px solid var(--gold);border-radius:4px;padding:3px;font-weight:900;color:var(--navy);background:transparent;" onchange="onAnnualOrderEdit('+realIdx+',this.value)"></td>';
     tr+='<td><input type="number" min="0" step="0.01" value="'+r.price+'" style="width:75px;text-align:center;border:1px solid var(--border);border-radius:4px;padding:3px;" onchange="onAnnualPriceEdit('+realIdx+',this.value)"></td>';
-    tr+='<td style="font-weight:900;color:#6C3483;">'+(r.value>0?r.value.toLocaleString('ar-EG',{minimumFractionDigits:2,maximumFractionDigits:2}):'—')+'</td>';
+    tr+='<td style="font-weight:900;color:#6C3483;">'+(r.value>0?r.value.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):'—')+'</td>';
     tr+='</tr>';
     return tr;
   }).join('');
@@ -5413,7 +5413,7 @@ function updateAnnualNeedsTotalValue(){
   const el=document.getElementById('annualNeedsTotalValue');
   if(!el)return;
   const total=_annualNeedsRows.reduce((s,r)=>s+(r.value||0),0);
-  el.textContent='إجمالي قيمة الاحتياج السنوي: '+total.toLocaleString('ar-EG',{minimumFractionDigits:2,maximumFractionDigits:2})+' جنيه';
+  el.textContent='إجمالي قيمة الاحتياج السنوي: '+total.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})+' جنيه';
 }
 
 function recalcAnnualRowDerived(idx){
@@ -5472,7 +5472,7 @@ function printAnnualNeedsA4(){
   if(!pages.length)pages.push([]);
   const today=new Date().toLocaleDateString('ar-EG');
   const grandTotalValue=_annualNeedsRows.reduce((s,r)=>s+(r.value||0),0);
-  const fmtMoney=v=>v.toLocaleString('ar-EG',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const fmtMoney=v=>v.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
   let html='';
   pages.forEach(function(pageRows,pageIdx){
     const isLastPage=pageIdx===pages.length-1;
@@ -5643,7 +5643,7 @@ function exportAnnualNeedsExcel(){
   ws['!margins']={left:.4,right:.4,top:.7,bottom:.7,header:.3,footer:.3};
   ws['!headerFooter']={
     oddHeader:'&C&"Calibri,Bold"&14شيت الاحتياج السنوي للأصناف',
-    oddFooter:'&R&"Calibri"&8إجمالي الكمية المطلوبة: '+tOrder+'   |   إجمالي القيمة: '+tValue.toLocaleString('ar-EG',{minimumFractionDigits:2,maximumFractionDigits:2})+' جنيه&C&"Calibri"&8صفحة &P من &N&L&8تاريخ الإصدار: &D'
+    oddFooter:'&R&"Calibri"&8إجمالي الكمية المطلوبة: '+tOrder+'   |   إجمالي القيمة: '+tValue.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})+' جنيه&C&"Calibri"&8صفحة &P من &N&L&8تاريخ الإصدار: &D'
   };
   ws['!printOptions']={gridLines:false,headings:false};
 
