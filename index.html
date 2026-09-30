@@ -5097,25 +5097,46 @@ ${styles}
       return;
     }
 
+    // تصدير PDF مباشر بيعتمد على تصوير كل صفحة كصورة (html2canvas)، وده بياخد وقت طويل جدًا
+    // ويعلّق المتصفح مع عدد كبير من الصفحات (زي طباعة فواتير كل المرضى دفعة واحدة).
+    // في الحالة دي الأنسب هو نظام الطباعة العادي (🖨 طباعة الآن) واختيار "حفظ كـ PDF" من نافذة الطباعة،
+    // لأنه بيتعامل مع أي عدد صفحات فورًا من غير ما يرسم كل صفحة كصورة.
+    const PDF_DIRECT_MAX_PAGES=10;
+    if(pageEls.length>PDF_DIRECT_MAX_PAGES){
+      cleanup();
+      alert('عدد الصفحات كبير ('+pageEls.length+' صفحة) وتصدير PDF المباشر مش مناسب لعدد كبير كده (ممكن ياخد وقت طويل جدًا أو يعلّق المتصفح).\n\nهيتفتحلك نظام الطباعة العادي دلوقتي — اختار "حفظ كـ PDF" (Save as PDF) من قائمة الطابعة في نافذة الطباعة، وده هيدّيك نفس النتيجة فورًا لأي عدد صفحات.');
+      PM.print();
+      return;
+    }
+
     const paperFormat=(s.paper||'A4').toLowerCase();
     const opt={
       margin:0,
       filename:(job.title||'تقرير')+'.pdf',
       image:{type:'jpeg',quality:0.98},
-      html2canvas:{scale:2,useCORS:true,logging:false,backgroundColor:'#ffffff'},
+      html2canvas:{scale:pageEls.length>4?1.5:2,useCORS:true,logging:false,backgroundColor:'#ffffff'},
       jsPDF:{unit:'mm',format:paperFormat,orientation:landscape?'landscape':'portrait'},
       pagebreak:{mode:'css'}
     };
 
+    // مؤقّت أمان: لو الرسم أخد أكتر من 25 ثانية من غير أي نتيجة، نوضّح للمستخدم إنه لسه شغال
+    // (من غير ما نلغي العملية، عشان ميحصلش تعارض مع تحميل بيحصل فعلاً)
+    let pdfDone=false;
+    const slowNotice=setTimeout(function(){
+      if(!pdfDone)toast('⏳ لسه بيجهّز الملف... لو استمر طويل استخدم زرار "🖨 طباعة الآن" واحفظ كـ PDF بدلاً منه','info');
+    },12000);
+
     // تأخير بسيط عشان نضمن إن المتصفح رسم المحتوى فعليًا قبل ما نبدأ نلتقطه كصورة
     setTimeout(function(){
       html2pdf().set(opt).from(container).save().then(function(){
+        pdfDone=true;clearTimeout(slowNotice);
         cleanup();
         toast('✓ تم تنزيل ملف PDF','success');
       }).catch(function(err){
+        pdfDone=true;clearTimeout(slowNotice);
         cleanup();
         // بنعرض رسالة الخطأ فعليًا على الشاشة (مش بس في الكونسول) عشان تقدر تبعتهالنا
-        alert('حصل خطأ أثناء إنشاء ملف الـ PDF:\n\n'+(err&&err.message?err.message:String(err)));
+        alert('حصل خطأ أثناء إنشاء ملف الـ PDF:\n\n'+(err&&err.message?err.message:String(err))+'\n\nجرب زرار "🖨 طباعة الآن" واختار "حفظ كـ PDF" بدلاً من التصدير المباشر.');
       });
     },300);
   }
@@ -6340,25 +6361,26 @@ function onPatientInvoiceMonthChange(i,val){
   patientInvoiceMonths[i]=val;
 }
 
-// بتجمع كل صرف المريض في الشهور المختارة في فاتورة واحدة موحدة وتطبعها
+// بتجمع صرف المريض في الشهور المختارة في فاتورة واحدة — كل شهر بقسم وجدول منفصل
 function generatePatientMonthInvoicePrint(){
   const p=S.patients[patientInvoiceIdx];
   if(!p){toast('تعذر إيجاد بيانات المريض','error');return;}
-  const chosen=[...new Set(patientInvoiceMonths.filter(Boolean))];
+  const chosen=[...new Set(patientInvoiceMonths.filter(Boolean))].sort();
   if(!chosen.length){toast('اختار شهر واحد على الأقل','error');return;}
   const history=getPatientHistory(p); // كل سجل المريض من اليومية الحالية + الأرشيف
   const matched=history.filter(row=>chosen.includes(getMonthKey(row.date)));
   if(!matched.length){toast('لا يوجد صرف لهذا المريض في الشهور المختارة','error');return;}
-  const mergedItems={};
+  const byMonth={};
   matched.forEach(row=>{
-    Object.entries(row.items||{}).forEach(([n,q])=>{mergedItems[n]=(mergedItems[n]||0)+(q||0);});
+    const mk=getMonthKey(row.date);
+    if(!byMonth[mk])byMonth[mk]={};
+    Object.entries(row.items||{}).forEach(([n,q])=>{byMonth[mk][n]=(byMonth[mk][n]||0)+(q||0);});
   });
-  const mergedRow={patientName:p.name,patientId:p.id||'',items:mergedItems};
-  const sortedMonths=[...chosen].sort();
-  const monthsLabel=sortedMonths.map(monthKeyLabel).join(' + ');
-  showA4PrintPreview(buildPatientReceiptHtml(mergedRow,monthsLabel,'الشهور:'));
+  const monthsData=chosen.filter(mk=>byMonth[mk]).map(mk=>({monthKey:mk,items:byMonth[mk]}));
+  const html=buildPatientMultiMonthReceiptHtml(p.name,p.id||'',monthsData);
+  showA4PrintPreview(html);
   closeModal('patientMonthInvoiceModal');
-  toast('✓ تم تجهيز الفاتورة الموحدة لشهور: '+monthsLabel,'success');
+  toast('✓ تم تجهيز الفاتورة — كل شهر بقسم لوحده','success');
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -6397,30 +6419,33 @@ function onAllPatientsInvoiceMonthChange(i,val){
   allPatientsInvoiceMonths[i]=val;
 }
 
-// بتجمع فواتير كل المرضى في الشهور المختارة — كل مريض بفاتورة واحدة موحدة — وتطبعهم كلهم مرة واحدة
+// بتجمع فواتير كل المرضى في الشهور المختارة — كل مريض بفاتورة واحدة، وكل شهر بقسم منفصل جواها — وتطبعهم كلهم مرة واحدة
 function generateAllPatientsMonthInvoicesPrint(){
-  const chosen=[...new Set(allPatientsInvoiceMonths.filter(Boolean))];
+  const chosen=[...new Set(allPatientsInvoiceMonths.filter(Boolean))].sort();
   if(!chosen.length){toast('اختار شهر واحد على الأقل','error');return;}
   const allDaysSource={...S.daily,...S.archive};
-  const groups={}; // key -> {patientName, patientId, items:{}}
+  const groups={}; // key -> {patientName, patientId, byMonth:{mk:{item:qty}}}
   Object.keys(allDaysSource).forEach(function(day){
-    if(!chosen.includes(getMonthKey(day)))return;
+    const mk=getMonthKey(day);
+    if(!chosen.includes(mk))return;
     (allDaysSource[day]||[]).forEach(function(row){
       const key=row.patientId?('id:'+row.patientId):('name:'+row.patientName);
-      if(!groups[key])groups[key]={patientName:row.patientName,patientId:row.patientId||'',items:{}};
+      if(!groups[key])groups[key]={patientName:row.patientName,patientId:row.patientId||'',byMonth:{}};
+      if(!groups[key].byMonth[mk])groups[key].byMonth[mk]={};
       Object.entries(row.items||{}).forEach(function([n,q]){
-        groups[key].items[n]=(groups[key].items[n]||0)+(q||0);
+        groups[key].byMonth[mk][n]=(groups[key].byMonth[mk][n]||0)+(q||0);
       });
     });
   });
-  const mergedRows=Object.values(groups).sort((a,b)=>a.patientName.localeCompare(b.patientName,'ar'));
-  if(!mergedRows.length){toast('لا يوجد أي صرف مسجل في الشهور المختارة','error');return;}
-  const sortedMonths=[...chosen].sort();
-  const monthsLabel=sortedMonths.map(monthKeyLabel).join(' + ');
-  const html=mergedRows.map(r=>buildPatientReceiptHtml(r,monthsLabel,'الشهور:')).join('');
+  const mergedList=Object.values(groups).sort((a,b)=>a.patientName.localeCompare(b.patientName,'ar'));
+  if(!mergedList.length){toast('لا يوجد أي صرف مسجل في الشهور المختارة','error');return;}
+  const html=mergedList.map(function(g){
+    const monthsData=chosen.filter(mk=>g.byMonth[mk]).map(mk=>({monthKey:mk,items:g.byMonth[mk]}));
+    return buildPatientMultiMonthReceiptHtml(g.patientName,g.patientId,monthsData);
+  }).join('');
   showA4PrintPreview(html);
   closeModal('allPatientsMonthInvoiceModal');
-  toast('✓ تم تجهيز '+mergedRows.length+' فاتورة موحدة لشهور: '+monthsLabel,'success');
+  toast('✓ تم تجهيز '+mergedList.length+' فاتورة — كل شهر بقسم لوحده','success');
 }
 
 function exportPatientReportExcel(){
@@ -7176,6 +7201,66 @@ function buildPatientReceiptHtml(row,dateLabel,fieldLabel){
   html+='</tbody></table>';
 
   html+='<div class="a4-sign-row" style="margin-top:40px;">';
+  html+='<div class="a4-sign-box"><div class="a4-sign-line">توقيع المريض / المستلم</div></div>';
+  html+='<div class="a4-sign-box"><div class="a4-sign-line">توقيع الصيدلي</div></div>';
+  html+='</div>';
+
+  html+='<div class="a4-footer"><span>تاريخ الطباعة: '+today+' '+now+'</span><span>احتفظ بهذا الإيصال</span></div>';
+  html+='</div>';
+  return html;
+}
+
+// فاتورة مريض موحدة لعدة شهور — كل شهر بجدول منفصل بأصنافه وكمياته (مش مجموع مدموج في رقم واحد)
+// monthsData: [{monthKey, items:{name:qty}}, ...] بترتيب الشهور المطلوب عرضها
+function buildPatientMultiMonthReceiptHtml(patientName,patientId,monthsData){
+  const today=new Date().toLocaleDateString('ar-EG');
+  const now=new Date().toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'});
+  const fmtNum=function(v){return (v||0).toLocaleString('ar-EG',{minimumFractionDigits:2,maximumFractionDigits:2});};
+  const monthsWithData=monthsData.filter(md=>Object.keys(md.items||{}).some(n=>(md.items[n]||0)>0));
+
+  let grandTotal=0;
+  let sectionsHtml='';
+  monthsWithData.forEach(function(md){
+    const itemNames=Object.keys(md.items).filter(n=>(md.items[n]||0)>0);
+    let monthTotal=0;
+    const rowsHtml=itemNames.map(function(n,i){
+      const qty=md.items[n]||0;
+      const itemObj=S.items.find(it=>it.name===n);
+      const price=itemObj?(itemObj.price||0):0;
+      const lineTotal=price*qty;
+      monthTotal+=lineTotal;
+      return '<tr><td>'+(i+1)+'</td><td class="a4-name-cell">'+n+'</td><td>'+qty+'</td><td>'+fmtNum(price)+'</td><td>'+fmtNum(lineTotal)+'</td></tr>';
+    }).join('');
+    grandTotal+=monthTotal;
+    sectionsHtml+='<div style="margin-top:16px;margin-bottom:6px;font-weight:900;font-size:13.5px;background:#eee;padding:6px 10px;border-right:4px solid #000;">📅 '+monthKeyLabel(md.monthKey)+'</div>';
+    sectionsHtml+='<table class="a4-table a4-table-bw"><thead><tr>';
+    sectionsHtml+='<th style="width:24px;">#</th><th class="a4-name-col">الصنف</th><th>الكمية</th><th>سعر الوحدة</th><th>الإجمالي</th>';
+    sectionsHtml+='</tr></thead><tbody>'+rowsHtml;
+    sectionsHtml+='<tr class="a4-total-row"><td colspan="4">إجمالي '+monthKeyLabel(md.monthKey)+'</td><td>'+fmtNum(monthTotal)+'</td></tr>';
+    sectionsHtml+='</tbody></table>';
+  });
+
+  const monthsLabel=monthsWithData.map(md=>monthKeyLabel(md.monthKey)).join(' + ')||'—';
+
+  let html='<div class="a4-page a4-page-bw" style="max-width:148mm;min-height:0;margin:0 auto;">';
+  html+='<div style="text-align:center;border-bottom:3px double #000;padding-bottom:10px;margin-bottom:14px;">';
+  html+='<div style="font-size:19px;font-weight:900;">💊 نظام صرف الأدوية</div>';
+  html+='<div style="font-size:14px;font-weight:700;margin-top:4px;">إيصال صرف دواء — عدة شهور</div>';
+  html+='</div>';
+
+  html+='<table style="width:100%;border-collapse:collapse;margin-bottom:6px;font-size:13px;">';
+  html+='<tr><td style="padding:4px 0;font-weight:700;width:90px;">اسم المريض:</td><td style="padding:4px 0;">'+patientName+'</td></tr>';
+  html+='<tr><td style="padding:4px 0;font-weight:700;">الرقم القومي:</td><td style="padding:4px 0;">'+(patientId||'\u2014')+'</td></tr>';
+  html+='<tr><td style="padding:4px 0;font-weight:700;">الشهور:</td><td style="padding:4px 0;">'+monthsLabel+'</td></tr>';
+  html+='</table>';
+
+  html+=sectionsHtml||'<div style="text-align:center;color:#777;padding:20px 0;">لا توجد أصناف مسجلة في الشهور المختارة</div>';
+
+  if(monthsWithData.length>1){
+    html+='<div style="margin-top:14px;text-align:left;font-weight:900;font-size:14.5px;border-top:2px solid #000;padding-top:8px;">الإجمالي الكلي لكل الشهور: '+fmtNum(grandTotal)+'</div>';
+  }
+
+  html+='<div class="a4-sign-row" style="margin-top:32px;">';
   html+='<div class="a4-sign-box"><div class="a4-sign-line">توقيع المريض / المستلم</div></div>';
   html+='<div class="a4-sign-box"><div class="a4-sign-line">توقيع الصيدلي</div></div>';
   html+='</div>';
