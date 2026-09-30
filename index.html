@@ -1108,6 +1108,7 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
         <button class="btn btn-excel" onclick="exportToExcel()">⬇ Excel</button>
         <button class="btn btn-purple" onclick="archiveCurrentDay()">🗄 أرشفة</button>
         <button class="btn btn-sm btn-outline" onclick="printAllDaily()">🖨</button>
+        <button class="btn btn-sm btn-outline" onclick="printAllPatientReceiptsA4()">🧾 طباعة كل الفواتير</button>
         <button class="btn btn-sm" id="transferSelectedBtn" onclick="openTransferModal()" disabled style="background:var(--light);color:var(--text3);border:none;padding:8px 14px;cursor:not-allowed;">↪ ترحيل المحدد ليومية أخرى</button>
         <button class="btn btn-sm btn-danger" onclick="openDeleteDayModal()" style="background:var(--crimson);color:white;border:none;padding:8px 14px;">🗑 حذف اليومية</button>
       </div>
@@ -1493,6 +1494,7 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
     </div>
     <div class="modal-footer">
       <button class="btn btn-excel" onclick="exportArchiveToExcel()">⬇ تصدير Excel</button>
+      <button class="btn btn-sm btn-outline" onclick="printAllPatientReceiptsA4(archViewDay,true)">🧾 طباعة كل الفواتير</button>
       <button class="btn btn-sm btn-danger" onclick="deleteArchiveDay()">🗑 حذف من الأرشيف</button>
       <button class="btn btn-sm" style="background:var(--light);color:var(--text2)" onclick="closeModal('archiveViewModal')">إغلاق</button>
     </div>
@@ -1787,6 +1789,10 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
           <div class="pc-icon">📦</div><div class="pc-label">الاحتياج السنوي للأصناف</div>
           <div class="pc-desc">احتياج كل صنف لتغطية 12 شهر بناءً على 3 شهور تختارهم</div>
         </button>
+        <button class="pc-card" onclick="closeModal('printCenterModal');openAllPatientsMonthInvoiceModal();">
+          <div class="pc-icon">🧾</div><div class="pc-label">فواتير كل المرضى لعدة شهور</div>
+          <div class="pc-desc">فاتورة موحدة لكل مريض تجمع صرفه في الشهور اللي تختارها، وطباعتها كلها دفعة واحدة</div>
+        </button>
       </div>
 
       <div style="margin-top:14px;padding:10px 12px;background:var(--light);border-radius:8px;font-size:11.5px;color:var(--text3);">
@@ -1954,6 +1960,52 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
     <div class="modal-footer" style="justify-content:space-between;">
       <button class="btn btn-sm" style="background:var(--light);color:var(--text2)" onclick="closeModal('patientReportModal')">إغلاق</button>
       <button class="btn btn-excel" onclick="exportPatientReportExcel()">⬇ Excel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ PATIENT MULTI-MONTH INVOICE MODAL (فاتورة موحدة بشهور محددة) ═══ -->
+<div class="modal-overlay" id="patientMonthInvoiceModal">
+  <div class="modal" style="width:min(520px,94vw);border-top:4px solid var(--gold);">
+    <div class="modal-header" style="background:var(--navy);">
+      <div class="modal-title">🧾 فاتورة موحدة بشهور محددة</div>
+      <button class="modal-close" onclick="closeModal('patientMonthInvoiceModal')">✕</button>
+    </div>
+    <div class="modal-body" style="padding:16px;">
+      <div style="margin-bottom:10px;">
+        <div style="font-weight:900;color:var(--navy);font-size:15px;" id="pmiPatientName">—</div>
+        <div style="font-size:12px;color:var(--text3);" id="pmiPatientId"></div>
+      </div>
+      <div style="font-size:12.5px;color:var(--text3);margin-bottom:12px;line-height:1.8;">
+        اختار أي عدد من الشهور (3 أو أكتر أو أقل)، وهيتم جمع كل صرف المريض في الشهور دي — سواء من يومية حالية أو من الأرشيف — في فاتورة واحدة موحدة بإجمالي كمية كل صنف.
+      </div>
+      <div id="pmiMonthsList" style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px;"></div>
+      <button class="btn btn-sm" style="background:var(--light);color:var(--text2);" onclick="addPatientInvoiceMonthField()">+ إضافة شهر</button>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-navy" onclick="generatePatientMonthInvoicePrint()">🖨 إنشاء وطباعة الفاتورة الموحدة</button>
+      <button class="btn btn-sm" style="background:var(--light);color:var(--text2)" onclick="closeModal('patientMonthInvoiceModal')">إغلاق</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ ALL PATIENTS MULTI-MONTH INVOICES MODAL (فواتير كل المرضى لعدة شهور) ═══ -->
+<div class="modal-overlay" id="allPatientsMonthInvoiceModal">
+  <div class="modal" style="width:min(520px,94vw);border-top:4px solid var(--gold);">
+    <div class="modal-header" style="background:var(--navy);">
+      <div class="modal-title">🧾 فواتير كل المرضى لعدة شهور</div>
+      <button class="modal-close" onclick="closeModal('allPatientsMonthInvoiceModal')">✕</button>
+    </div>
+    <div class="modal-body" style="padding:16px;">
+      <div style="font-size:12.5px;color:var(--text3);margin-bottom:12px;line-height:1.8;">
+        اختار أي عدد من الشهور (3 أو أكتر أو أقل). هيتم تجميع صرف <b>كل مريض</b> في الشهور دي — من اليومية الحالية والأرشيف — في فاتورة واحدة موحدة له، وطباعة فواتير كل المرضى دفعة واحدة (كل مريض في صفحة منفصلة).
+      </div>
+      <div id="apmiMonthsList" style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px;"></div>
+      <button class="btn btn-sm" style="background:var(--light);color:var(--text2);" onclick="addAllPatientsInvoiceMonthField()">+ إضافة شهر</button>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-navy" onclick="generateAllPatientsMonthInvoicesPrint()">🖨 إنشاء وطباعة كل الفواتير</button>
+      <button class="btn btn-sm" style="background:var(--light);color:var(--text2)" onclick="closeModal('allPatientsMonthInvoiceModal')">إغلاق</button>
     </div>
   </div>
 </div>
@@ -6180,6 +6232,7 @@ function renderPatientsDB(){
       <td style="text-align:center;"><span class="qty-badge${days?'':' zero'}">${days||'—'}</span></td>
       <td style="text-align:center;">
         <button class="btn btn-sm btn-primary" onclick="openPatientReport(${realIdx})" title="تقرير أيام الصرف">📋 تقرير</button>
+        <button class="btn btn-sm btn-outline" onclick="openPatientMonthInvoice(${realIdx})" title="فاتورة موحدة بشهور محددة">🧾 فاتورة بشهور</button>
         <button class="btn btn-sm btn-warn" onclick="openEditPatientDB(${realIdx})" title="تعديل">✏ تعديل</button>
         <button class="btn btn-sm btn-danger" onclick="deletePatientDBIdx(${realIdx})" title="حذف">✕</button>
       </td>
@@ -6245,6 +6298,131 @@ function openPatientReport(idx){
   </div>`;
   document.getElementById('patientReportModal').classList.add('open');
 }
+// ═══════════════════════════════════════════════════════════════
+// ══ فاتورة مريض واحد موحّدة بعدة شهور مختارة ═══════════════════
+// ═══════════════════════════════════════════════════════════════
+let patientInvoiceIdx=-1;
+let patientInvoiceMonths=[];
+
+function openPatientMonthInvoice(idx){
+  const p=S.patients[idx];
+  if(!p)return;
+  patientInvoiceIdx=idx;
+  const cm=getMonthKey(S.date||new Date().toISOString().split('T')[0]);
+  patientInvoiceMonths=[shiftMonthKey(cm,-2),shiftMonthKey(cm,-1),cm];
+  document.getElementById('pmiPatientName').textContent=p.name;
+  document.getElementById('pmiPatientId').textContent=p.id?('الرقم القومي: '+p.id):'بدون رقم قومي مسجل';
+  renderPatientInvoiceMonthPickers();
+  document.getElementById('patientMonthInvoiceModal').classList.add('open');
+}
+
+function renderPatientInvoiceMonthPickers(){
+  const wrap=document.getElementById('pmiMonthsList');
+  wrap.innerHTML=patientInvoiceMonths.map(function(mk,i){
+    return '<div style="display:flex;gap:6px;align-items:center;">'
+      +'<input type="month" class="form-input" value="'+(mk||'')+'" onchange="onPatientInvoiceMonthChange('+i+',this.value)" style="flex:1;">'
+      +(patientInvoiceMonths.length>1?'<button class="btn btn-sm btn-danger" onclick="removePatientInvoiceMonthField('+i+')" title="حذف الشهر">✕</button>':'')
+      +'</div>';
+  }).join('');
+}
+// بتضيف حقل شهر جديد لو عايز تجمع أكتر من 3 شهور
+function addPatientInvoiceMonthField(){
+  patientInvoiceMonths.push('');
+  renderPatientInvoiceMonthPickers();
+}
+// بتشيل شهر من القائمة لو عايز أقل من 3
+function removePatientInvoiceMonthField(i){
+  if(patientInvoiceMonths.length<=1)return;
+  patientInvoiceMonths.splice(i,1);
+  renderPatientInvoiceMonthPickers();
+}
+function onPatientInvoiceMonthChange(i,val){
+  patientInvoiceMonths[i]=val;
+}
+
+// بتجمع كل صرف المريض في الشهور المختارة في فاتورة واحدة موحدة وتطبعها
+function generatePatientMonthInvoicePrint(){
+  const p=S.patients[patientInvoiceIdx];
+  if(!p){toast('تعذر إيجاد بيانات المريض','error');return;}
+  const chosen=[...new Set(patientInvoiceMonths.filter(Boolean))];
+  if(!chosen.length){toast('اختار شهر واحد على الأقل','error');return;}
+  const history=getPatientHistory(p); // كل سجل المريض من اليومية الحالية + الأرشيف
+  const matched=history.filter(row=>chosen.includes(getMonthKey(row.date)));
+  if(!matched.length){toast('لا يوجد صرف لهذا المريض في الشهور المختارة','error');return;}
+  const mergedItems={};
+  matched.forEach(row=>{
+    Object.entries(row.items||{}).forEach(([n,q])=>{mergedItems[n]=(mergedItems[n]||0)+(q||0);});
+  });
+  const mergedRow={patientName:p.name,patientId:p.id||'',items:mergedItems};
+  const sortedMonths=[...chosen].sort();
+  const monthsLabel=sortedMonths.map(monthKeyLabel).join(' + ');
+  showA4PrintPreview(buildPatientReceiptHtml(mergedRow,monthsLabel,'الشهور:'));
+  closeModal('patientMonthInvoiceModal');
+  toast('✓ تم تجهيز الفاتورة الموحدة لشهور: '+monthsLabel,'success');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ══ فواتير كل المرضى موحّدة لعدة شهور مختارة (طباعة جماعية) ═════
+// ═══════════════════════════════════════════════════════════════
+let allPatientsInvoiceMonths=[];
+
+function openAllPatientsMonthInvoiceModal(){
+  const cm=getMonthKey(S.date||new Date().toISOString().split('T')[0]);
+  allPatientsInvoiceMonths=[shiftMonthKey(cm,-2),shiftMonthKey(cm,-1),cm];
+  renderAllPatientsInvoiceMonthPickers();
+  document.getElementById('allPatientsMonthInvoiceModal').classList.add('open');
+}
+
+function renderAllPatientsInvoiceMonthPickers(){
+  const wrap=document.getElementById('apmiMonthsList');
+  wrap.innerHTML=allPatientsInvoiceMonths.map(function(mk,i){
+    return '<div style="display:flex;gap:6px;align-items:center;">'
+      +'<input type="month" class="form-input" value="'+(mk||'')+'" onchange="onAllPatientsInvoiceMonthChange('+i+',this.value)" style="flex:1;">'
+      +(allPatientsInvoiceMonths.length>1?'<button class="btn btn-sm btn-danger" onclick="removeAllPatientsInvoiceMonthField('+i+')" title="حذف الشهر">✕</button>':'')
+      +'</div>';
+  }).join('');
+}
+// بتضيف حقل شهر جديد لو عايز تجمع أكتر من 3 شهور
+function addAllPatientsInvoiceMonthField(){
+  allPatientsInvoiceMonths.push('');
+  renderAllPatientsInvoiceMonthPickers();
+}
+// بتشيل شهر من القائمة لو عايز أقل شهور
+function removeAllPatientsInvoiceMonthField(i){
+  if(allPatientsInvoiceMonths.length<=1)return;
+  allPatientsInvoiceMonths.splice(i,1);
+  renderAllPatientsInvoiceMonthPickers();
+}
+function onAllPatientsInvoiceMonthChange(i,val){
+  allPatientsInvoiceMonths[i]=val;
+}
+
+// بتجمع فواتير كل المرضى في الشهور المختارة — كل مريض بفاتورة واحدة موحدة — وتطبعهم كلهم مرة واحدة
+function generateAllPatientsMonthInvoicesPrint(){
+  const chosen=[...new Set(allPatientsInvoiceMonths.filter(Boolean))];
+  if(!chosen.length){toast('اختار شهر واحد على الأقل','error');return;}
+  const allDaysSource={...S.daily,...S.archive};
+  const groups={}; // key -> {patientName, patientId, items:{}}
+  Object.keys(allDaysSource).forEach(function(day){
+    if(!chosen.includes(getMonthKey(day)))return;
+    (allDaysSource[day]||[]).forEach(function(row){
+      const key=row.patientId?('id:'+row.patientId):('name:'+row.patientName);
+      if(!groups[key])groups[key]={patientName:row.patientName,patientId:row.patientId||'',items:{}};
+      Object.entries(row.items||{}).forEach(function([n,q]){
+        groups[key].items[n]=(groups[key].items[n]||0)+(q||0);
+      });
+    });
+  });
+  const mergedRows=Object.values(groups).sort((a,b)=>a.patientName.localeCompare(b.patientName,'ar'));
+  if(!mergedRows.length){toast('لا يوجد أي صرف مسجل في الشهور المختارة','error');return;}
+  const sortedMonths=[...chosen].sort();
+  const monthsLabel=sortedMonths.map(monthKeyLabel).join(' + ');
+  const html=mergedRows.map(r=>buildPatientReceiptHtml(r,monthsLabel,'الشهور:')).join('');
+  showA4PrintPreview(html);
+  closeModal('allPatientsMonthInvoiceModal');
+  toast('✓ تم تجهيز '+mergedRows.length+' فاتورة موحدة لشهور: '+monthsLabel,'success');
+}
+
 function exportPatientReportExcel(){
   if(!patientReportData.length){toast('لا توجد بيانات لتصديرها','error');return;}
   const titleEl=document.getElementById('patientReportTitle').textContent;
@@ -6960,10 +7138,8 @@ function toast(msg,type='info'){
 // ═══════════════════════════════════════════════════════════════
 // ══ PRINT SINGLE PATIENT RECEIPT — إيصال صرف فردي ═══════════════
 // ═══════════════════════════════════════════════════════════════
-function printPatientReceiptA4(day,idx,fromArchive){
-  const source=fromArchive?S.archive:S.daily;
-  const row=(source[day]||[])[idx];
-  if(!row){toast('تعذر إيجاد بيانات المريض','error');return;}
+function buildPatientReceiptHtml(row,dateLabel,fieldLabel){
+  fieldLabel=fieldLabel||'التاريخ:';
   const itemNames=Object.keys(row.items||{}).filter(n=>(row.items[n]||0)>0);
   const today=new Date().toLocaleDateString('ar-EG');
   const now=new Date().toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'});
@@ -6988,7 +7164,7 @@ function printPatientReceiptA4(day,idx,fromArchive){
   html+='<table style="width:100%;border-collapse:collapse;margin-bottom:14px;font-size:13px;">';
   html+='<tr><td style="padding:4px 0;font-weight:700;width:90px;">اسم المريض:</td><td style="padding:4px 0;">'+row.patientName+'</td></tr>';
   html+='<tr><td style="padding:4px 0;font-weight:700;">الرقم القومي:</td><td style="padding:4px 0;">'+(row.patientId||'\u2014')+'</td></tr>';
-  html+='<tr><td style="padding:4px 0;font-weight:700;">التاريخ:</td><td style="padding:4px 0;">'+fmtDate(day)+'</td></tr>';
+  html+='<tr><td style="padding:4px 0;font-weight:700;">'+fieldLabel+'</td><td style="padding:4px 0;">'+dateLabel+'</td></tr>';
   html+='</table>';
 
   html+='<table class="a4-table a4-table-bw"><thead><tr>';
@@ -7006,8 +7182,26 @@ function printPatientReceiptA4(day,idx,fromArchive){
 
   html+='<div class="a4-footer"><span>تاريخ الطباعة: '+today+' '+now+'</span><span>احتفظ بهذا الإيصال</span></div>';
   html+='</div>';
+  return html;
+}
 
+function printPatientReceiptA4(day,idx,fromArchive){
+  const source=fromArchive?S.archive:S.daily;
+  const row=(source[day]||[])[idx];
+  if(!row){toast('تعذر إيجاد بيانات المريض','error');return;}
+  showA4PrintPreview(buildPatientReceiptHtml(row,fmtDate(day)));
+}
+
+// بتطبع فواتير كل مرضى اليومية دفعة واحدة، فاتورة كل مريض في صفحة منفصلة
+function printAllPatientReceiptsA4(day,fromArchive){
+  const d=day||S.activeDay||S.date;
+  const source=fromArchive?S.archive:S.daily;
+  const rows=source[d]||[];
+  if(!rows.length){toast('لا توجد فواتير لطباعتها في هذه اليومية','error');return;}
+  const dateLabel=fmtDate(d);
+  const html=rows.map(row=>buildPatientReceiptHtml(row,dateLabel)).join('');
   showA4PrintPreview(html);
+  toast('✓ جاري تجهيز '+rows.length+' فاتورة للطباعة','success');
 }
 
 function printAllDaily(){
