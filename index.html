@@ -5016,7 +5016,7 @@ ${styles}
   .pm-print-bar button:hover{background:#1E5A8F;}
   .pm-print-bar button.pm-close{background:#3D5269;}
   @media print{.pm-print-bar{display:none!important;} html,body,#a4PrintRoot{background:#fff!important;padding:0!important;}
-    #a4PrintRoot .a4-page{box-shadow:none!important;margin:0!important;}}
+    #a4PrintRoot .a4-page{box-shadow:none!important;margin:0 auto!important;}}
 </style>
 </head><body>
 <div class="pm-print-bar">
@@ -5084,6 +5084,7 @@ ${styles}
     pageEls.forEach(function(p,i){
       p.style.pageBreakBefore=i===0?'avoid':'always';
       p.style.pageBreakInside='avoid';
+      p.style.margin='0 auto';
     });
 
     function cleanup(){
