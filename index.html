@@ -15,7 +15,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="صرف الأدوية">
 
-<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;900&family=Cairo:wght@300;400;600;700&family=Noto+Naskh+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;900&family=Cairo:wght@300;400;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <!-- Firebase SDK تم تعطيلها (المزامنة السحابية ملغاة — البرنامج بيشتغل محلي بالكامل عن طريق localStorage) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -774,9 +774,9 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
 .a4-table-bw td{color:#000!important;border:1px solid #555!important;background:#fff!important;font-weight:700;}
 .a4-table-bw tr:nth-child(even) td{background:#eee!important;}
 .a4-table-bw tr.a4-total-row td{background:#ddd!important;border-top:2px solid #000!important;font-weight:900!important;}
-.a4-daily-handwriting,.a4-daily-handwriting *{font-family:'Noto Naskh Arabic','Tajawal',sans-serif!important;}
-.a4-daily-handwriting .a4-daily-band h1{font-size:26px;}
-.a4-daily-handwriting td,.a4-daily-handwriting th{font-size:15px;}
+.a4-daily-handwriting,.a4-daily-handwriting *{font-family:'Cairo','Tajawal',sans-serif!important;}
+.a4-daily-handwriting .a4-daily-band h1{font-size:24px;}
+.a4-daily-handwriting td,.a4-daily-handwriting th{font-size:11px;}
 
 /* تصميم طباعة اليومية بشكل النموذج المرجعي: شريط عنوان أزرق فاتح + أسماء أصناف رأسية */
 .a4-daily-band{background:#DCE8F5;border:2px solid #16406B;border-radius:6px;padding:10px 16px;
@@ -788,7 +788,7 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
 .a4-daily-meta-row{display:flex;justify-content:space-between;align-items:center;
   font-size:13px;font-weight:700;color:#16406B;margin:0 0 10px;}
 .a4-table-vertical{table-layout:fixed;}
-.a4-table-vertical th.item-col-v{height:100px;padding:0;width:20px;position:relative;
+.a4-table-vertical th.item-col-v{height:140px;padding:0;width:20px;position:relative;
   border:1px solid #000!important;overflow:hidden;}
 .a4-table-vertical td{overflow:hidden;text-overflow:clip;}
 .a4-table-vertical th.item-col-v .rot{position:absolute;bottom:5px;left:50%;
@@ -7310,6 +7310,22 @@ function printAllDaily(){
   allItems.forEach(n=>totals[n]=0);
   data.forEach(row=>{allItems.forEach(n=>{totals[n]+=(row.items[n]||0);});});
 
+  // أعمدة ثابتة النسبة (م / اسم المريض / الرقم القومي) وباقي العرض بيتقسم بالتساوي
+  // على كل أصناف اليوم كنسبة مئوية من عرض الورقة، عشان الجدول يتلائم مع A4 بالظبط
+  // مهما كان عدد الأصناف، من غير ما يتقص أو يخرج برا حدود الورقة.
+  const FIXED_NUM_PCT=3,FIXED_NAME_PCT=16,FIXED_ID_PCT=11;
+  const itemCount=allItems.length||1;
+  const itemColPct=((100-(FIXED_NUM_PCT+FIXED_NAME_PCT+FIXED_ID_PCT))/itemCount).toFixed(3);
+
+  // كل ما عدد الأصناف يزيد، بنصغّر الخط ونكبّر ارتفاع رأس العمود شوية عشان اسم
+  // الصنف الطويل ميتقصش ومايدخلش في العمود اللي جنبه
+  let rotFontSize=10,cellFontSize=11,headHeight=140;
+  if(itemCount>40){rotFontSize=7;cellFontSize=9;headHeight=170;}
+  else if(itemCount>28){rotFontSize=7.5;cellFontSize=9.5;headHeight=160;}
+  else if(itemCount>18){rotFontSize=8.5;cellFontSize=10.5;headHeight=150;}
+  const longestNameLen=allItems.reduce((m,n)=>Math.max(m,n.length),0);
+  if(longestNameLen>26)headHeight=Math.max(headHeight,175);
+
   const ROWS_PER_PAGE=24;
   const pages=[];
   for(let i=0;i<data.length;i+=ROWS_PER_PAGE){pages.push(data.slice(i,i+ROWS_PER_PAGE));}
@@ -7328,7 +7344,7 @@ function printAllDaily(){
       tr+='<td>'+(row.patientId||'\u2014')+'</td>';
       allItems.forEach(function(n){
         const q=row.items[n]||0;
-        tr+='<td>'+(q?q:'\u2014')+'</td>';
+        tr+='<td style="font-size:'+cellFontSize+'px;">'+(q?q:'\u2014')+'</td>';
       });
       tr+='</tr>';
       return tr;
@@ -7336,7 +7352,7 @@ function printAllDaily(){
     let totalRowHtml='';
     if(isLastPage){
       totalRowHtml='<tr class="a4-total-row"><td colspan="2">الإجمالي</td><td></td>';
-      allItems.forEach(function(n){totalRowHtml+='<td>'+totals[n]+'</td>';});
+      allItems.forEach(function(n){totalRowHtml+='<td style="font-size:'+cellFontSize+'px;">'+totals[n]+'</td>';});
       totalRowHtml+='</tr>';
     }
     let signHtml='';
@@ -7346,14 +7362,14 @@ function printAllDaily(){
       signHtml+='<span>الختم:</span>';
       signHtml+='</div>';
     }
-    let page='<div class="a4-page a4-page-bw a4-daily-handwriting" style="width:auto;min-width:277mm;min-height:0;">';
+    let page='<div class="a4-page a4-page-bw a4-daily-handwriting" style="width:auto;min-width:277mm;min-height:0;font-size:'+cellFontSize+'px;">';
     page+='<div class="a4-daily-band"><div class="icon-badge">💊</div><h1>يومية صرف صيدلية</h1></div>';
     page+='<div class="a4-daily-meta-row"><span>التاريخ: '+dateLabel+'</span><span>'+PHARMACY_LABEL+'</span></div>';
-    page+='<table class="a4-table a4-table-bw a4-table-vertical"><thead><tr>';
-    page+='<th style="width:20px;">م</th>';
-    page+='<th class="a4-name-col" style="width:95px;">اسم المريض</th>';
-    page+='<th style="width:70px;">الرقم القومي</th>';
-    allItems.forEach(function(n){page+='<th class="item-col-v"><span class="rot">'+n+'</span></th>';});
+    page+='<table class="a4-table a4-table-bw a4-table-vertical" style="table-layout:fixed;"><thead><tr>';
+    page+='<th style="width:'+FIXED_NUM_PCT+'%;font-size:'+cellFontSize+'px;">م</th>';
+    page+='<th class="a4-name-col" style="width:'+FIXED_NAME_PCT+'%;font-size:'+cellFontSize+'px;">اسم المريض</th>';
+    page+='<th style="width:'+FIXED_ID_PCT+'%;font-size:'+cellFontSize+'px;">الرقم القومي</th>';
+    allItems.forEach(function(n){page+='<th class="item-col-v" style="width:'+itemColPct+'%;height:'+headHeight+'px;"><span class="rot" style="font-size:'+rotFontSize+'px;">'+n+'</span></th>';});
     page+='</tr></thead><tbody>'+rowsHtml+totalRowHtml+'</tbody></table>';
     page+=signHtml;
     page+='<div class="a4-footer"><span>عدد المرضى: '+data.length+'</span><span>صفحة '+(pageIdx+1)+' من '+pages.length+' | تاريخ الطباعة: '+today+'</span></div>';
