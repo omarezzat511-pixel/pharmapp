@@ -7326,7 +7326,7 @@ function printAllDaily(){
   const longestNameLen=allItems.reduce((m,n)=>Math.max(m,n.length),0);
   if(longestNameLen>26)headHeight=Math.max(headHeight,175);
 
-  const ROWS_PER_PAGE=24;
+  const ROWS_PER_PAGE=25;
   const pages=[];
   for(let i=0;i<data.length;i+=ROWS_PER_PAGE){pages.push(data.slice(i,i+ROWS_PER_PAGE));}
   if(!pages.length)pages.push([]);
