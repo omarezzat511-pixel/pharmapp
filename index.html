@@ -163,7 +163,6 @@ body{font-family:'Tajawal',sans-serif;background:var(--navy);min-height:100vh;co
 .daily-table th.name-col{text-align:right;white-space:nowrap;position:sticky;top:0;right:34px;z-index:4;background:var(--teal);}
 .daily-table th.num-col{width:34px;white-space:nowrap;position:sticky;top:0;right:0;z-index:4;background:var(--teal);}
 .daily-table th.id-col{width:110px;white-space:nowrap;}
-.daily-table th.decision-col{width:90px;white-space:nowrap;}
 .daily-table th.item-col{white-space:nowrap;font-size:11px;padding:5px 8px;}
 .daily-table th.edit-col{width:72px;white-space:nowrap;}
 .daily-table td{padding:4px 5px;border:1px solid #D0E4EC;vertical-align:middle;text-align:center;font-size:14px;font-weight:700;}
@@ -390,6 +389,7 @@ tr.patient-row,tr.inv-row{cursor:pointer;}
 /* ═══ PRINT STYLES — A4 LANDSCAPE, BLACK & WHITE, CLEAN TABLE ═══ */
 @page{size:A4 landscape;margin:10mm 8mm;}
 @media print{
+  .dec-col{display:none!important;} /* رقم/تاريخ القرار يظهروا في اليومية على الشاشة بس — مش في الطباعة */
   .daily-table th,.daily-table td,.daily-table td:first-child,.daily-table td.name-cell,.daily-table th.num-col,.daily-table th.name-col{position:static!important;}
   @page{size:A4 landscape;margin:10mm 8mm;margin-header:0;margin-footer:0;}
   html,body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
@@ -1040,16 +1040,17 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
             </div>
           </div>
         </div>
-        <div class="form-row">
+        <div class="form-row" style="margin-top:14px;">
           <div class="form-group">
             <label class="form-label">رقم القرار</label>
-            <input class="form-input" id="decisionNumber" placeholder="أدخل رقم القرار...">
+            <input class="form-input" id="decisionNo" placeholder="رقم القرار (اختياري)" autocomplete="off">
           </div>
           <div class="form-group">
             <label class="form-label">تاريخ القرار (شهر/سنة)</label>
-            <input class="form-input" id="decisionDate" placeholder="مثال: 03/26" maxlength="5" oninput="formatDecisionDateInput(this)">
+            <input class="form-input" id="decisionDate" placeholder="mm/yy — مثال: 03/26" maxlength="5" inputmode="numeric" autocomplete="off" dir="ltr" style="text-align:right;" oninput="onDecisionDateInput(this)" onblur="onDecisionDateBlur(this)">
           </div>
         </div>
+        <div id="decisionAlert" style="display:none;margin-top:12px;"></div>
       </div>
     </div>
 
@@ -1476,8 +1477,8 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
         <div class="form-group"><label class="form-label">الرقم القومي</label><input class="form-input" id="editPatientId"></div>
       </div>
       <div class="form-row" style="margin-bottom:16px;">
-        <div class="form-group"><label class="form-label">رقم القرار</label><input class="form-input" id="editDecisionNumber" placeholder="أدخل رقم القرار..."></div>
-        <div class="form-group"><label class="form-label">تاريخ القرار (شهر/سنة)</label><input class="form-input" id="editDecisionDate" placeholder="مثال: 03/26" maxlength="5" oninput="formatDecisionDateInput(this)"></div>
+        <div class="form-group"><label class="form-label">رقم القرار</label><input class="form-input" id="editDecisionNo" placeholder="اختياري" autocomplete="off"></div>
+        <div class="form-group"><label class="form-label">تاريخ القرار (mm/yy)</label><input class="form-input" id="editDecisionDate" placeholder="مثال: 03/26" maxlength="5" inputmode="numeric" autocomplete="off" dir="ltr" style="text-align:right;" oninput="onDecisionDateInput(this)" onblur="onDecisionDateBlur(this)"></div>
       </div>
       <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px;">الأصناف المصروفة</div>
       <table class="edit-tbl" id="editItemsTable">
@@ -1813,9 +1814,9 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
           <div class="pc-icon">🧾</div><div class="pc-label">فواتير كل المرضى لعدة شهور</div>
           <div class="pc-desc">فاتورة موحدة لكل مريض تجمع صرفه في الشهور اللي تختارها، وطباعتها كلها دفعة واحدة</div>
         </button>
-        <button class="pc-card" onclick="closeModal('printCenterModal');openDecisionMonthInvoiceModal();">
-          <div class="pc-icon">📜</div><div class="pc-label">فواتير المرضى حسب القرار</div>
-          <div class="pc-desc">اختار شهر القرار، وهيجمعلك فاتورة كل مريض ليه قرار بتاريخ الشهر ده</div>
+        <button class="pc-card" onclick="closeModal('printCenterModal');openDecisionInvoiceModal();">
+          <div class="pc-icon">📑</div><div class="pc-label">فواتير المرضى حسب القرار</div>
+          <div class="pc-desc">اختار شهر القرار (مثلاً 03/26) وهيطلع فاتورة لكل قرار تاريخه الشهر ده، بصرفه كله مجمّع</div>
         </button>
       </div>
 
@@ -2034,25 +2035,28 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
   </div>
 </div>
 
-<!-- ═══ DECISION-MONTH INVOICES MODAL (فواتير المرضى حسب شهر القرار) ═══ -->
-<div class="modal-overlay" id="decisionMonthInvoiceModal">
-  <div class="modal" style="width:min(480px,94vw);border-top:4px solid var(--gold);">
+<!-- ═══ فواتير المرضى حسب القرار ═══ -->
+<div class="modal-overlay" id="decisionInvoiceModal">
+  <div class="modal" style="width:min(520px,94vw);border-top:4px solid var(--gold);">
     <div class="modal-header" style="background:var(--navy);">
-      <div class="modal-title">📜 فواتير المرضى حسب القرار</div>
-      <button class="modal-close" onclick="closeModal('decisionMonthInvoiceModal')">✕</button>
+      <div class="modal-title">📑 فواتير المرضى حسب القرار</div>
+      <button class="modal-close" onclick="closeModal('decisionInvoiceModal')">✕</button>
     </div>
     <div class="modal-body" style="padding:16px;">
       <div style="font-size:12.5px;color:var(--text3);margin-bottom:12px;line-height:1.8;">
-        اختار شهر القرار المطلوب. هيتم تجميع كل مريض عنده قرار بتاريخ الشهر ده (من اليومية الحالية والأرشيف) في فاتورة واحدة باسمه ورقم قراره، وطباعة فواتير كل المرضى دي دفعة واحدة.
+        اختار شهر تاريخ القرار (mm/yy) — هيتجمع كل صرف المريض على كل قرار تاريخه الشهر ده (من اليومية الحالية والأرشيف) في فاتورة واحدة لكل قرار، وكل شهر صرف بقسم لوحده جواها.
       </div>
       <div class="form-group">
-        <label class="form-label">شهر القرار</label>
-        <input class="form-input" type="month" id="dmiMonthPick">
+        <label class="form-label">شهر تاريخ القرار</label>
+        <select class="form-input" id="decInvMonthSel"></select>
       </div>
+      <label style="display:flex;align-items:center;gap:8px;margin-top:12px;font-size:13px;cursor:pointer;">
+        <input type="checkbox" id="decInvShowNo"> إظهار رقم وتاريخ القرار في الفاتورة المطبوعة
+      </label>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-navy" onclick="generateDecisionMonthInvoicesPrint()">🖨 إنشاء وطباعة فواتير القرارات</button>
-      <button class="btn btn-sm" style="background:var(--light);color:var(--text2)" onclick="closeModal('decisionMonthInvoiceModal')">إغلاق</button>
+      <button class="btn btn-navy" onclick="generateDecisionInvoicesPrint()">🖨 إنشاء وطباعة الفواتير</button>
+      <button class="btn btn-sm" style="background:var(--light);color:var(--text2)" onclick="closeModal('decisionInvoiceModal')">إغلاق</button>
     </div>
   </div>
 </div>
@@ -2519,6 +2523,7 @@ function selPat(name,id){
   document.getElementById('patientId').value=dc(id);
   document.getElementById('nameDropdown').classList.remove('open');
   clearPatientFieldErrors();
+  updateDecisionAlert();
   document.getElementById('itemSearch').focus();
 }
 
@@ -2682,8 +2687,9 @@ function clearPatientEntry(){
   save();
   document.getElementById('patientName').value='';
   document.getElementById('patientId').value='';
-  document.getElementById('decisionNumber').value='';
+  document.getElementById('decisionNo').value='';
   document.getElementById('decisionDate').value='';
+  updateDecisionAlert();
   document.getElementById('itemSearch').value='';
   document.getElementById('itemQty').value='';
   selItem='';S.currentItems=[];renderCurrentItems();
@@ -2702,6 +2708,12 @@ function transferToDaily(){
   if(!name){toast('أدخل اسم المريض','error');document.getElementById('patientName').focus();return;}
   if(!date){toast('حدد التاريخ من الشريط العلوي','error');return;}
   if(!S.currentItems.length){toast('أضف صنفاً واحداً على الأقل','error');return;}
+  // ── بيانات القرار (اختيارية) ──
+  const decNo=document.getElementById('decisionNo').value.trim();
+  const decDate=normDecisionDate(document.getElementById('decisionDate').value);
+  if(decDate===null){toast('تاريخ القرار لازم يكون بصيغة mm/yy — مثال: 03/26','error');document.getElementById('decisionDate').focus();return;}
+  // التنبيهات دي مش بتوقف الصرف — بس بتنبّه (بتتحسب قبل تسجيل الصرف الحالي)
+  const decWarnings=evaluateDecision(name,id,decNo,decDate,date);
 
   // ── Conflict validation ──
   if(id){
@@ -2742,9 +2754,9 @@ function transferToDaily(){
       unmatchedItems.push(itemName); // الصنف ده مش موجود في قائمة الأصناف — الصرف اتسجل بس رصيده مش هيتنقص!
     }
   });
-  const decisionNumber=document.getElementById('decisionNumber').value.trim();
-  const decisionDateVal=document.getElementById('decisionDate').value.trim();
-  const newDailyRow={patientName:name,patientId:id,items:obj,batchAllocations:batchAllocations,decisionNumber:decisionNumber,decisionDate:decisionDateVal};
+  const newDailyRow={patientName:name,patientId:id,items:obj,batchAllocations:batchAllocations};
+  if(decNo)newDailyRow.decisionNo=decNo;
+  if(decDate)newDailyRow.decisionDate=decDate;
   S.daily[date].push(newDailyRow);
 
   // Update inventory
@@ -2754,22 +2766,97 @@ function transferToDaily(){
   appendDailyRowToCloud(date,newDailyRow);
   document.getElementById('patientName').value='';
   document.getElementById('patientId').value='';
-  document.getElementById('decisionNumber').value='';
+  document.getElementById('decisionNo').value='';
   document.getElementById('decisionDate').value='';
+  updateDecisionAlert();
   document.getElementById('itemSearch').value='';
   document.getElementById('itemQty').value='';
   selItem='';
   S.currentItems=[];renderCurrentItems();updateStats();
   document.getElementById('patientName').focus();
   toast(`✓ تم ترحيل "${name}" إلى يومية ${date}`,'success');
+  if(decWarnings.length){
+    playAlertSound('yellow');
+    decWarnings.forEach((w,i)=>setTimeout(()=>toast('⚠️ '+w,'error',8000),400+i*300));
+  }
   if(unmatchedItems.length){
     toast('⚠️ تنبيه: الصنف "'+unmatchedItems.join('، ')+'" مش موجود في قائمة الأصناف الحالية — الصرف اتسجل في اليومية بس رصيد الصنف مش هيتنقص! راجع اسم الصنف من صفحة الأصناف.','error');
   }
-  // تنبيه رقم/تاريخ القرار (6 شهور) — تنبيه فقط، مش بيوقف الصرف
-  checkDecisionAlerts(name,id,decisionNumber,decisionDateVal,date);
   // Check stock after transfer
   const affectedItems=Object.keys(obj).map(n=>S.items.find(i=>i.name===n)).filter(Boolean);
   checkAndAlertStock(affectedItems);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ══ القرار (رقم القرار / تاريخ القرار mm/yy) ═══════════════════
+// ═══════════════════════════════════════════════════════════════
+// القرار صالح 6 شهور من شهر تاريخه. التنبيهات هنا مجرد تنبيه — مش بتوقف الصرف أبداً.
+const DECISION_VALID_MONTHS=6;
+function escHtml(v){return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+// بتحوّل أي إدخال لصيغة mm/yy. '' = فاضي، null = صيغة غلط
+function normDecisionDate(v){
+  v=convertArabicDigits(String(v==null?'':v)).trim();
+  if(!v)return '';
+  let m=v.match(/^(\d{1,2})\s*[\/\-.\\]\s*(\d{2}|\d{4})$/);
+  if(!m){const d=v.match(/^(\d{2})(\d{2})$/);if(d)m=[v,d[1],d[2]];else return null;}
+  const mm=parseInt(m[1],10);
+  if(mm<1||mm>12)return null;
+  return String(mm).padStart(2,'0')+'/'+(m[2].length===4?m[2].slice(2):m[2]);
+}
+function decisionMonthIdx(dd){const m=/^(\d{2})\/(\d{2})$/.exec(dd||'');return m?(2000+parseInt(m[2],10))*12+parseInt(m[1],10)-1:null;}
+function decisionIdxLabel(idx){const y=Math.floor(idx/12),mo=(idx%12)+1;return String(mo).padStart(2,'0')+'/'+String(y).slice(2);}
+function normDecisionNo(v){return convertArabicDigits(String(v==null?'':v)).replace(/\s+/g,'').toLowerCase();}
+function onDecisionDateInput(el){
+  const d=convertArabicDigits(el.value).replace(/\D/g,'').slice(0,4);
+  el.value=d.length>2?d.slice(0,2)+'/'+d.slice(2):d;
+}
+function onDecisionDateBlur(el){const n=normDecisionDate(el.value);if(n)el.value=n;updateDecisionAlert();}
+
+// بترجع الشهور (yyyy-mm) اللي المريض صرف فيها على نفس رقم القرار — من اليومية الحالية + الأرشيف (الأرشيف أولى لنفس اليوم زي باقي النظام)
+function decisionDispensedMonths(name,id,decNo){
+  const set=new Set();const key=normDecisionNo(decNo);
+  if(!key)return set;
+  const days=new Set([...Object.keys(S.daily),...Object.keys(S.archive)]);
+  days.forEach(d=>{
+    (S.archive[d]||S.daily[d]||[]).forEach(r=>{
+      const same=(id&&r.patientId===id)||r.patientName===name;
+      if(same&&normDecisionNo(r.decisionNo)===key)set.add(getMonthKey(d));
+    });
+  });
+  return set;
+}
+// بترجع مصفوفة رسائل تنبيه (فاضية لو مفيش حاجة). dispDate = تاريخ الصرف yyyy-mm-dd
+function evaluateDecision(name,id,decNo,decDate,dispDate){
+  const msgs=[];
+  if(!name||!dispDate)return msgs;
+  const label=decNo?('رقم '+decNo):'';
+  if(decNo){
+    const months=decisionDispensedMonths(name,id,decNo);
+    months.delete(getMonthKey(dispDate)); // الشهر الحالي مش بيتحسب (الصرف الجديد هيبقى هو الشهر اللي بعده)
+    if(months.size>=DECISION_VALID_MONTHS){
+      msgs.push('المريض صرف '+months.size+' شهور على القرار '+label+' — خلصت مدة الـ '+DECISION_VALID_MONTHS+' شهور.');
+    }
+  }
+  const di=decisionMonthIdx(decDate);
+  const m=/^(\d{4})-(\d{2})/.exec(dispDate);
+  if(di!==null&&m){
+    const cur=parseInt(m[1],10)*12+parseInt(m[2],10)-1;
+    if(cur-di>=DECISION_VALID_MONTHS){
+      msgs.push('القرار '+label+' بتاريخ '+decDate+' عدّى '+DECISION_VALID_MONTHS+' شهور (كان صالح لحد '+decisionIdxLabel(di+DECISION_VALID_MONTHS-1)+').');
+    }
+  }
+  return msgs;
+}
+function updateDecisionAlert(){
+  const box=document.getElementById('decisionAlert');if(!box)return;
+  const name=document.getElementById('patientName').value.trim();
+  const id=document.getElementById('patientId').value.trim();
+  const decNo=document.getElementById('decisionNo').value.trim();
+  const decDate=normDecisionDate(document.getElementById('decisionDate').value);
+  const msgs=(decNo||decDate)?evaluateDecision(name,id,decNo,decDate||'',S.date):[];
+  if(!msgs.length){box.style.display='none';box.innerHTML='';return;}
+  box.style.display='block';
+  box.innerHTML=msgs.map(m=>'<div class="alert-banner yellow" style="margin-bottom:6px;">⚠️ '+escHtml(m)+' <span style="font-weight:400;font-size:12px;">(تنبيه فقط — تقدر ترحّل عادي)</span></div>').join('');
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -3188,64 +3275,6 @@ function exportReceiptsToExcel(){
 function getMonthKey(dateStr){
   const d=new Date(dateStr+'T00:00:00');
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
-}
-
-// ═══════════════════════════════════════════════════════════════
-// ══ رقم القرار وتاريخ القرار (6 شهور صلاحية) ═══════════════════
-// ═══════════════════════════════════════════════════════════════
-// فورمات حقل تاريخ القرار أثناء الكتابة: بيحوّل أي أرقام مكتوبة تلقائيًا لصيغة mm/yy
-function formatDecisionDateInput(input){
-  let v=input.value.replace(/[^\d]/g,'').slice(0,4);
-  if(v.length>=3)v=v.slice(0,2)+'/'+v.slice(2);
-  input.value=v;
-}
-// بيحوّل تاريخ القرار من صيغة mm/yy لمفتاح شهر "YYYY-MM" (بافتراض سنة 20xx) — أو null لو الصيغة غلط
-function decisionDateToMonthKey(dd){
-  if(!dd)return null;
-  const m=String(dd).trim().match(/^(\d{1,2})\/(\d{2})$/);
-  if(!m)return null;
-  const mo=parseInt(m[1],10);
-  if(mo<1||mo>12)return null;
-  const yr=2000+parseInt(m[2],10);
-  return yr+'-'+String(mo).padStart(2,'0');
-}
-// بيحسب عدد الشهور الفاصلة بين مفتاحي شهر (YYYY-MM) — mk2 بعد mk1
-function monthsBetweenKeys(mk1,mk2){
-  const [y1,m1]=mk1.split('-').map(Number);
-  const [y2,m2]=mk2.split('-').map(Number);
-  return (y2-y1)*12+(m2-m1);
-}
-// بيدوّر في اليومية الحالية + الأرشيف على كل سجلات نفس المريض بنفس رقم القرار،
-// ويرجع عدد الشهور المختلفة اللي صرف فيها تحت القرار ده
-function countDecisionDispenseMonths(patientName,patientId,decisionNumber){
-  if(!decisionNumber)return 0;
-  const allDaysSource={...S.daily,...S.archive};
-  const months=new Set();
-  Object.keys(allDaysSource).forEach(function(day){
-    (allDaysSource[day]||[]).forEach(function(row){
-      const sameP=patientId?(row.patientId===patientId):(row.patientName===patientName);
-      if(sameP&&(row.decisionNumber||'')===decisionNumber){
-        months.add(getMonthKey(day));
-      }
-    });
-  });
-  return months.size;
-}
-// تنبيه (بدون إيقاف الصرف) لو القرار خلص 6 شهور صرف فعلي، أو عدّى عليه 6 شهور من تاريخه
-function checkDecisionAlerts(patientName,patientId,decisionNumber,decisionDate,entryDate){
-  if(!decisionNumber)return;
-  const monthsDispensed=countDecisionDispenseMonths(patientName,patientId,decisionNumber);
-  if(monthsDispensed>=6){
-    toast('⚠️ القرار رقم '+decisionNumber+' للمريض "'+patientName+'" صرف عليه 6 شهور بالفعل — القرار خلص ويحتاج تجديد','error');
-  }
-  const decisionMk=decisionDateToMonthKey(decisionDate);
-  if(decisionMk){
-    const entryMk=getMonthKey(entryDate);
-    const elapsed=monthsBetweenKeys(decisionMk,entryMk);
-    if(elapsed>=6){
-      toast('⚠️ مر على تاريخ القرار رقم '+decisionNumber+' ('+decisionDate+') أكتر من 6 شهور — يحتاج تجديد حتى لو عدد شهور الصرف أقل من 6','error');
-    }
-  }
 }
 
 // يحسب القيم الصحيحة لصف صنف معين في شهر معين من غير أي افتراضات — بيتستخدم لما نحتاج ننشئ صف جديد
@@ -3770,9 +3799,9 @@ function renderDaily(){
   const totals={};allItems.forEach(n=>totals[n]=0);
   data.forEach(row=>{allItems.forEach(n=>{totals[n]+=(row.items[n]||0);});});
   dailySelectedIdx.clear();updateTransferBtnState();
-  head.innerHTML=`<tr><th class="sel-col" style="width:34px;text-align:center;"><input type="checkbox" id="dailySelectAll" onchange="toggleSelectAllDaily(this.checked)"></th><th class="num-col">#</th><th class="name-col">اسم المريض</th><th class="id-col">الرقم القومي</th><th class="decision-col">رقم القرار</th><th class="decision-col">تاريخ القرار</th>${allItems.map(n=>`<th class="item-col">${n}</th>`).join('')}<th class="edit-col">تعديل</th></tr>`;
-  body.innerHTML=data.map((row,i)=>`<tr class="patient-row" onclick="if(event.target.tagName!=='INPUT'&&event.target.tagName!=='BUTTON')toggleRowHighlight(this)"><td style="text-align:center;"><input type="checkbox" class="daily-row-check" data-idx="${i}" onchange="toggleDailyRowSelect(${i},this.checked)"></td><td>${i+1}</td><td class="name-cell">${row.patientName}</td><td>${row.patientId||'—'}</td><td>${row.decisionNumber||'—'}</td><td>${row.decisionDate||'—'}</td>${allItems.map(n=>{const q=row.items[n]||0;return`<td>${q?`<span class="qty-badge">${q}</span>`:'<span class="qty-badge zero">—</span>'}</td>`;}).join('')}<td class="edit-col"><div style="display:flex;gap:4px;justify-content:center;"><button class="btn btn-sm btn-warn" onclick="openEditPatient('${ad}',${i})" title="تعديل بيانات المريض">✏ تعديل</button><button class="btn btn-sm btn-outline" onclick="printPatientReceiptA4('${ad}',${i})" title="طباعة إيصال المريض">🖨 فاتورة</button></div></td></tr>`).join('');
-  body.innerHTML+=`<tr class="total-row"><td></td><td>—</td><td class="name-cell" style="font-weight:700;">الإجمالي</td><td></td><td></td><td></td>${allItems.map(n=>`<td><strong>${totals[n]}</strong></td>`).join('')}<td class="edit-col"></td></tr>`;
+  head.innerHTML=`<tr><th class="sel-col" style="width:34px;text-align:center;"><input type="checkbox" id="dailySelectAll" onchange="toggleSelectAllDaily(this.checked)"></th><th class="num-col">#</th><th class="name-col">اسم المريض</th><th class="id-col">الرقم القومي</th><th class="dec-col">رقم القرار</th><th class="dec-col">تاريخ القرار</th>${allItems.map(n=>`<th class="item-col">${n}</th>`).join('')}<th class="edit-col">تعديل</th></tr>`;
+  body.innerHTML=data.map((row,i)=>`<tr class="patient-row" onclick="if(event.target.tagName!=='INPUT'&&event.target.tagName!=='BUTTON')toggleRowHighlight(this)"><td style="text-align:center;"><input type="checkbox" class="daily-row-check" data-idx="${i}" onchange="toggleDailyRowSelect(${i},this.checked)"></td><td>${i+1}</td><td class="name-cell">${row.patientName}</td><td>${row.patientId||'—'}</td><td class="dec-col">${escHtml(row.decisionNo)||'—'}</td><td class="dec-col">${escHtml(row.decisionDate)||'—'}</td>${allItems.map(n=>{const q=row.items[n]||0;return`<td>${q?`<span class="qty-badge">${q}</span>`:'<span class="qty-badge zero">—</span>'}</td>`;}).join('')}<td class="edit-col"><div style="display:flex;gap:4px;justify-content:center;"><button class="btn btn-sm btn-warn" onclick="openEditPatient('${ad}',${i})" title="تعديل بيانات المريض">✏ تعديل</button><button class="btn btn-sm btn-outline" onclick="printPatientReceiptA4('${ad}',${i})" title="طباعة إيصال المريض">🖨 فاتورة</button></div></td></tr>`).join('');
+  body.innerHTML+=`<tr class="total-row"><td></td><td>—</td><td class="name-cell" style="font-weight:700;">الإجمالي</td><td></td><td class="dec-col"></td><td class="dec-col"></td>${allItems.map(n=>`<td><strong>${totals[n]}</strong></td>`).join('')}<td class="edit-col"></td></tr>`;
   document.getElementById('dailyPagination').innerHTML='';
   filterDaily(document.getElementById('dailySearch').value||'');
 }
@@ -4005,9 +4034,9 @@ function filterDailyByItem(q){
   const headers=Array.from(headRow.cells);
 
   // حدد إيه الـ column indexes اللي هتتخفى وهتتظهر
-  // أول 6 أعمدة: تحديد، #، الاسم، الرقم القومي، رقم القرار، تاريخ القرار — دايماً ظاهرة
+  // أول 3 أعمدة: #، الاسم، الرقم القومي — دايماً ظاهرة
   // آخر عمود: تعديل — دايماً ظاهر
-  const fixedCols=new Set([0,1,2,3,4,5,headers.length-1]);
+  const fixedCols=new Set([0,1,2,3,4,5,headers.length-1]); // 4 و5 = رقم/تاريخ القرار
   const matchCols=new Set(); // indexes للأصناف المطابقة
 
   headers.forEach((th,i)=>{
@@ -4092,7 +4121,7 @@ function openEditPatient(day,idx){
   editItems=Object.entries(row.items).map(([name,qty])=>({name,qty}));
   document.getElementById('editPatientName').value=row.patientName;
   document.getElementById('editPatientId').value=row.patientId||'';
-  document.getElementById('editDecisionNumber').value=row.decisionNumber||'';
+  document.getElementById('editDecisionNo').value=row.decisionNo||'';
   document.getElementById('editDecisionDate').value=row.decisionDate||'';
   document.getElementById('editNewItem').value='';document.getElementById('editNewQty').value='';selEditItem='';
   renderEditTbl();document.getElementById('editPatientModal').classList.add('open');
@@ -4121,18 +4150,22 @@ function savePatientEdit(){
   if(!name){toast('اسم المريض مطلوب','error');return;}
   if(!editItems.length){toast('أضف صنفاً واحداً على الأقل','error');return;}
   const obj={};editItems.forEach(i=>{if(i.qty>0)obj[i.name]=i.qty;});
-  const editDecisionNumber=document.getElementById('editDecisionNumber').value.trim();
-  const editDecisionDateVal=document.getElementById('editDecisionDate').value.trim();
+  const decNoE=document.getElementById('editDecisionNo').value.trim();
+  const decDateE=normDecisionDate(document.getElementById('editDecisionDate').value);
+  if(decDateE===null){toast('تاريخ القرار لازم يكون بصيغة mm/yy — مثال: 03/26','error');document.getElementById('editDecisionDate').focus();return;}
+  const decExtra={};
+  if(decNoE)decExtra.decisionNo=decNoE;
+  if(decDateE)decExtra.decisionDate=decDateE;
 
   if(editCtx.mode==='archive'){
-    S.archive[editCtx.day][editCtx.idx]={patientName:name,patientId:document.getElementById('editPatientId').value.trim(),items:obj,decisionNumber:editDecisionNumber,decisionDate:editDecisionDateVal};
+    S.archive[editCtx.day][editCtx.idx]={patientName:name,patientId:document.getElementById('editPatientId').value.trim(),items:obj,...decExtra};
     save();viewArchDay(editCtx.day);closeModal('editPatientModal');
     document.querySelector('#editPatientModal .modal-title').textContent='✏️ تعديل بيانات المريض في اليومية';
     toast('تم حفظ التعديلات في الأرشيف ✓','success');return;
   }
   if(editCtx.mode==='archive-add'){
     if(!S.archive[editCtx.day])S.archive[editCtx.day]=[];
-    S.archive[editCtx.day].push({patientName:name,patientId:document.getElementById('editPatientId').value.trim(),items:obj,decisionNumber:editDecisionNumber,decisionDate:editDecisionDateVal});
+    S.archive[editCtx.day].push({patientName:name,patientId:document.getElementById('editPatientId').value.trim(),items:obj,...decExtra});
     save();viewArchDay(editCtx.day);closeModal('editPatientModal');
     document.querySelector('#editPatientModal .modal-title').textContent='✏️ تعديل بيانات المريض في اليومية';
     toast('تم إضافة المريض للأرشيف ✓','success');return;
@@ -4164,9 +4197,8 @@ function savePatientEdit(){
     }
   });
 
-  S.daily[editCtx.day][editCtx.idx]={patientName:name,patientId:document.getElementById('editPatientId').value.trim(),items:obj,batchAllocations:newBatchAllocations,decisionNumber:editDecisionNumber,decisionDate:editDecisionDateVal};
+  S.daily[editCtx.day][editCtx.idx]={patientName:name,patientId:document.getElementById('editPatientId').value.trim(),items:obj,batchAllocations:newBatchAllocations,...decExtra};
   save();pushDailyDayToCloud(editCtx.day);renderDaily();updateStats();renderInventory();renderItemsGrid();closeModal('editPatientModal');toast('تم حفظ التعديلات ✓','success');
-  checkDecisionAlerts(name,document.getElementById('editPatientId').value.trim(),editDecisionNumber,editDecisionDateVal,editCtx.day);
   if(unmatchedEditItems.length){
     toast('⚠️ تنبيه: الصنف "'+unmatchedEditItems.join('، ')+'" مش موجود في قائمة الأصناف الحالية — رصيده مش هيتنقص!','error');
   }
@@ -4281,12 +4313,12 @@ function viewArchDay(day){
   archViewDay=day;const data=S.archive[day];
   document.getElementById('archViewPageTitle').textContent=`📅 يومية ${fmtDate(day)}`;
   const ai=getItems(data);
-  document.getElementById('archViewPageHead').innerHTML=`<tr><th class="num-col">#</th><th class="name-col">اسم المريض</th><th class="id-col">الرقم القومي</th><th class="decision-col">رقم القرار</th><th class="decision-col">تاريخ القرار</th>${ai.map(n=>`<th class="item-col">${n}</th>`).join('')}<th class="edit-col">تعديل</th></tr>`;
+  document.getElementById('archViewPageHead').innerHTML=`<tr><th class="num-col">#</th><th class="name-col">اسم المريض</th><th class="id-col">الرقم القومي</th><th class="dec-col">رقم القرار</th><th class="dec-col">تاريخ القرار</th>${ai.map(n=>`<th class="item-col">${n}</th>`).join('')}<th class="edit-col">تعديل</th></tr>`;
   const totals={};ai.forEach(n=>totals[n]=0);
   document.getElementById('archViewPageBody').innerHTML=data.map((row,i)=>{
     ai.forEach(n=>{totals[n]+=(row.items[n]||0);});
-    return `<tr class="patient-row"><td>${i+1}</td><td class="name-cell">${row.patientName}</td><td>${row.patientId||'—'}</td><td>${row.decisionNumber||'—'}</td><td>${row.decisionDate||'—'}</td>${ai.map(n=>{const q=row.items[n]||0;return`<td>${q?`<span class="qty-badge">${q}</span>`:'<span class="qty-badge zero">—</span>'}</td>`;}).join('')}<td class="edit-col"><div style="display:flex;gap:4px;justify-content:center;"><button class="btn btn-sm btn-warn" onclick="openArchEdit(${i})" title="تعديل">✏ تعديل</button><button class="btn btn-sm btn-outline" onclick="printPatientReceiptA4('${day}',${i},true)" title="طباعة إيصال المريض">🖨 فاتورة</button></div></td></tr>`;
-  }).join('')+`<tr class="total-row"><td>—</td><td class="name-cell" style="font-weight:700;">الإجمالي</td><td></td><td></td><td></td>${ai.map(n=>`<td><strong>${totals[n]}</strong></td>`).join('')}<td></td></tr>`;
+    return `<tr class="patient-row"><td>${i+1}</td><td class="name-cell">${row.patientName}</td><td>${row.patientId||'—'}</td><td class="dec-col">${escHtml(row.decisionNo)||'—'}</td><td class="dec-col">${escHtml(row.decisionDate)||'—'}</td>${ai.map(n=>{const q=row.items[n]||0;return`<td>${q?`<span class="qty-badge">${q}</span>`:'<span class="qty-badge zero">—</span>'}</td>`;}).join('')}<td class="edit-col"><div style="display:flex;gap:4px;justify-content:center;"><button class="btn btn-sm btn-warn" onclick="openArchEdit(${i})" title="تعديل">✏ تعديل</button><button class="btn btn-sm btn-outline" onclick="printPatientReceiptA4('${day}',${i},true)" title="طباعة إيصال المريض">🖨 فاتورة</button></div></td></tr>`;
+  }).join('')+`<tr class="total-row"><td>—</td><td class="name-cell" style="font-weight:700;">الإجمالي</td><td></td><td class="dec-col"></td><td class="dec-col"></td>${ai.map(n=>`<td><strong>${totals[n]}</strong></td>`).join('')}<td></td></tr>`;
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById('page-archive-view').classList.add('active');
@@ -4369,7 +4401,7 @@ function openArchEdit(idx){
   editItems=Object.entries(row.items).map(([name,qty])=>({name,qty}));
   document.getElementById('editPatientName').value=row.patientName;
   document.getElementById('editPatientId').value=row.patientId||'';
-  document.getElementById('editDecisionNumber').value=row.decisionNumber||'';
+  document.getElementById('editDecisionNo').value=row.decisionNo||'';
   document.getElementById('editDecisionDate').value=row.decisionDate||'';
   document.getElementById('editNewItem').value='';document.getElementById('editNewQty').value='';selEditItem='';
   document.querySelector('#editPatientModal .modal-title').textContent='✏️ تعديل مريض في الأرشيف';
@@ -4381,7 +4413,7 @@ function openArchAddPatient(){
   editItems=[];
   document.getElementById('editPatientName').value='';
   document.getElementById('editPatientId').value='';
-  document.getElementById('editDecisionNumber').value='';
+  document.getElementById('editDecisionNo').value='';
   document.getElementById('editDecisionDate').value='';
   document.getElementById('editNewItem').value='';document.getElementById('editNewQty').value='';selEditItem='';
   document.querySelector('#editPatientModal .modal-title').textContent='➕ إضافة مريض جديد للأرشيف';
@@ -6584,90 +6616,53 @@ function generateAllPatientsMonthInvoicesPrint(){
 }
 
 // ═══════════════════════════════════════════════════════════════
-// ══ فواتير المرضى بناءً على رقم/تاريخ القرار (تجميع حسب شهر القرار) ═
+// ══ فواتير المرضى حسب القرار ═══════════════════════════════════
 // ═══════════════════════════════════════════════════════════════
-function buildDecisionInvoiceHtml(patientName,patientId,decisionNumbers,monthLabel,items){
-  const today=new Date().toLocaleDateString('ar-EG');
-  const now=new Date().toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'});
-  const fmtNum=function(v){return (v||0).toLocaleString('ar-EG',{minimumFractionDigits:2,maximumFractionDigits:2});};
-  const itemNames=Object.keys(items).filter(n=>(items[n]||0)>0);
-
-  let grandTotal=0;
-  const rowsHtml=itemNames.map(function(n,i){
-    const qty=items[n]||0;
-    const itemObj=S.items.find(it=>it.name===n);
-    const price=itemObj?(itemObj.price||0):0;
-    const lineTotal=price*qty;
-    grandTotal+=lineTotal;
-    return '<tr><td>'+(i+1)+'</td><td class="a4-name-cell">'+n+'</td><td>'+qty+'</td><td>'+fmtNum(price)+'</td><td>'+fmtNum(lineTotal)+'</td></tr>';
-  }).join('');
-
-  let html='<div class="a4-page a4-page-bw" style="max-width:148mm;min-height:0;margin:0 auto;">';
-  html+='<div style="text-align:center;border-bottom:3px double #000;padding-bottom:10px;margin-bottom:14px;">';
-  html+='<div style="font-size:19px;font-weight:900;">💊 نظام صرف الأدوية</div>';
-  html+='<div style="font-size:14px;font-weight:700;margin-top:4px;">إيصال صرف دواء — بناءً على القرار</div>';
-  html+='</div>';
-
-  html+='<table style="width:100%;border-collapse:collapse;margin-bottom:6px;font-size:13px;">';
-  html+='<tr><td style="padding:4px 0;font-weight:700;width:100px;">اسم المريض:</td><td style="padding:4px 0;">'+patientName+'</td></tr>';
-  html+='<tr><td style="padding:4px 0;font-weight:700;">الرقم القومي:</td><td style="padding:4px 0;">'+(patientId||'\u2014')+'</td></tr>';
-  html+='<tr><td style="padding:4px 0;font-weight:700;">رقم القرار:</td><td style="padding:4px 0;">'+(decisionNumbers||'\u2014')+'</td></tr>';
-  html+='<tr><td style="padding:4px 0;font-weight:700;">شهر القرار:</td><td style="padding:4px 0;">'+monthLabel+'</td></tr>';
-  html+='</table>';
-
-  html+='<table class="a4-table a4-table-bw"><thead><tr>';
-  html+='<th style="width:24px;">#</th><th class="a4-name-col">الصنف</th><th>الكمية</th><th>سعر الوحدة</th><th>الإجمالي</th>';
-  html+='</tr></thead><tbody>'+(rowsHtml||'<tr><td colspan="5" style="text-align:center;color:#777;">لا توجد أصناف مسجلة</td></tr>');
-  if(itemNames.length){
-    html+='<tr class="a4-total-row"><td colspan="4">الإجمالي الكلي</td><td>'+fmtNum(grandTotal)+'</td></tr>';
-  }
-  html+='</tbody></table>';
-
-  html+='<div class="a4-sign-row" style="margin-top:32px;">';
-  html+='<div class="a4-sign-box"><div class="a4-sign-line">توقيع المريض / المستلم</div></div>';
-  html+='<div class="a4-sign-box"><div class="a4-sign-line">توقيع الصيدلي</div></div>';
-  html+='</div>';
-
-  html+='<div class="a4-footer"><span>تاريخ الطباعة: '+today+' '+now+'</span><span>احتفظ بهذا الإيصال</span></div>';
-  html+='</div>';
-  return html;
-}
-
-function openDecisionMonthInvoiceModal(){
-  const cm=getMonthKey(S.date||new Date().toISOString().split('T')[0]);
-  document.getElementById('dmiMonthPick').value=cm;
-  document.getElementById('decisionMonthInvoiceModal').classList.add('open');
-}
-
-// بتجمع فواتير كل مريض ليه قرار تاريخه في الشهر المختار — كل مريض بفاتورة واحدة
-// (لو نفس المريض ليه أكتر من صرف تحت نفس القرار في الشهر ده، بيتجمعوا مع بعض)
-function generateDecisionMonthInvoicesPrint(){
-  const mk=document.getElementById('dmiMonthPick').value; // "YYYY-MM"
-  if(!mk){toast('اختار شهر القرار المطلوب أولاً','error');return;}
-  const allDaysSource={...S.daily,...S.archive};
-  const groups={}; // key -> {patientName, patientId, decisionNumbers:Set, items:{}}
-  Object.keys(allDaysSource).forEach(function(day){
-    (allDaysSource[day]||[]).forEach(function(row){
-      if(!row.decisionNumber)return;
-      const dmk=decisionDateToMonthKey(row.decisionDate);
-      if(dmk!==mk)return;
-      const key=row.patientId?('id:'+row.patientId):('name:'+row.patientName);
-      if(!groups[key])groups[key]={patientName:row.patientName,patientId:row.patientId||'',decisionNumbers:new Set(),items:{}};
-      groups[key].decisionNumbers.add(row.decisionNumber);
-      Object.entries(row.items||{}).forEach(function([n,q]){
-        groups[key].items[n]=(groups[key].items[n]||0)+(q||0);
-      });
+// بتجمع صرف كل (مريض + رقم قرار) من اليومية الحالية والأرشيف في فاتورة واحدة، وبتفلتر بشهر تاريخ القرار.
+function buildDecisionGroups(){
+  const src={...S.daily,...S.archive}; // الأرشيف بيغطي نفس اليوم لو متكرر (زي باقي الفواتير)
+  const groups={};
+  Object.keys(src).sort().forEach(function(day){
+    const mk=getMonthKey(day);
+    (src[day]||[]).forEach(function(row){
+      const no=(row.decisionNo||'').trim();const dd=row.decisionDate||'';
+      if(!no&&!dd)return;
+      const pk=row.patientId?('id:'+row.patientId):('name:'+row.patientName);
+      const key=pk+'|'+(no?('no:'+normDecisionNo(no)):('date:'+dd));
+      if(!groups[key])groups[key]={patientName:row.patientName,patientId:row.patientId||'',decisionNo:no,decisionDate:'',byMonth:{}};
+      const g=groups[key];
+      if(!g.decisionDate&&dd)g.decisionDate=dd;
+      if(!g.byMonth[mk])g.byMonth[mk]={};
+      Object.entries(row.items||{}).forEach(function([n,q]){g.byMonth[mk][n]=(g.byMonth[mk][n]||0)+(q||0);});
     });
   });
-  const list=Object.values(groups).sort((a,b)=>a.patientName.localeCompare(b.patientName,'ar'));
-  if(!list.length){toast('لا توجد قرارات مسجلة بتاريخ هذا الشهر','error');return;}
-  const monthLabel=monthKeyLabel(mk);
+  return Object.values(groups).filter(g=>g.decisionDate);
+}
+function decisionSortKey(dd){const i=decisionMonthIdx(dd);return i===null?0:i;}
+function openDecisionInvoiceModal(){
+  const groups=buildDecisionGroups();
+  if(!groups.length){toast('لا توجد قرارات مسجلة — أدخل رقم/تاريخ القرار في صفحة إدخال البيانات الأول','error');return;}
+  const counts={};
+  groups.forEach(g=>{counts[g.decisionDate]=(counts[g.decisionDate]||0)+1;});
+  const sel=document.getElementById('decInvMonthSel');
+  sel.innerHTML=Object.keys(counts).sort((a,b)=>decisionSortKey(a)-decisionSortKey(b)).map(dd=>'<option value="'+dd+'">'+dd+' — '+counts[dd]+' قرار</option>').join('');
+  document.getElementById('decInvShowNo').checked=false;
+  document.getElementById('decisionInvoiceModal').classList.add('open');
+}
+function generateDecisionInvoicesPrint(){
+  const dd=document.getElementById('decInvMonthSel').value;
+  if(!dd){toast('اختار شهر القرار','error');return;}
+  const showNo=document.getElementById('decInvShowNo').checked;
+  const list=buildDecisionGroups().filter(g=>g.decisionDate===dd).sort((a,b)=>a.patientName.localeCompare(b.patientName,'ar'));
+  if(!list.length){toast('لا توجد قرارات بتاريخ '+dd,'error');return;}
   const html=list.map(function(g){
-    return buildDecisionInvoiceHtml(g.patientName,g.patientId,Array.from(g.decisionNumbers).join('، '),monthLabel,g.items);
+    const monthsData=Object.keys(g.byMonth).sort().map(mk=>({monthKey:mk,items:g.byMonth[mk]}));
+    const opts=showNo?{title:'فاتورة صرف على قرار',extraRows:[['رقم القرار:',escHtml(g.decisionNo)||'\u2014'],['تاريخ القرار:',g.decisionDate]]}:{title:'فاتورة صرف على قرار'};
+    return buildPatientMultiMonthReceiptHtml(g.patientName,g.patientId,monthsData,opts);
   }).join('');
   showA4PrintPreview(html);
-  closeModal('decisionMonthInvoiceModal');
-  toast('✓ تم تجهيز '+list.length+' فاتورة لقرارات شهر '+monthLabel,'success');
+  closeModal('decisionInvoiceModal');
+  toast('✓ تم تجهيز '+list.length+' فاتورة لقرارات '+dd,'success');
 }
 
 function exportPatientReportExcel(){
@@ -7372,11 +7367,11 @@ function renderStockAlertBanner(){
   ['stockAlertBanner','invAlertBanner'].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML=html;});
 }
 
-function toast(msg,type='info'){
+function toast(msg,type='info',ms){
   const tc=document.getElementById('toastContainer');const icons={success:'✓',error:'✕',info:'ℹ'};
   const el=document.createElement('div');el.className=`toast ${type}`;
   el.innerHTML=`<span>${icons[type]||'ℹ'}</span> ${msg}`;tc.appendChild(el);
-  setTimeout(()=>{el.style.opacity='0';el.style.transform='translateX(-16px)';el.style.transition='.3s';setTimeout(()=>el.remove(),300);},3200);
+  setTimeout(()=>{el.style.opacity='0';el.style.transform='translateX(-16px)';el.style.transition='.3s';setTimeout(()=>el.remove(),300);},ms||3200);
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -7434,7 +7429,8 @@ function buildPatientReceiptHtml(row,dateLabel,fieldLabel){
 
 // فاتورة مريض موحدة لعدة شهور — كل شهر بجدول منفصل بأصنافه وكمياته (مش مجموع مدموج في رقم واحد)
 // monthsData: [{monthKey, items:{name:qty}}, ...] بترتيب الشهور المطلوب عرضها
-function buildPatientMultiMonthReceiptHtml(patientName,patientId,monthsData){
+function buildPatientMultiMonthReceiptHtml(patientName,patientId,monthsData,opts){
+  opts=opts||{};
   const today=new Date().toLocaleDateString('ar-EG');
   const now=new Date().toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'});
   const fmtNum=function(v){return (v||0).toLocaleString('ar-EG',{minimumFractionDigits:2,maximumFractionDigits:2});};
@@ -7467,13 +7463,14 @@ function buildPatientMultiMonthReceiptHtml(patientName,patientId,monthsData){
   let html='<div class="a4-page a4-page-bw" style="max-width:148mm;min-height:0;margin:0 auto;">';
   html+='<div style="text-align:center;border-bottom:3px double #000;padding-bottom:10px;margin-bottom:14px;">';
   html+='<div style="font-size:19px;font-weight:900;">💊 نظام صرف الأدوية</div>';
-  html+='<div style="font-size:14px;font-weight:700;margin-top:4px;">إيصال صرف دواء — عدة شهور</div>';
+  html+='<div style="font-size:14px;font-weight:700;margin-top:4px;">'+(opts.title||'إيصال صرف دواء — عدة شهور')+'</div>';
   html+='</div>';
 
   html+='<table style="width:100%;border-collapse:collapse;margin-bottom:6px;font-size:13px;">';
   html+='<tr><td style="padding:4px 0;font-weight:700;width:90px;">اسم المريض:</td><td style="padding:4px 0;">'+patientName+'</td></tr>';
   html+='<tr><td style="padding:4px 0;font-weight:700;">الرقم القومي:</td><td style="padding:4px 0;">'+(patientId||'\u2014')+'</td></tr>';
   html+='<tr><td style="padding:4px 0;font-weight:700;">الشهور:</td><td style="padding:4px 0;">'+monthsLabel+'</td></tr>';
+  (opts.extraRows||[]).forEach(function(r){html+='<tr><td style="padding:4px 0;font-weight:700;">'+r[0]+'</td><td style="padding:4px 0;">'+r[1]+'</td></tr>';});
   html+='</table>';
 
   html+=sectionsHtml||'<div style="text-align:center;color:#777;padding:20px 0;">لا توجد أصناف مسجلة في الشهور المختارة</div>';
@@ -7594,6 +7591,12 @@ function printAllDaily(){
 
   showA4PrintPreview(html, true);
 }
+
+// تنبيه القرار المباشر في صفحة الإدخال
+['patientName','patientId','decisionNo','decisionDate'].forEach(function(id){
+  const el=document.getElementById(id);if(el)el.addEventListener('input',updateDecisionAlert);
+});
+(function(){const g=document.getElementById('globalDate');if(g)g.addEventListener('change',updateDecisionAlert);})();
 
 // Keyboard shortcuts
 document.addEventListener('keydown',e=>{
