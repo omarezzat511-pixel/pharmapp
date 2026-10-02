@@ -775,26 +775,31 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
 .a4-table-bw tr:nth-child(even) td{background:#eee!important;}
 .a4-table-bw tr.a4-total-row td{background:#ddd!important;border-top:2px solid #000!important;font-weight:900!important;}
 .a4-daily-handwriting,.a4-daily-handwriting *{font-family:'Cairo','Tajawal',sans-serif!important;}
-.a4-daily-handwriting .a4-daily-band h1{font-size:24px;}
+.a4-daily-handwriting .a4-daily-band h1{font-size:15px;}
 .a4-daily-handwriting td,.a4-daily-handwriting th{font-size:11px;}
+/* تقليل الحشو والهوامش داخل صفحة اليومية بس (من غير ما يأثر على باقي الشيتات)
+   عشان الصفحة كلها (بالعنوان + الجدول + التوقيع + التذييل) تتلائم فعليًا
+   مع ارتفاع ورقة A4 الحقيقي وما تفيضش لصفحة تانية بشكل غير متوقع عند الطباعة */
+.a4-daily-handwriting .a4-footer{margin-top:4px!important;padding-top:3px!important;font-size:9px!important;}
 
 /* تصميم طباعة اليومية بشكل النموذج المرجعي: شريط عنوان أزرق فاتح + أسماء أصناف رأسية */
-.a4-daily-band{background:#DCE8F5;border:2px solid #16406B;border-radius:6px;padding:10px 16px;
-  display:flex;align-items:center;justify-content:center;position:relative;margin-bottom:8px;}
-.a4-daily-band .icon-badge{position:absolute;right:14px;top:50%;transform:translateY(-50%);
-  width:38px;height:38px;border-radius:50%;background:#16406B;color:#fff;display:flex;
-  align-items:center;justify-content:center;font-size:18px;}
-.a4-daily-band h1{font-size:21px;font-weight:900;color:#16406B;margin:0;}
+.a4-daily-band{background:#DCE8F5;border:2px solid #16406B;border-radius:6px;padding:4px 14px;
+  display:flex;align-items:center;justify-content:center;position:relative;margin-bottom:4px;}
+.a4-daily-band .icon-badge{position:absolute;right:10px;top:50%;transform:translateY(-50%);
+  width:26px;height:26px;border-radius:50%;background:#16406B;color:#fff;display:flex;
+  align-items:center;justify-content:center;font-size:13px;}
+.a4-daily-band h1{font-size:16px;font-weight:900;color:#16406B;margin:0;}
 .a4-daily-meta-row{display:flex;justify-content:space-between;align-items:center;
-  font-size:13px;font-weight:700;color:#16406B;margin:0 0 10px;}
+  font-size:10.5px;font-weight:700;color:#16406B;margin:0 0 5px;}
 .a4-table-vertical{table-layout:fixed;}
-.a4-table-vertical th.item-col-v{height:140px;padding:0;width:20px;position:relative;
+.a4-table-vertical th{padding:2px 3px;}
+.a4-table-vertical td{padding:1px 3px;overflow:hidden;text-overflow:clip;}
+.a4-table-vertical th.item-col-v{height:70px;padding:0;width:20px;position:relative;
   border:1px solid #000!important;overflow:hidden;}
-.a4-table-vertical td{overflow:hidden;text-overflow:clip;}
-.a4-table-vertical th.item-col-v .rot{position:absolute;bottom:5px;left:50%;
+.a4-table-vertical th.item-col-v .rot{position:absolute;bottom:3px;left:50%;
   transform-origin:left bottom;transform:rotate(-90deg);
-  white-space:nowrap;font-size:10px;font-weight:700;}
-.a4-daily-sign-line{display:flex;justify-content:flex-start;gap:60px;margin-top:34px;font-size:13px;font-weight:700;}
+  white-space:nowrap;font-size:8px;font-weight:700;}
+.a4-daily-sign-line{display:flex;justify-content:flex-start;gap:60px;margin-top:14px;font-size:10.5px;font-weight:700;}
 
 /* شبكة كروت الأصناف — 4 كروت بحجم ثابت في كل ورقة A4 (كارت = ربع الورقة) — تصميم احترافي */
 .a4-cards-page{position:relative;width:100%;height:281mm;}
@@ -5015,6 +5020,11 @@ ${styles}
     font-weight:800;cursor:pointer;font-size:13.5px;font-family:'Tajawal',Arial,sans-serif;}
   .pm-print-bar button:hover{background:#1E5A8F;}
   .pm-print-bar button.pm-close{background:#3D5269;}
+  /* يومية صرف الأدوية: بنثبّت ارتفاع الصفحة بالظبط على ارتفاع الورقة الحقيقي (${dims.h}mm)
+     وبنمنع أي فيضان زيادة، من هنا في شاشة ما قبل الطباعة نفسها (مش بس وقت الطباعة الفعلية)،
+     عشان اللي تشوفه قبل ما تدوس "اطبع الآن" يبقى هو بالظبط اللي هيتطبع - من غير تقسيم غير متوقع
+     لصفحة تانية ومن غير أي قص نص في نص الجدول. */
+  .a4-daily-handwriting{height:${dims.h}mm!important;max-height:${dims.h}mm!important;overflow:hidden!important;}
   @media print{.pm-print-bar{display:none!important;} html,body,#a4PrintRoot{background:#fff!important;padding:0!important;}
     #a4PrintRoot .a4-page{box-shadow:none!important;margin:0 auto!important;}}
 </style>
@@ -7317,14 +7327,15 @@ function printAllDaily(){
   const itemCount=allItems.length||1;
   const itemColPct=((100-(FIXED_NUM_PCT+FIXED_NAME_PCT+FIXED_ID_PCT))/itemCount).toFixed(3);
 
-  // كل ما عدد الأصناف يزيد، بنصغّر الخط ونكبّر ارتفاع رأس العمود شوية عشان اسم
-  // الصنف الطويل ميتقصش ومايدخلش في العمود اللي جنبه
-  let rotFontSize=10,cellFontSize=11,headHeight=140;
-  if(itemCount>40){rotFontSize=7;cellFontSize=9;headHeight=170;}
-  else if(itemCount>28){rotFontSize=7.5;cellFontSize=9.5;headHeight=160;}
-  else if(itemCount>18){rotFontSize=8.5;cellFontSize=10.5;headHeight=150;}
+  // كل ما عدد الأصناف يزيد، بنصغّر الخط شوية عشان اسم الصنف الطويل ميدخلش
+  // في العمود اللي جنبه — وبنحافظ على ارتفاع رأس الجدول صغير نسبيًا عشان
+  // الصفحة كلها (25 اسم + الجدول) تتلائم فعليًا مع ارتفاع ورقة A4 الحقيقي
+  let rotFontSize=8,cellFontSize=9,headHeight=70;
+  if(itemCount>40){rotFontSize=6;cellFontSize=7.5;headHeight=80;}
+  else if(itemCount>28){rotFontSize=6.5;cellFontSize=8;headHeight=76;}
+  else if(itemCount>18){rotFontSize=7;cellFontSize=8.5;headHeight=73;}
   const longestNameLen=allItems.reduce((m,n)=>Math.max(m,n.length),0);
-  if(longestNameLen>26)headHeight=Math.max(headHeight,175);
+  if(longestNameLen>26)headHeight=Math.max(headHeight,86);
 
   const ROWS_PER_PAGE=25;
   const pages=[];
@@ -7362,7 +7373,7 @@ function printAllDaily(){
       signHtml+='<span>الختم:</span>';
       signHtml+='</div>';
     }
-    let page='<div class="a4-page a4-page-bw a4-daily-handwriting" style="width:auto;min-width:277mm;min-height:0;font-size:'+cellFontSize+'px;">';
+    let page='<div class="a4-page a4-page-bw a4-daily-handwriting" style="width:auto;min-width:277mm;min-height:0;padding:6mm 10mm;font-size:'+cellFontSize+'px;">';
     page+='<div class="a4-daily-band"><div class="icon-badge">💊</div><h1>يومية صرف صيدلية</h1></div>';
     page+='<div class="a4-daily-meta-row"><span>التاريخ: '+dateLabel+'</span><span>'+PHARMACY_LABEL+'</span></div>';
     page+='<table class="a4-table a4-table-bw a4-table-vertical" style="table-layout:fixed;"><thead><tr>';
