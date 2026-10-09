@@ -1308,6 +1308,8 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
         <div class="search-bar" style="max-width:280px;"><svg class="search-icon" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><input id="patientDBSearch" placeholder="بحث بالاسم أو الرقم القومي..." oninput="renderPatientsDB()"></div>
         <button class="btn btn-primary" onclick="openAddPatientDBModal()">➕ إضافة مريض</button>
         <button class="btn btn-navy" onclick="exportPatientsBackup()">💾 نسخة احتياطية للمرضى</button>
+        <button class="btn btn-navy" onclick="document.getElementById('patientsRestoreFile').click()">📥 استرجاع بيانات المرضى</button>
+        <input type="file" id="patientsRestoreFile" accept=".json,.txt,.xlsx,.xls,.csv,application/json,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv" style="display:none" onchange="onPatientsRestoreFile(this)">
         <button class="btn btn-danger" onclick="openDeleteAllPatientsModal()" style="background:var(--crimson);color:#fff;border:none;">🗑️ حذف كل المرضى</button>
       </div>
     </div>
@@ -2090,6 +2092,31 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
     <div class="modal-footer" style="justify-content:space-between;">
       <button class="btn btn-sm" style="background:var(--light);color:var(--text2)" onclick="closeModal('deleteAllPatientsModal')">إلغاء</button>
       <button class="btn btn-danger" id="delAllPatBtn" onclick="executeDeleteAllPatients()" disabled style="background:#ccc;color:#999;cursor:not-allowed;padding:10px 22px;font-size:14px;border:none;">🗑️ تأكيد الحذف</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ استرجاع بيانات المرضى ═══ -->
+<div class="modal-overlay" id="restorePatientsModal">
+  <div class="modal" style="width:min(520px,94vw);border-top:4px solid var(--gold);">
+    <div class="modal-header" style="background:var(--navy);">
+      <div class="modal-title">📥 استرجاع بيانات المرضى</div>
+      <button class="modal-close" onclick="closeModal('restorePatientsModal')">✕</button>
+    </div>
+    <div class="modal-body" style="padding:16px;">
+      <div style="font-size:13.5px;color:var(--text2);line-height:2;">
+        الملف فيه <strong id="rpFileCount">0</strong> مريض، والمسجل حالياً <strong id="rpCurCount">0</strong> مريض.<br>
+        <strong>دمج:</strong> بيضيف المرضى الجداد بس ويسيب الحاليين زي ما هما (المتكرر مبيتضافش).<br>
+        <strong>استبدال:</strong> بيمسح المرضى الحاليين ويحط اللي في الملف مكانهم.<br>
+        <span style="color:var(--text3);font-size:12.5px;">اليوميات وباقي البيانات مش بتتأثر في الحالتين.</span>
+      </div>
+    </div>
+    <div class="modal-footer" style="justify-content:space-between;">
+      <button class="btn btn-sm" style="background:var(--light);color:var(--text2)" onclick="closeModal('restorePatientsModal')">إلغاء</button>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-navy" onclick="applyPatientsRestore('merge')">➕ دمج</button>
+        <button class="btn btn-danger" style="background:var(--crimson);color:#fff;border:none;" onclick="applyPatientsRestore('replace')">🔁 استبدال</button>
+      </div>
     </div>
   </div>
 </div>
@@ -6953,6 +6980,112 @@ function deletePatientDBIdx(idx){
 // ═══════════════════════════════════════════════════════════════
 // ══ HELPERS ═══════════════════════════════════════════════════
 // ═══════════════════════════════════════════════════════════════
+// استرجاع بيانات المرضى من ملف نسخة احتياطية (ملف المرضى، أو نسخة كاملة فيها مرضى) — بيلمس المرضى بس
+let _pendingPatientsRestore=null;
+function cleanPatientsList(arr){
+  const out=[];const seenId=new Set(),seenName=new Set();
+  (Array.isArray(arr)?arr:[]).forEach(function(p){
+    if(!p||typeof p!=='object')return;
+    const name=String(p.name==null?'':p.name).trim();
+    const id=String(p.id==null?'':p.id).trim();
+    if(!name)return;
+    if((id&&seenId.has(id))||seenName.has(name))return;
+    if(id)seenId.add(id);seenName.add(name);
+    out.push({name,id});
+  });
+  return out;
+}
+// ── قراءة شيت إكسيل/CSV: بيدوّر على عمودي "اسم المريض" و"الرقم القومي" بالعناوين، ولو مفيش عناوين بياخد العمود الأول اسم والتاني رقم قومي ──
+function _hdrNorm(v){return String(v==null?'':v).toLowerCase().replace(/[\s_\-\.]/g,'').replace(/[أإآ]/g,'ا').replace(/ى/g,'ي').replace(/ة/g,'ه');}
+function _isNameHdr(h){return h.includes('اسم')||h.includes('name')||h.includes('مريض')||h.includes('patient');}
+function _isIdHdr(h){return h.includes('قومي')||h.includes('بطاق')||h.includes('هوي')||h.includes('national')||h==='id'||h==='nid'||h.includes('nationalid');}
+function _cellText(v){
+  if(v==null)return '';
+  if(typeof v==='number')return Number.isInteger(v)?String(Math.round(v)):String(v);
+  return convertArabicDigits(String(v)).trim();
+}
+function patientsFromWorkbook(wb){
+  // أول مرة: الشيتات اللي فيها عناوين واضحة (اسم/رقم قومي). تاني مرة: من غير عناوين (عمود 1 اسم، عمود 2 رقم قومي)
+  for(const withHeader of [true,false]){
+    for(const sn of wb.SheetNames){
+      const rows=XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,raw:true,defval:'',blankrows:false});
+      if(!rows.length)continue;
+      let hdrRow=-1,nameCol=0,idCol=1;
+      for(let r=0;r<Math.min(rows.length,10)&&hdrRow<0;r++){
+        const hs=rows[r].map(_hdrNorm);
+        const nc=hs.findIndex(_isNameHdr);
+        if(nc>=0){hdrRow=r;nameCol=nc;idCol=hs.findIndex((h,i)=>i!==nc&&_isIdHdr(h));}
+      }
+      if(withHeader&&hdrRow<0)continue;
+      if(!withHeader&&hdrRow>=0)continue;
+      const list=[];
+      for(let r=hdrRow+1;r<rows.length;r++){
+        const row=rows[r];
+        const name=_cellText(row[nameCol]);
+        if(!name||/^\d+$/.test(name))continue; // صف فاضي أو عمود ترقيم مش اسم
+        const id=idCol>=0?_cellText(row[idCol]).replace(/[\s\-]/g,''):'';
+        list.push({name,id});
+      }
+      const cleaned=cleanPatientsList(list);
+      if(cleaned.length)return cleaned;
+    }
+  }
+  return [];
+}
+function onPatientsRestoreFile(input){
+  const file=input.files&&input.files[0];
+  if(!file)return;
+  const isSheet=/\.(xlsx|xls|csv)$/i.test(file.name);
+  const isCsv=/\.csv$/i.test(file.name);
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      let list;
+      if(isSheet){
+        if(typeof XLSX==='undefined'){toast('مكتبة الإكسيل مش متحمّلة — اتصل بالنت مرة واحدة وجرب تاني','error');return;}
+        const wb=isCsv?XLSX.read(e.target.result,{type:'string'}):XLSX.read(e.target.result,{type:'array'}); // CSV بنقراه كنص عشان العربي يفضل سليم
+        list=patientsFromWorkbook(wb);
+      }else{
+        const data=JSON.parse(e.target.result);
+        list=cleanPatientsList(Array.isArray(data)?data:data&&data.patients);
+      }
+      if(!list.length){toast(isSheet?'ملقيتش مرضى في الشيت — لازم يبقى فيه عمود اسم (وعمود رقم قومي)':'الملف مفيهوش بيانات مرضى صالحة','error');return;}
+      _pendingPatientsRestore=list;
+      document.getElementById('rpFileCount').textContent=list.length;
+      document.getElementById('rpCurCount').textContent=S.patients.length;
+      document.getElementById('restorePatientsModal').classList.add('open');
+    }catch(err){
+      toast('ملف غير صالح أو تالف','error');
+    }
+  };
+  if(isSheet&&!isCsv)reader.readAsArrayBuffer(file);else reader.readAsText(file);
+  input.value='';
+}
+function applyPatientsRestore(mode){
+  const list=_pendingPatientsRestore;
+  if(!list||!list.length){closeModal('restorePatientsModal');return;}
+  let msg;
+  if(mode==='replace'){
+    S.patients=list.map(p=>({...p}));
+    msg='تم استبدال المرضى بـ '+list.length+' مريض من الملف';
+  }else{
+    let added=0;
+    list.forEach(function(p){
+      const ex=S.patients.some(x=>x.name===p.name||(p.id&&x.id===p.id));
+      if(!ex){S.patients.push({...p});added++;}
+    });
+    msg=added?('تم دمج '+added+' مريض جديد'+(list.length-added?' (و'+(list.length-added)+' موجودين بالفعل)':'')):'كل المرضى اللي في الملف موجودين بالفعل — مفيش جديد';
+  }
+  _pendingPatientsRestore=null;
+  save();
+  resetDecisionAuto();
+  renderPatientsDB();
+  if(typeof updateStats==='function')updateStats();
+  if(typeof updateBackupStats==='function')updateBackupStats();
+  closeModal('restorePatientsModal');
+  toast('✓ '+msg+' — اليوميات لم تتأثر','success');
+}
+
 // ═══════════════════════════════════════════════════════════════
 // ══ حذف كل المرضى (قاعدة بيانات المرضى بس) ═════════════════════
 // ═══════════════════════════════════════════════════════════════
