@@ -2885,10 +2885,19 @@ function collectKnownDecisions(){
   return map;
 }
 function isSamePatient(a,name,id){return (id&&a.id===id)||(name&&a.name===name);}
-// القرارات الخاصة بمريض معين — الأحدث الأول
-function getPatientDecisions(name,id,known){
-  known=known||collectKnownDecisions();
-  return Object.values(known).filter(e=>e.patients.some(p=>isSamePatient(p,name,id))).sort((a,b)=>a.day<b.day?1:(a.day>b.day?-1:0));
+// القرارات الخاصة بمريض معين — الأحدث الأول (بترتيب آخر صف اتسجل للمريض بالقرار ده)
+function getPatientDecisions(name,id){
+  const src={...S.daily,...S.archive};
+  const map={};let seq=0;
+  Object.keys(src).sort().forEach(function(day){
+    (src[day]||[]).forEach(function(r){
+      seq++;
+      const no=(r.decisionNo||'').trim();if(!no)return;
+      if(!isSamePatient({name:r.patientName,id:r.patientId||''},name,id))return;
+      map[normDecisionNo(no)]={no:no,date:r.decisionDate||'',day:day,seq:seq};
+    });
+  });
+  return Object.values(map).sort((a,b)=>b.seq-a.seq);
 }
 // المريض المحدد حالياً في الحقول (لو الاسم/الرقم القومي مطابق تماماً لمريض مسجل)
 function resolveCurrentPatient(){
@@ -2924,40 +2933,81 @@ function focusAfterPatient(){
   else document.getElementById('itemSearch').focus();
 }
 let dcIdx=-1;
+// كل (رقم قرار + مريض) كعنصر مستقل — آخر صرف يكسب (بيحدد تاريخ القرار واسم المريض)
+function collectDecisionPairs(){
+  const src={...S.daily,...S.archive};
+  const map={};let seq=0;
+  Object.keys(src).sort().forEach(function(day){
+    (src[day]||[]).forEach(function(r){
+      seq++;
+      const no=(r.decisionNo||'').trim();if(!no)return;
+      const pk=r.patientId?('id:'+r.patientId):('name:'+r.patientName);
+      map[normDecisionNo(no)+'|'+pk]={k:normDecisionNo(no),no:no,date:r.decisionDate||'',name:r.patientName||'',id:r.patientId||'',seq:seq};
+    });
+  });
+  return Object.values(map);
+}
 function onDecisionNoInput(){
   const dd=document.getElementById('decisionDropdown');
   const q=normDecisionNo(document.getElementById('decisionNo').value);
-  const known=collectKnownDecisions();
   const pat=resolveCurrentPatient()||{name:document.getElementById('patientName').value.trim(),id:document.getElementById('patientId').value.trim()};
-  const own=new Set(getPatientDecisions(pat.name,pat.id,known).map(e=>normDecisionNo(e.no)));
-  let list=Object.entries(known).filter(([k])=>!q||k.includes(q));
+  const hasPat=!!(pat.name||pat.id);
+  const isOwn=x=>hasPat&&isSamePatient({name:x.name,id:x.id},pat.name,pat.id);
+  let list=collectDecisionPairs().filter(x=>!q||x.k.includes(q));
   list.sort((a,b)=>{
-    const oa=own.has(a[0])?0:1,ob=own.has(b[0])?0:1;
+    const oa=isOwn(a)?0:1,ob=isOwn(b)?0:1;
     if(oa!==ob)return oa-ob;
-    return a[1].day<b[1].day?1:(a[1].day>b[1].day?-1:0);
+    return b.seq-a.seq;
   });
-  list=list.filter(([k,e])=>!(q&&k===q&&list.length===1)).slice(0,7); // لو مطابق تماماً ومفيش غيره مفيش داعي للقائمة
+  list=list.slice(0,7);
+  if(list.length===1&&q&&list[0].k===q&&isOwn(list[0])){dd.classList.remove('open');dcIdx=-1;return;} // مطابق تماماً لقرار المريض الحالي
   if(!list.length){dd.classList.remove('open');dcIdx=-1;return;}
-  dd.innerHTML=list.map(([k,e])=>'<div class="autocomplete-item" onmousedown="event.preventDefault();selDecision(\''+ec(e.no)+'\')"><strong>'+escHtml(e.no)+'</strong><span style="color:var(--text3);font-size:12px;margin-right:8px;">'+(e.date?escHtml(e.date)+' — ':'')+escHtml(e.patients[e.patients.length-1].name)+(own.has(k)?' ⭐':'')+'</span></div>').join('');
+  dd.innerHTML=list.map(x=>'<div class="autocomplete-item" onmousedown="event.preventDefault();selDecision(\''+ec(x.no)+'\',\''+ec(x.name)+'\',\''+ec(x.id)+'\')"><strong>'+escHtml(x.no)+'</strong><span style="color:var(--text3);font-size:12px;margin-right:8px;">'+(x.date?escHtml(x.date)+' — ':'')+escHtml(x.name)+(isOwn(x)?' ⭐':'')+'</span></div>').join('');
   dd.classList.add('open');dcIdx=-1;
 }
-function selDecision(encNo){
-  const no=dc(encNo);
-  const e=collectKnownDecisions()[normDecisionNo(no)];
-  document.getElementById('decisionNo').value=no;
-  if(e&&e.date)document.getElementById('decisionDate').value=e.date;
-  document.getElementById('decisionDropdown').classList.remove('open');
-  _decAuto={no:'',date:''}; // اختيار يدوي — مش تعبئة تلقائية
+// بتعبّي المريض (اسم + رقم قومي) وتاريخ القرار من قرار معروف، وتفضّل لحقل الصنف
+function applyDecisionPair(x,overwritePatient){
+  const nameEl=document.getElementById('patientName'),idEl=document.getElementById('patientId');
+  const dtEl=document.getElementById('decisionDate');
+  const patEmpty=!nameEl.value.trim()&&!idEl.value.trim();
+  if(x.name&&(overwritePatient||patEmpty)){
+    let id=x.id;
+    if(!id){const reg=S.patients.find(p=>p.name===x.name);if(reg&&reg.id)id=reg.id;}
+    nameEl.value=x.name;idEl.value=id||'';
+    document.getElementById('nameDropdown').classList.remove('open');
+    document.getElementById('idDropdown').classList.remove('open');
+    clearPatientFieldErrors();
+    _decKey=id?('id:'+id):('name:'+x.name); // منع تعبئة القرار الأخير للمريض فوق اللي اخترناه
+  }
+  if(x.date&&(overwritePatient||!dtEl.value.trim()))dtEl.value=x.date;
+  _decAuto={no:'',date:''};
   updateDecisionAlert();
+}
+function focusAfterDecision(){
   const dtEl=document.getElementById('decisionDate');
   if(!dtEl.value.trim())dtEl.focus();else document.getElementById('itemSearch').focus();
 }
-// لو الرقم المكتوب مطابق لقرار معروف وتاريخه فاضي: املا التاريخ
-function fillDateFromTypedDecision(){
-  const noEl=document.getElementById('decisionNo'),dtEl=document.getElementById('decisionDate');
-  const no=noEl.value.trim();if(!no||dtEl.value.trim())return;
-  const e=collectKnownDecisions()[normDecisionNo(no)];
-  if(e&&e.date){dtEl.value=e.date;updateDecisionAlert();}
+function selDecision(encNo,encName,encId){
+  const no=dc(encNo),name=dc(encName||''),id=dc(encId||'');
+  document.getElementById('decisionNo').value=no;
+  document.getElementById('decisionDropdown').classList.remove('open');
+  const k=normDecisionNo(no);
+  const pairs=collectDecisionPairs().filter(x=>x.k===k);
+  const x=pairs.find(p=>p.name===name&&p.id===id)||pairs.sort((a,b)=>b.seq-a.seq)[0];
+  if(x)applyDecisionPair(x,true);else updateDecisionAlert();
+  focusAfterDecision();
+}
+// لو الرقم المكتوب مطابق لقرار معروف: املا بقية الحقول (المريض لو فاضي + التاريخ لو فاضي)
+function fillFromTypedDecision(){
+  const noEl=document.getElementById('decisionNo');
+  const no=noEl.value.trim();if(!no)return false;
+  const k=normDecisionNo(no);
+  const pairs=collectDecisionPairs().filter(x=>x.k===k).sort((a,b)=>b.seq-a.seq);
+  if(!pairs.length)return false;
+  const pat=resolveCurrentPatient()||{name:document.getElementById('patientName').value.trim(),id:document.getElementById('patientId').value.trim()};
+  const own=(pat.name||pat.id)?pairs.find(x=>isSamePatient({name:x.name,id:x.id},pat.name,pat.id)):null;
+  applyDecisionPair(own||pairs[0],false);
+  return true;
 }
 function onDecisionNoKeydown(e){
   const dd=document.getElementById('decisionDropdown');
@@ -2969,9 +3019,8 @@ function onDecisionNoKeydown(e){
     e.preventDefault();
     if(dcIdx>=0&&items[dcIdx]){items[dcIdx].dispatchEvent(new MouseEvent('mousedown',{bubbles:true,cancelable:true}));return;}
     dd.classList.remove('open');
-    fillDateFromTypedDecision();
-    const dtEl=document.getElementById('decisionDate');
-    if(!dtEl.value.trim())dtEl.focus();else document.getElementById('itemSearch').focus();
+    fillFromTypedDecision();
+    focusAfterDecision();
   }
 }
 function onDecisionDateKeydown(e){
@@ -7725,7 +7774,7 @@ function printAllDaily(){
 ['patientName','patientId','decisionNo','decisionDate'].forEach(function(id){
   const el=document.getElementById(id);if(el)el.addEventListener('input',updateDecisionAlert);
 });
-(function(){const el=document.getElementById('decisionNo');if(el)el.addEventListener('blur',function(){setTimeout(fillDateFromTypedDecision,150);});})();
+(function(){const el=document.getElementById('decisionNo');if(el)el.addEventListener('blur',function(){setTimeout(fillFromTypedDecision,150);});})();
 (function(){const g=document.getElementById('globalDate');if(g)g.addEventListener('change',updateDecisionAlert);})();
 
 // Keyboard shortcuts
