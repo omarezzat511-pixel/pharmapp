@@ -1307,6 +1307,8 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
       <div class="header-actions">
         <div class="search-bar" style="max-width:280px;"><svg class="search-icon" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><input id="patientDBSearch" placeholder="بحث بالاسم أو الرقم القومي..." oninput="renderPatientsDB()"></div>
         <button class="btn btn-primary" onclick="openAddPatientDBModal()">➕ إضافة مريض</button>
+        <button class="btn btn-navy" onclick="exportPatientsBackup()">💾 نسخة احتياطية للمرضى</button>
+        <button class="btn btn-danger" onclick="openDeleteAllPatientsModal()" style="background:var(--crimson);color:#fff;border:none;">🗑️ حذف كل المرضى</button>
       </div>
     </div>
     <div class="stats-band" style="grid-template-columns:repeat(3,1fr)">
@@ -2060,6 +2062,34 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
     <div class="modal-footer">
       <button class="btn btn-navy" onclick="generateDecisionInvoicesPrint()">🖨 إنشاء وطباعة الفواتير</button>
       <button class="btn btn-sm" style="background:var(--light);color:var(--text2)" onclick="closeModal('decisionInvoiceModal')">إغلاق</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ حذف كل بيانات المرضى ═══ -->
+<div class="modal-overlay" id="deleteAllPatientsModal">
+  <div class="modal" style="border-top:4px solid var(--crimson);">
+    <div class="modal-header" style="background:var(--crimson);">
+      <div class="modal-title">🗑️ حذف كل بيانات المرضى</div>
+      <button class="modal-close" onclick="closeModal('deleteAllPatientsModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="text-align:center;padding:10px 0 18px;">
+        <div style="font-size:48px;margin-bottom:12px;">⚠️</div>
+        <div style="font-size:15px;font-weight:700;color:var(--crimson);margin-bottom:8px;">هذا الإجراء لا يمكن التراجع عنه</div>
+        <div style="font-size:13px;color:var(--text2);line-height:1.9;">
+          سيتم حذف <strong id="delAllPatCount">0</strong> مريض من قاعدة البيانات، ولن يظهروا في اقتراحات صفحة إدخال البيانات.<br>
+          <strong>اليوميات والأرشيف والوارد والجرد والأصناف لن تتأثر</strong> (وأسماء المرضى المسجلة في اليوميات القديمة تفضل زي ما هي).
+        </div>
+      </div>
+      <div style="background:var(--crim2);border:1.5px solid rgba(181,48,42,0.25);border-radius:var(--radius2);padding:14px;margin-bottom:4px;">
+        <label class="form-label" style="color:var(--crimson);margin-bottom:8px;display:block;">اكتب كلمة <strong>حذف</strong> للتأكيد:</label>
+        <input class="form-input" id="delAllPatInput" placeholder='اكتب "حذف" هنا...' oninput="onDeleteAllPatientsInput()" style="border-color:rgba(181,48,42,0.4);">
+      </div>
+    </div>
+    <div class="modal-footer" style="justify-content:space-between;">
+      <button class="btn btn-sm" style="background:var(--light);color:var(--text2)" onclick="closeModal('deleteAllPatientsModal')">إلغاء</button>
+      <button class="btn btn-danger" id="delAllPatBtn" onclick="executeDeleteAllPatients()" disabled style="background:#ccc;color:#999;cursor:not-allowed;padding:10px 22px;font-size:14px;border:none;">🗑️ تأكيد الحذف</button>
     </div>
   </div>
 </div>
@@ -6521,6 +6551,23 @@ async function shareBackupWhatsApp(){
   },600);
 }
 
+// نسخة احتياطية لبيانات المرضى بس (الاسم + الرقم القومي) — من غير اليوميات أو أي بيانات تانية.
+// الملف ده بيترجع من نفس زرار "استرجاع" في صفحة حفظ واسترجاع البيانات، وبيستبدل المرضى بس.
+function exportPatientsBackup(){
+  if(!S.patients.length){toast('مفيش مرضى مسجلين عشان تاخد نسخة منهم','error');return;}
+  const data=JSON.stringify({type:'patients-backup',exportedAt:new Date().toISOString(),patients:S.patients},null,2);
+  const blob=new Blob([data],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  const d=new Date();
+  const stamp=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')
+    +'_'+String(d.getHours()).padStart(2,'0')+'-'+String(d.getMinutes()).padStart(2,'0');
+  a.download=`patients_backup_${stamp}.json`;
+  document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+  toast('✓ تم تصدير نسخة المرضى ('+S.patients.length+' مريض)','success');
+}
+
 function importBackup(input){
   const file=input.files[0];
   if(!file)return;
@@ -6528,7 +6575,8 @@ function importBackup(input){
   reader.onload=(e)=>{
     try{
       const data=JSON.parse(e.target.result);
-      if(!confirm('هل أنت متأكد من استرجاع هذه البيانات؟\nسيتم استبدال جميع البيانات الحالية.'))return;
+      const onlyPatients=data.type==='patients-backup';
+      if(!confirm(onlyPatients?('هل أنت متأكد من استرجاع بيانات المرضى ('+(data.patients||[]).length+' مريض)؟\nسيتم استبدال بيانات المرضى الحالية فقط — اليوميات وباقي البيانات لن تتأثر.'):'هل أنت متأكد من استرجاع هذه البيانات؟\nسيتم استبدال جميع البيانات الحالية.'))return;
       if(data.items)S.items=data.items;
       if(data.nextId)S.nextId=data.nextId;
       if(data.patients)S.patients=data.patients;
@@ -6541,7 +6589,7 @@ function importBackup(input){
       save();
       pushDocToCloud('daily',['daily']); // استرجاع كامل مقصود — لازم يكتب فوق اليومية في السحابة كمان
       pushDocToCloud('receipts',['receipts']); // ونفس الكلام على الوارد
-      renderItemsGrid();renderDaily();renderArchive();renderReceipts();renderInventory();updateStats();updateBackupStats();
+      renderItemsGrid();renderDaily();renderArchive();renderReceipts();renderInventory();updateStats();updateBackupStats();renderPatientsDB();
       toast('✓ تم استرجاع البيانات بنجاح','success');
     }catch(err){
       toast('ملف غير صالح أو تالف','error');
@@ -6905,6 +6953,41 @@ function deletePatientDBIdx(idx){
 // ═══════════════════════════════════════════════════════════════
 // ══ HELPERS ═══════════════════════════════════════════════════
 // ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
+// ══ حذف كل المرضى (قاعدة بيانات المرضى بس) ═════════════════════
+// ═══════════════════════════════════════════════════════════════
+function openDeleteAllPatientsModal(){
+  if(!S.patients.length){toast('قاعدة بيانات المرضى فاضية أصلاً','error');return;}
+  document.getElementById('delAllPatCount').textContent=S.patients.length;
+  document.getElementById('delAllPatInput').value='';
+  onDeleteAllPatientsInput();
+  document.getElementById('deleteAllPatientsModal').classList.add('open');
+  setTimeout(()=>document.getElementById('delAllPatInput').focus(),100);
+}
+function onDeleteAllPatientsInput(){
+  const ok=document.getElementById('delAllPatInput').value.trim()==='حذف';
+  const btn=document.getElementById('delAllPatBtn');
+  btn.disabled=!ok;
+  btn.style.background=ok?'var(--crimson)':'#ccc';
+  btn.style.color=ok?'white':'#999';
+  btn.style.cursor=ok?'pointer':'not-allowed';
+}
+function executeDeleteAllPatients(){
+  if(document.getElementById('delAllPatInput').value.trim()!=='حذف')return;
+  const n=S.patients.length;
+  S.patients=[]; // بس المرضى — اليوميات والأرشيف وباقي البيانات مش بتتلمس
+  save();
+  // صفحة الإدخال: امسح أي اقتراحات/أخطاء/قرار تلقائي مرتبط بالمرضى المحذوفين
+  ['nameDropdown','idDropdown'].forEach(function(id){const el=document.getElementById(id);if(el){el.classList.remove('open');el.innerHTML='';}});
+  clearPatientFieldErrors();
+  resetDecisionAuto();
+  renderPatientsDB();
+  if(typeof updateStats==='function')updateStats();
+  if(typeof updateBackupStats==='function')updateBackupStats();
+  closeModal('deleteAllPatientsModal');
+  toast('تم حذف '+n+' مريض من قاعدة البيانات — اليوميات لم تتأثر','success');
+}
+
 // ═══════════════════════════════════════════════════════════════
 // ══ RESET ALL DATA ════════════════════════════════════════════
 // ═══════════════════════════════════════════════════════════════
