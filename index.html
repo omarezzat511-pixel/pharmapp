@@ -1043,11 +1043,14 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
         <div class="form-row" style="margin-top:14px;">
           <div class="form-group">
             <label class="form-label">رقم القرار</label>
-            <input class="form-input" id="decisionNo" placeholder="رقم القرار (اختياري)" autocomplete="off">
+            <div class="autocomplete-wrap">
+              <input class="form-input" id="decisionNo" placeholder="رقم القرار (اختياري)" autocomplete="off" oninput="onDecisionNoInput()" onfocus="onDecisionNoInput()" onkeydown="onDecisionNoKeydown(event)">
+              <div class="autocomplete-list" id="decisionDropdown"></div>
+            </div>
           </div>
           <div class="form-group">
             <label class="form-label">تاريخ القرار (شهر/سنة)</label>
-            <input class="form-input" id="decisionDate" placeholder="mm/yy — مثال: 03/26" maxlength="5" inputmode="numeric" autocomplete="off" dir="ltr" style="text-align:right;" oninput="onDecisionDateInput(this)" onblur="onDecisionDateBlur(this)">
+            <input class="form-input" id="decisionDate" placeholder="mm/yy — مثال: 03/26" maxlength="5" inputmode="numeric" autocomplete="off" dir="ltr" style="text-align:right;" oninput="onDecisionDateInput(this)" onblur="onDecisionDateBlur(this)" onkeydown="onDecisionDateKeydown(event)">
           </div>
         </div>
         <div id="decisionAlert" style="display:none;margin-top:12px;"></div>
@@ -2510,7 +2513,7 @@ function clearPatientFieldErrors(){
   const errEl=document.getElementById('patientMismatchError');
   if(errEl)errEl.style.display='none';
 }
-function handleIdEnter(e){if(e.key==='Enter'){onPatientIdInput();document.getElementById('itemSearch').focus();}}
+function handleIdEnter(e){if(e.key==='Enter'){onPatientIdInput();tryAutofillDecision();focusAfterPatient();}}
 function onPatientKeydown(e){
   const dd=document.getElementById('nameDropdown');const items=dd.querySelectorAll('.autocomplete-item');if(!items.length)return;
   if(e.key==='ArrowDown'){pIdx=Math.min(pIdx+1,items.length-1);hlAc(items,pIdx);e.preventDefault();}
@@ -2523,8 +2526,9 @@ function selPat(name,id){
   document.getElementById('patientId').value=dc(id);
   document.getElementById('nameDropdown').classList.remove('open');
   clearPatientFieldErrors();
+  tryAutofillDecision(true); // اختيار المريض من القائمة = نعبّي قراره الأخير حتى لو فيه قيم قديمة
   updateDecisionAlert();
-  document.getElementById('itemSearch').focus();
+  focusAfterPatient();
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -2689,6 +2693,7 @@ function clearPatientEntry(){
   document.getElementById('patientId').value='';
   document.getElementById('decisionNo').value='';
   document.getElementById('decisionDate').value='';
+  resetDecisionAuto();
   updateDecisionAlert();
   document.getElementById('itemSearch').value='';
   document.getElementById('itemQty').value='';
@@ -2708,6 +2713,7 @@ function transferToDaily(){
   if(!name){toast('أدخل اسم المريض','error');document.getElementById('patientName').focus();return;}
   if(!date){toast('حدد التاريخ من الشريط العلوي','error');return;}
   if(!S.currentItems.length){toast('أضف صنفاً واحداً على الأقل','error');return;}
+  tryAutofillDecision(); // مهم لو الاسم اتدخل صوتي أو من غير ما يحصل event
   // ── بيانات القرار (اختيارية) ──
   const decNo=document.getElementById('decisionNo').value.trim();
   const decDate=normDecisionDate(document.getElementById('decisionDate').value);
@@ -2768,6 +2774,7 @@ function transferToDaily(){
   document.getElementById('patientId').value='';
   document.getElementById('decisionNo').value='';
   document.getElementById('decisionDate').value='';
+  resetDecisionAuto();
   updateDecisionAlert();
   document.getElementById('itemSearch').value='';
   document.getElementById('itemQty').value='';
@@ -2857,6 +2864,125 @@ function updateDecisionAlert(){
   if(!msgs.length){box.style.display='none';box.innerHTML='';return;}
   box.style.display='block';
   box.innerHTML=msgs.map(m=>'<div class="alert-banner yellow" style="margin-bottom:6px;">⚠️ '+escHtml(m)+' <span style="font-weight:400;font-size:12px;">(تنبيه فقط — تقدر ترحّل عادي)</span></div>').join('');
+}
+
+// ── تنبؤ رقم القرار + تعبئة تلقائية لرقم/تاريخ القرار حسب المريض ──
+// بنجمع كل القرارات المسجلة قبل كده (اليومية + الأرشيف) من غير تخزين إضافي، فأي قرار اتحفظ مرة بيظهر بعد كده لوحده.
+function collectKnownDecisions(){
+  const src={...S.daily,...S.archive};
+  const map={}; // normNo -> {no,date,day,patients:[{name,id}]}
+  Object.keys(src).sort().forEach(function(day){
+    (src[day]||[]).forEach(function(r){
+      const no=(r.decisionNo||'').trim();if(!no)return;
+      const k=normDecisionNo(no);
+      if(!map[k])map[k]={no:no,date:'',day:day,patients:[]};
+      const e=map[k];
+      e.no=no;e.day=day; // الأحدث يكسب
+      if(r.decisionDate)e.date=r.decisionDate;
+      e.patients.push({name:r.patientName,id:r.patientId||''});
+    });
+  });
+  return map;
+}
+function isSamePatient(a,name,id){return (id&&a.id===id)||(name&&a.name===name);}
+// القرارات الخاصة بمريض معين — الأحدث الأول
+function getPatientDecisions(name,id,known){
+  known=known||collectKnownDecisions();
+  return Object.values(known).filter(e=>e.patients.some(p=>isSamePatient(p,name,id))).sort((a,b)=>a.day<b.day?1:(a.day>b.day?-1:0));
+}
+// المريض المحدد حالياً في الحقول (لو الاسم/الرقم القومي مطابق تماماً لمريض مسجل)
+function resolveCurrentPatient(){
+  const name=document.getElementById('patientName').value.trim();
+  const id=document.getElementById('patientId').value.trim();
+  const byId=id?S.patients.find(p=>p.id===id):null;
+  if(byId&&(!name||byId.name===name))return {name:byId.name,id:byId.id||''};
+  if(!id&&name){const byName=S.patients.find(p=>p.name===name);if(byName)return {name:byName.name,id:byName.id||''};}
+  return null;
+}
+let _decKey='',_decAuto={no:'',date:''};
+function resetDecisionAuto(){_decKey='';_decAuto={no:'',date:''};}
+// لما المريض يتغير: املا آخر قرار له تلقائي (من غير ما نمسح أي حاجة اتكتبت يدوي)
+function tryAutofillDecision(force){
+  const noEl=document.getElementById('decisionNo'),dtEl=document.getElementById('decisionDate');
+  if(!noEl||!dtEl)return;
+  const pat=resolveCurrentPatient();
+  const key=pat?(pat.id?('id:'+pat.id):('name:'+pat.name)):'';
+  if(key===_decKey&&!force)return;
+  const untouched=force||(!noEl.value.trim()&&!dtEl.value.trim())||(noEl.value===_decAuto.no&&dtEl.value===_decAuto.date);
+  _decKey=key;
+  if(!untouched)return;
+  const last=pat?getPatientDecisions(pat.name,pat.id)[0]:null;
+  _decAuto={no:last?last.no:'',date:last?last.date:''};
+  noEl.value=_decAuto.no;dtEl.value=_decAuto.date;
+  updateDecisionAlert();
+}
+// بعد اختيار المريض: روح لأول حقل قرار فاضي، ولو الاتنين متعبيين كمّل على الصنف
+function focusAfterPatient(){
+  const noEl=document.getElementById('decisionNo'),dtEl=document.getElementById('decisionDate');
+  if(!noEl.value.trim())noEl.focus();
+  else if(!dtEl.value.trim())dtEl.focus();
+  else document.getElementById('itemSearch').focus();
+}
+let dcIdx=-1;
+function onDecisionNoInput(){
+  const dd=document.getElementById('decisionDropdown');
+  const q=normDecisionNo(document.getElementById('decisionNo').value);
+  const known=collectKnownDecisions();
+  const pat=resolveCurrentPatient()||{name:document.getElementById('patientName').value.trim(),id:document.getElementById('patientId').value.trim()};
+  const own=new Set(getPatientDecisions(pat.name,pat.id,known).map(e=>normDecisionNo(e.no)));
+  let list=Object.entries(known).filter(([k])=>!q||k.includes(q));
+  list.sort((a,b)=>{
+    const oa=own.has(a[0])?0:1,ob=own.has(b[0])?0:1;
+    if(oa!==ob)return oa-ob;
+    return a[1].day<b[1].day?1:(a[1].day>b[1].day?-1:0);
+  });
+  list=list.filter(([k,e])=>!(q&&k===q&&list.length===1)).slice(0,7); // لو مطابق تماماً ومفيش غيره مفيش داعي للقائمة
+  if(!list.length){dd.classList.remove('open');dcIdx=-1;return;}
+  dd.innerHTML=list.map(([k,e])=>'<div class="autocomplete-item" onmousedown="event.preventDefault();selDecision(\''+ec(e.no)+'\')"><strong>'+escHtml(e.no)+'</strong><span style="color:var(--text3);font-size:12px;margin-right:8px;">'+(e.date?escHtml(e.date)+' — ':'')+escHtml(e.patients[e.patients.length-1].name)+(own.has(k)?' ⭐':'')+'</span></div>').join('');
+  dd.classList.add('open');dcIdx=-1;
+}
+function selDecision(encNo){
+  const no=dc(encNo);
+  const e=collectKnownDecisions()[normDecisionNo(no)];
+  document.getElementById('decisionNo').value=no;
+  if(e&&e.date)document.getElementById('decisionDate').value=e.date;
+  document.getElementById('decisionDropdown').classList.remove('open');
+  _decAuto={no:'',date:''}; // اختيار يدوي — مش تعبئة تلقائية
+  updateDecisionAlert();
+  const dtEl=document.getElementById('decisionDate');
+  if(!dtEl.value.trim())dtEl.focus();else document.getElementById('itemSearch').focus();
+}
+// لو الرقم المكتوب مطابق لقرار معروف وتاريخه فاضي: املا التاريخ
+function fillDateFromTypedDecision(){
+  const noEl=document.getElementById('decisionNo'),dtEl=document.getElementById('decisionDate');
+  const no=noEl.value.trim();if(!no||dtEl.value.trim())return;
+  const e=collectKnownDecisions()[normDecisionNo(no)];
+  if(e&&e.date){dtEl.value=e.date;updateDecisionAlert();}
+}
+function onDecisionNoKeydown(e){
+  const dd=document.getElementById('decisionDropdown');
+  const items=dd.querySelectorAll('.autocomplete-item');
+  if(e.key==='ArrowDown'&&items.length){dcIdx=Math.min(dcIdx+1,items.length-1);hlAc(items,dcIdx);e.preventDefault();return;}
+  if(e.key==='ArrowUp'&&items.length){dcIdx=Math.max(dcIdx-1,0);hlAc(items,dcIdx);e.preventDefault();return;}
+  if(e.key==='Escape'){dd.classList.remove('open');return;}
+  if(e.key==='Enter'){
+    e.preventDefault();
+    if(dcIdx>=0&&items[dcIdx]){items[dcIdx].dispatchEvent(new MouseEvent('mousedown',{bubbles:true,cancelable:true}));return;}
+    dd.classList.remove('open');
+    fillDateFromTypedDecision();
+    const dtEl=document.getElementById('decisionDate');
+    if(!dtEl.value.trim())dtEl.focus();else document.getElementById('itemSearch').focus();
+  }
+}
+function onDecisionDateKeydown(e){
+  if(e.key!=='Enter')return;
+  e.preventDefault();
+  const el=e.target;
+  const n=normDecisionDate(el.value);
+  if(n===null){toast('تاريخ القرار لازم يكون بصيغة mm/yy — مثال: 03/26','error');return;}
+  if(n)el.value=n;
+  updateDecisionAlert();
+  document.getElementById('itemSearch').focus();
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -7593,9 +7719,13 @@ function printAllDaily(){
 }
 
 // تنبيه القرار المباشر في صفحة الإدخال
+['patientName','patientId'].forEach(function(id){
+  const el=document.getElementById(id);if(el)el.addEventListener('input',tryAutofillDecision);
+});
 ['patientName','patientId','decisionNo','decisionDate'].forEach(function(id){
   const el=document.getElementById(id);if(el)el.addEventListener('input',updateDecisionAlert);
 });
+(function(){const el=document.getElementById('decisionNo');if(el)el.addEventListener('blur',function(){setTimeout(fillDateFromTypedDecision,150);});})();
 (function(){const g=document.getElementById('globalDate');if(g)g.addEventListener('change',updateDecisionAlert);})();
 
 // Keyboard shortcuts
