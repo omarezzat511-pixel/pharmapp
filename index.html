@@ -1322,7 +1322,7 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
       <div class="card-header teal"><div class="ch-icon">👥</div><div class="ch-title">سجل المرضى</div></div>
       <div style="overflow-x:auto;">
         <table class="patient-db-table">
-          <thead><tr><th>#</th><th>اسم المريض</th><th>الرقم القومي</th><th style="width:80px;text-align:center;">أيام</th><th style="width:140px;text-align:center;">إجراءات</th></tr></thead>
+          <thead><tr><th>#</th><th>اسم المريض</th><th>الرقم القومي</th><th>رقم القرار</th><th>تاريخ القرار</th><th style="width:80px;text-align:center;">أيام</th><th style="width:140px;text-align:center;">إجراءات</th></tr></thead>
           <tbody id="patientDBBody"></tbody>
         </table>
       </div>
@@ -1557,7 +1557,11 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
     <div class="modal-header"><div class="modal-title">✏️ تعديل بيانات المريض</div><button class="modal-close" onclick="closeModal('editPatientDBModal')">✕</button></div>
     <div class="modal-body">
       <div class="form-group" style="margin-bottom:13px;"><label class="form-label">اسم المريض</label><input class="form-input" id="dbEditName" placeholder="اسم المريض"></div>
-      <div class="form-group"><label class="form-label">الرقم القومي</label><input class="form-input" id="dbEditId" placeholder="الرقم القومي (اختياري)"></div>
+      <div class="form-group" style="margin-bottom:13px;"><label class="form-label">الرقم القومي</label><input class="form-input" id="dbEditId" placeholder="الرقم القومي (اختياري)"></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">رقم القرار</label><input class="form-input" id="dbEditDecisionNo" placeholder="اختياري" autocomplete="off"></div>
+        <div class="form-group"><label class="form-label">تاريخ القرار (mm/yy)</label><input class="form-input" id="dbEditDecisionDate" placeholder="مثال: 03/26" maxlength="5" inputmode="numeric" autocomplete="off" dir="ltr" style="text-align:right;" oninput="onDecisionDateInput(this)"></div>
+      </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-sm btn-danger" onclick="deletePatientDB()" style="margin-left:auto;">🗑 حذف المريض</button>
@@ -2080,7 +2084,7 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
         <div style="font-size:48px;margin-bottom:12px;">⚠️</div>
         <div style="font-size:15px;font-weight:700;color:var(--crimson);margin-bottom:8px;">هذا الإجراء لا يمكن التراجع عنه</div>
         <div style="font-size:13px;color:var(--text2);line-height:1.9;">
-          سيتم حذف <strong id="delAllPatCount">0</strong> مريض من قاعدة البيانات، ولن يظهروا في اقتراحات صفحة إدخال البيانات.<br>
+          سيتم حذف <strong id="delAllPatCount">0</strong> مريض من قاعدة البيانات (بما فيها أرقام وتواريخ القرارات المحفوظة معاهم)، ولن يظهروا في اقتراحات صفحة إدخال البيانات.<br>
           <strong>اليوميات والأرشيف والوارد والجرد والأصناف لن تتأثر</strong> (وأسماء المرضى المسجلة في اليوميات القديمة تفضل زي ما هي).
         </div>
       </div>
@@ -2106,7 +2110,8 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
     <div class="modal-body" style="padding:16px;">
       <div style="font-size:13.5px;color:var(--text2);line-height:2;">
         الملف فيه <strong id="rpFileCount">0</strong> مريض، والمسجل حالياً <strong id="rpCurCount">0</strong> مريض.<br>
-        <strong>دمج:</strong> بيضيف المرضى الجداد بس ويسيب الحاليين زي ما هما (المتكرر مبيتضافش).<br>
+        <span id="rpDecInfo"></span> <span id="rpBadDates" style="color:var(--crimson);"></span><br>
+        <strong>دمج:</strong> بيضيف المرضى الجداد، والمرضى الحاليين بيحدّث قرارهم من الملف (لو الملف فيه قرار) ويسيب باقي بياناتهم.<br>
         <strong>استبدال:</strong> بيمسح المرضى الحاليين ويحط اللي في الملف مكانهم.<br>
         <span style="color:var(--text3);font-size:12.5px;">اليوميات وباقي البيانات مش بتتأثر في الحالتين.</span>
       </div>
@@ -2942,19 +2947,30 @@ function collectKnownDecisions(){
   return map;
 }
 function isSamePatient(a,name,id){return (id&&a.id===id)||(name&&a.name===name);}
-// القرارات الخاصة بمريض معين — الأحدث الأول (بترتيب آخر صف اتسجل للمريض بالقرار ده)
+// ترتيب القرارات: باليوم ثم بترتيب التسجيل. القرار المحفوظ على سجل المريض (من الشيت أو التعديل) ليه يوم تسجيله (decisionAt)
+// وبيتحسب قبل أي صرف في نفس اليوم — فأي صرف أحدث منه بيكسب، وأي صرف أقدم منه بيخسر قدامه.
+function _decRank(x){return (x.day||'')+'|'+String((x.seq||0)+1).padStart(9,'0');}
+function cmpDecNewest(a,b){const ra=_decRank(a),rb=_decRank(b);return ra<rb?1:(ra>rb?-1:0);}
+// القرارات الخاصة بمريض معين — الأحدث الأول
 function getPatientDecisions(name,id){
   const src={...S.daily,...S.archive};
-  const map={};let seq=0;
+  const cands=[];let seq=0;
   Object.keys(src).sort().forEach(function(day){
     (src[day]||[]).forEach(function(r){
       seq++;
       const no=(r.decisionNo||'').trim();if(!no)return;
       if(!isSamePatient({name:r.patientName,id:r.patientId||''},name,id))return;
-      map[normDecisionNo(no)]={no:no,date:r.decisionDate||'',day:day,seq:seq};
+      cands.push({no:no,date:r.decisionDate||'',day:day,seq:seq});
     });
   });
-  return Object.values(map).sort((a,b)=>b.seq-a.seq);
+  S.patients.forEach(function(p){
+    const no=(p.decisionNo||'').trim();if(!no)return;
+    if(!isSamePatient(p,name,id))return;
+    cands.push({no:no,date:p.decisionDate||'',day:p.decisionAt||'',seq:-1});
+  });
+  const map={};
+  cands.sort((a,b)=>-cmpDecNewest(a,b)).forEach(c=>{map[normDecisionNo(c.no)]=c;});
+  return Object.values(map).sort(cmpDecNewest);
 }
 // المريض المحدد حالياً في الحقول (لو الاسم/الرقم القومي مطابق تماماً لمريض مسجل)
 function resolveCurrentPatient(){
@@ -2993,14 +3009,23 @@ let dcIdx=-1;
 // كل (رقم قرار + مريض) كعنصر مستقل — آخر صرف يكسب (بيحدد تاريخ القرار واسم المريض)
 function collectDecisionPairs(){
   const src={...S.daily,...S.archive};
-  const map={};let seq=0;
+  const cands=[];let seq=0;
   Object.keys(src).sort().forEach(function(day){
     (src[day]||[]).forEach(function(r){
       seq++;
       const no=(r.decisionNo||'').trim();if(!no)return;
-      const pk=r.patientId?('id:'+r.patientId):('name:'+r.patientName);
-      map[normDecisionNo(no)+'|'+pk]={k:normDecisionNo(no),no:no,date:r.decisionDate||'',name:r.patientName||'',id:r.patientId||'',seq:seq};
+      cands.push({no:no,date:r.decisionDate||'',name:r.patientName||'',id:r.patientId||'',day:day,seq:seq});
     });
+  });
+  S.patients.forEach(function(p){
+    const no=(p.decisionNo||'').trim();if(!no)return;
+    cands.push({no:no,date:p.decisionDate||'',name:p.name||'',id:p.id||'',day:p.decisionAt||'',seq:-1});
+  });
+  const map={};
+  cands.sort((a,b)=>-cmpDecNewest(a,b)).forEach(function(c){
+    const pk=c.id?('id:'+c.id):('name:'+c.name);
+    const k=normDecisionNo(c.no);
+    map[k+'|'+pk]={k:k,no:c.no,date:c.date,name:c.name,id:c.id,day:c.day,seq:c.seq};
   });
   return Object.values(map);
 }
@@ -3014,7 +3039,7 @@ function onDecisionNoInput(){
   list.sort((a,b)=>{
     const oa=isOwn(a)?0:1,ob=isOwn(b)?0:1;
     if(oa!==ob)return oa-ob;
-    return b.seq-a.seq;
+    return cmpDecNewest(a,b);
   });
   list=list.slice(0,7);
   if(list.length===1&&q&&list[0].k===q&&isOwn(list[0])){dd.classList.remove('open');dcIdx=-1;return;} // مطابق تماماً لقرار المريض الحالي
@@ -3050,7 +3075,7 @@ function selDecision(encNo,encName,encId){
   document.getElementById('decisionDropdown').classList.remove('open');
   const k=normDecisionNo(no);
   const pairs=collectDecisionPairs().filter(x=>x.k===k);
-  const x=pairs.find(p=>p.name===name&&p.id===id)||pairs.sort((a,b)=>b.seq-a.seq)[0];
+  const x=pairs.find(p=>p.name===name&&p.id===id)||pairs.sort(cmpDecNewest)[0];
   if(x)applyDecisionPair(x,true);else updateDecisionAlert();
   focusAfterDecision();
 }
@@ -3059,7 +3084,7 @@ function fillFromTypedDecision(){
   const noEl=document.getElementById('decisionNo');
   const no=noEl.value.trim();if(!no)return false;
   const k=normDecisionNo(no);
-  const pairs=collectDecisionPairs().filter(x=>x.k===k).sort((a,b)=>b.seq-a.seq);
+  const pairs=collectDecisionPairs().filter(x=>x.k===k).sort(cmpDecNewest);
   if(!pairs.length)return false;
   const pat=resolveCurrentPatient()||{name:document.getElementById('patientName').value.trim(),id:document.getElementById('patientId').value.trim()};
   const own=(pat.name||pat.id)?pairs.find(x=>isSamePatient({name:x.name,id:x.id},pat.name,pat.id)):null;
@@ -6644,7 +6669,7 @@ function renderPatientsDB(){
 
   const tb=document.getElementById('patientDBBody');
   if(!filtered.length){
-    tb.innerHTML=`<tr><td colspan="5"><div class="empty-state"><div class="empty-state-icon">👥</div><div style="font-size:14px;">${q?'لا توجد نتائج':'لا يوجد مرضى مسجلون بعد'}</div></div></td></tr>`;
+    tb.innerHTML=`<tr><td colspan="7"><div class="empty-state"><div class="empty-state-icon">👥</div><div style="font-size:14px;">${q?'لا توجد نتائج':'لا يوجد مرضى مسجلون بعد'}</div></div></td></tr>`;
     return;
   }
 
@@ -6667,6 +6692,8 @@ function renderPatientsDB(){
       <td>${i+1}</td>
       <td><strong>${hlQ}</strong></td>
       <td style="font-family:monospace;font-size:13px;">${hlId}</td>
+      <td>${escHtml(p.decisionNo)||'<span style="color:var(--text3)">—</span>'}</td>
+      <td style="font-family:monospace;font-size:13px;">${escHtml(p.decisionDate)||'<span style="color:var(--text3)">—</span>'}</td>
       <td style="text-align:center;"><span class="qty-badge${days?'':' zero'}">${days||'—'}</span></td>
       <td style="text-align:center;">
         <button class="btn btn-sm btn-primary" onclick="openPatientReport(${realIdx})" title="تقرير أيام الصرف">📋 تقرير</button>
@@ -6935,6 +6962,8 @@ function openEditPatientDB(idx){
   const p=S.patients[idx];
   document.getElementById('dbEditName').value=p.name;
   document.getElementById('dbEditId').value=p.id||'';
+  document.getElementById('dbEditDecisionNo').value=p.decisionNo||'';
+  document.getElementById('dbEditDecisionDate').value=p.decisionDate||'';
   document.getElementById('editPatientDBModal').classList.add('open');
 }
 
@@ -6945,7 +6974,16 @@ function savePatientDB(){
   if(!name){toast('أدخل اسم المريض','error');return;}
   const oldName=S.patients[editingPatientIdx].name;
   const oldId=S.patients[editingPatientIdx].id;
-  S.patients[editingPatientIdx]={name,id};
+  const decNoE=document.getElementById('dbEditDecisionNo').value.trim();
+  const decDateE=normDecisionDate(document.getElementById('dbEditDecisionDate').value);
+  if(decDateE===null){toast('تاريخ القرار لازم يكون بصيغة mm/yy — مثال: 03/26','error');document.getElementById('dbEditDecisionDate').focus();return;}
+  const oldRec=S.patients[editingPatientIdx];
+  const newRec={...oldRec,name,id}; // بنحافظ على أي بيانات تانية على المريض
+  if(decNoE)newRec.decisionNo=decNoE;else delete newRec.decisionNo;
+  if(decDateE)newRec.decisionDate=decDateE;else delete newRec.decisionDate;
+  if(!decNoE&&!decDateE)delete newRec.decisionAt;
+  else if(decNoE!==(oldRec.decisionNo||'')||decDateE!==(oldRec.decisionDate||''))newRec.decisionAt=todayISO();
+  S.patients[editingPatientIdx]=newRec;
   // Update references in daily + archive
   Object.values(S.daily).forEach(dayArr=>{
     dayArr.forEach(r=>{
@@ -6982,16 +7020,41 @@ function deletePatientDBIdx(idx){
 // ═══════════════════════════════════════════════════════════════
 // استرجاع بيانات المرضى من ملف نسخة احتياطية (ملف المرضى، أو نسخة كاملة فيها مرضى) — بيلمس المرضى بس
 let _pendingPatientsRestore=null;
+function todayISO(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+// بينضّف قايمة مرضى (من ملف JSON أو شيت). المريض ممكن يكون ليه decisionNo / decisionDate (mm/yy) / decisionAt (يوم تسجيل القرار).
+// لو المريض اتكرر بنفس الاسم أو الرقم القومي بيتدمج: القرار الأحدث (بتاريخه) هو اللي بيفضل، ولو التواريخ مش واضحة آخر صف بيكسب.
 function cleanPatientsList(arr){
-  const out=[];const seenId=new Set(),seenName=new Set();
+  const out=[];const byId=new Map(),byName=new Map();
   (Array.isArray(arr)?arr:[]).forEach(function(p){
     if(!p||typeof p!=='object')return;
     const name=String(p.name==null?'':p.name).trim();
     const id=String(p.id==null?'':p.id).trim();
     if(!name)return;
-    if((id&&seenId.has(id))||seenName.has(name))return;
-    if(id)seenId.add(id);seenName.add(name);
-    out.push({name,id});
+    const decNo=String(p.decisionNo==null?'':p.decisionNo).trim();
+    let decDate=normDecisionDate(p.decisionDate);if(decDate===null)decDate='';
+    const decAt=/^\d{4}-\d{2}-\d{2}$/.test(String(p.decisionAt||''))?String(p.decisionAt):'';
+    const exIdx=(id&&byId.has(id))?byId.get(id):(byName.has(name)?byName.get(name):-1);
+    if(exIdx>=0){
+      const ex=out[exIdx];
+      if(!ex.id&&id){ex.id=id;byId.set(id,exIdx);}
+      if(decNo||decDate){
+        const ei=decisionMonthIdx(ex.decisionDate),ni=decisionMonthIdx(decDate);
+        const take=!(ex.decisionNo||ex.decisionDate)||ei===null||ni===null||ni>=ei;
+        if(take){
+          if(decNo)ex.decisionNo=decNo;else delete ex.decisionNo;
+          if(decDate)ex.decisionDate=decDate;else delete ex.decisionDate;
+          if(decAt)ex.decisionAt=decAt;else delete ex.decisionAt;
+        }
+      }
+      return;
+    }
+    const o={name,id};
+    if(decNo)o.decisionNo=decNo;
+    if(decDate)o.decisionDate=decDate;
+    if((decNo||decDate)&&decAt)o.decisionAt=decAt;
+    out.push(o);
+    if(id)byId.set(id,out.length-1);
+    byName.set(name,out.length-1);
   });
   return out;
 }
@@ -7000,21 +7063,88 @@ function _hdrNorm(v){return String(v==null?'':v).toLowerCase().replace(/[\s_\-\.
 function _isNameHdr(h){return h.includes('اسم')||h.includes('name')||h.includes('مريض')||h.includes('patient');}
 function _isIdHdr(h){return h.includes('قومي')||h.includes('بطاق')||h.includes('هوي')||h.includes('national')||h==='id'||h==='nid'||h.includes('nationalid');}
 function _cellText(v){
-  if(v==null)return '';
+  if(v==null||typeof v==='object')return '';
   if(typeof v==='number')return Number.isInteger(v)?String(Math.round(v)):String(v);
   return convertArabicDigits(String(v)).trim();
 }
+function _pad2(n){return String(n).padStart(2,'0');}
+function _isDecDateHdr(h){return (h.includes('تاريخ')||h.includes('date'))&&(h.includes('قرار')||h.includes('decision'));}
+function _isDecNoHdr(h){return (h.includes('قرار')||h.includes('decision'))&&!(h.includes('تاريخ')||h.includes('date'));}
+function _fmtStrip(z){return String(z||'').replace(/"[^"]*"/g,'').replace(/\[[^\]]*\]/g,'').replace(/General/gi,'');}
+function _isDateFmt(z){
+  if(typeof XLSX!=='undefined'&&XLSX.SSF&&XLSX.SSF.is_date){try{return !!XLSX.SSF.is_date(String(z));}catch(e){}}
+  return /[dmy]/i.test(_fmtStrip(z));
+}
+// بتحوّل خلايا الشيت لمصفوفة صفوف. الخلايا اللي شكلها تاريخ بتتحوّل لكائن {y,m,d,hasYear} عشان نعرف نقرا شهر/سنة القرار بدقة.
+function _sheetRows(ws){
+  if(!ws||!ws['!ref'])return [];
+  const rng=XLSX.utils.decode_range(ws['!ref']);
+  const rows=[];
+  for(let r=rng.s.r;r<=rng.e.r;r++){
+    const row=[];let any=false;
+    for(let c=rng.s.c;c<=rng.e.c;c++){
+      const cell=ws[XLSX.utils.encode_cell({r:r,c:c})];
+      let v='';
+      if(cell&&cell.v!=null&&cell.v!==''){
+        any=true;
+        if(cell.v instanceof Date){
+          v={y:cell.v.getFullYear(),m:cell.v.getMonth()+1,d:cell.v.getDate(),hasYear:true};
+        }else if(cell.t==='n'&&cell.z&&_isDateFmt(cell.z)){
+          const dt=new Date(Date.UTC(1899,11,30)+Math.floor(cell.v)*86400000);
+          v={y:dt.getUTCFullYear(),m:dt.getUTCMonth()+1,d:dt.getUTCDate(),hasYear:/y/i.test(_fmtStrip(cell.z))};
+        }else v=cell.v;
+      }
+      row.push(v);
+    }
+    if(any)rows.push(row);
+  }
+  return rows;
+}
+// تاريخ قرار من نص: mm/yy أو mm/yyyy أو 0326 (من normDecisionDate) + yyyy-mm(-dd) + dd/mm/yyyy. '' = فاضي، null = مش مفهوم
+function _decDateFromText(v){
+  const t=convertArabicDigits(String(v==null?'':v)).trim();
+  if(!t)return '';
+  const n=normDecisionDate(t);
+  if(n!==null)return n;
+  let m=t.match(/^(\d{4})\s*[\/\-.]\s*(\d{1,2})(?:\s*[\/\-.]\s*\d{1,2})?$/);
+  if(m){const mm=parseInt(m[2],10);return (mm>=1&&mm<=12)?_pad2(mm)+'/'+m[1].slice(2):null;}
+  m=t.match(/^(\d{1,2})\s*[\/\-.]\s*(\d{1,2})\s*[\/\-.]\s*(\d{4})$/);
+  if(m){const mm=parseInt(m[2],10);return (mm>=1&&mm<=12)?_pad2(mm)+'/'+m[3].slice(2):null;}
+  return null;
+}
+function _decDateFromCell(v){
+  if(v==null||v==='')return '';
+  if(typeof v==='object'){
+    if(v.hasYear)return _pad2(v.m)+'/'+String(v.y).slice(-2);
+    // تاريخ من غير سنة: غالباً إكسيل حوّل "03/26" لـ 26 مارس — فاليوم هو السنة
+    return (v.d>=0&&v.d<=99)?_pad2(v.m)+'/'+_pad2(v.d):null;
+  }
+  if(typeof v==='number'){
+    if(!isFinite(v))return null;
+    const t=String(Math.round(v));
+    return t.length>4?null:normDecisionDate(t.padStart(4,'0'));
+  }
+  return _decDateFromText(v);
+}
+let _badDecDates=0;
 function patientsFromWorkbook(wb){
-  // أول مرة: الشيتات اللي فيها عناوين واضحة (اسم/رقم قومي). تاني مرة: من غير عناوين (عمود 1 اسم، عمود 2 رقم قومي)
+  _badDecDates=0;
+  // أول مرة: الشيتات اللي فيها عناوين واضحة. تاني مرة: من غير عناوين (عمود 1 اسم، 2 رقم قومي، 3 رقم القرار، 4 تاريخ القرار)
   for(const withHeader of [true,false]){
     for(const sn of wb.SheetNames){
-      const rows=XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,raw:true,defval:'',blankrows:false});
+      const rows=_sheetRows(wb.Sheets[sn]);
       if(!rows.length)continue;
-      let hdrRow=-1,nameCol=0,idCol=1;
+      let hdrRow=-1,nameCol=0,idCol=1,decNoCol=2,decDateCol=3;
       for(let r=0;r<Math.min(rows.length,10)&&hdrRow<0;r++){
         const hs=rows[r].map(_hdrNorm);
-        const nc=hs.findIndex(_isNameHdr);
-        if(nc>=0){hdrRow=r;nameCol=nc;idCol=hs.findIndex((h,i)=>i!==nc&&_isIdHdr(h));}
+        const nc=hs.findIndex(h=>_isNameHdr(h)&&!_isDecNoHdr(h)&&!_isDecDateHdr(h));
+        if(nc>=0){
+          hdrRow=r;nameCol=nc;
+          idCol=hs.findIndex((h,i)=>i!==nc&&_isIdHdr(h));
+          decNoCol=hs.findIndex((h,i)=>i!==nc&&i!==idCol&&_isDecNoHdr(h));
+          decDateCol=hs.findIndex((h,i)=>i!==nc&&i!==idCol&&i!==decNoCol&&_isDecDateHdr(h));
+          if(decNoCol>=0&&decDateCol<0)decDateCol=hs.findIndex((h,i)=>i!==nc&&i!==idCol&&i!==decNoCol&&(h==='تاريخ'||h==='date'));
+        }
       }
       if(withHeader&&hdrRow<0)continue;
       if(!withHeader&&hdrRow>=0)continue;
@@ -7023,8 +7153,14 @@ function patientsFromWorkbook(wb){
         const row=rows[r];
         const name=_cellText(row[nameCol]);
         if(!name||/^\d+$/.test(name))continue; // صف فاضي أو عمود ترقيم مش اسم
-        const id=idCol>=0?_cellText(row[idCol]).replace(/[\s\-]/g,''):'';
-        list.push({name,id});
+        const item={name:name,id:idCol>=0?_cellText(row[idCol]).replace(/[\s\-]/g,''):''};
+        const decNo=decNoCol>=0?_cellText(row[decNoCol]):'';
+        if(decNo)item.decisionNo=decNo;
+        if(decDateCol>=0){
+          const dv=_decDateFromCell(row[decDateCol]);
+          if(dv===null)_badDecDates++;else if(dv)item.decisionDate=dv;
+        }
+        list.push(item);
       }
       const cleaned=cleanPatientsList(list);
       if(cleaned.length)return cleaned;
@@ -7043,7 +7179,7 @@ function onPatientsRestoreFile(input){
       let list;
       if(isSheet){
         if(typeof XLSX==='undefined'){toast('مكتبة الإكسيل مش متحمّلة — اتصل بالنت مرة واحدة وجرب تاني','error');return;}
-        const wb=isCsv?XLSX.read(e.target.result,{type:'string'}):XLSX.read(e.target.result,{type:'array'}); // CSV بنقراه كنص عشان العربي يفضل سليم
+        const wb=isCsv?XLSX.read(e.target.result,{type:'string',raw:true}):XLSX.read(e.target.result,{type:'array',cellNF:true}); // CSV بنقراه كنص خام (من غير ما إكسيل يحوّل 03/26 لتاريخ) — وcellNF عشان نعرف شكل خلايا التاريخ
         list=patientsFromWorkbook(wb);
       }else{
         const data=JSON.parse(e.target.result);
@@ -7053,8 +7189,12 @@ function onPatientsRestoreFile(input){
       _pendingPatientsRestore=list;
       document.getElementById('rpFileCount').textContent=list.length;
       document.getElementById('rpCurCount').textContent=S.patients.length;
+      const withDec=list.filter(p=>p.decisionNo||p.decisionDate).length;
+      document.getElementById('rpDecInfo').innerHTML=withDec?('منهم <strong>'+withDec+'</strong> معاهم رقم/تاريخ قرار هيتحفظوا.'):'مفيش أرقام قرارات في الملف.';
+      document.getElementById('rpBadDates').textContent=(isSheet&&_badDecDates)?('⚠️ '+_badDecDates+' تاريخ قرار مش مفهوم واتجاهل (الصيغة المطلوبة mm/yy).'):'';
       document.getElementById('restorePatientsModal').classList.add('open');
     }catch(err){
+      console.error('patients restore failed:',err);
       toast('ملف غير صالح أو تالف','error');
     }
   };
@@ -7064,17 +7204,29 @@ function onPatientsRestoreFile(input){
 function applyPatientsRestore(mode){
   const list=_pendingPatientsRestore;
   if(!list||!list.length){closeModal('restorePatientsModal');return;}
+  const today=todayISO();
+  const stamp=function(p){const o={...p};if((o.decisionNo||o.decisionDate)&&!o.decisionAt)o.decisionAt=today;return o;};
+  const withDec=list.filter(p=>p.decisionNo||p.decisionDate).length;
   let msg;
   if(mode==='replace'){
-    S.patients=list.map(p=>({...p}));
-    msg='تم استبدال المرضى بـ '+list.length+' مريض من الملف';
+    S.patients=list.map(stamp);
+    msg='تم استبدال المرضى بـ '+list.length+' مريض من الملف'+(withDec?(' — '+withDec+' منهم بقراراتهم'):'');
   }else{
-    let added=0;
+    let added=0,updated=0;
     list.forEach(function(p){
-      const ex=S.patients.some(x=>x.name===p.name||(p.id&&x.id===p.id));
-      if(!ex){S.patients.push({...p});added++;}
+      const ex=S.patients.find(x=>x.name===p.name||(p.id&&x.id===p.id));
+      if(!ex){S.patients.push(stamp(p));added++;return;}
+      if(p.decisionNo||p.decisionDate){
+        if(p.decisionNo)ex.decisionNo=p.decisionNo;else delete ex.decisionNo;
+        if(p.decisionDate)ex.decisionDate=p.decisionDate;else delete ex.decisionDate;
+        ex.decisionAt=p.decisionAt||today;
+        updated++;
+      }
     });
-    msg=added?('تم دمج '+added+' مريض جديد'+(list.length-added?' (و'+(list.length-added)+' موجودين بالفعل)':'')):'كل المرضى اللي في الملف موجودين بالفعل — مفيش جديد';
+    const parts=[];
+    if(added)parts.push('اتضاف '+added+' مريض جديد');
+    if(updated)parts.push('اتحدّث قرار '+updated+' مريض موجود');
+    msg=parts.length?('تم الدمج: '+parts.join(' و')):'كل المرضى اللي في الملف موجودين بالفعل ومفيش قرارات جديدة';
   }
   _pendingPatientsRestore=null;
   save();
