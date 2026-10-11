@@ -7157,6 +7157,34 @@ function _nameKey(n){
     .replace(/[ً-ْٰـ]/g,'').replace(/[إأآ]/g,'ا').replace(/ى/g,'ي').replace(/ة/g,'ه').replace(/ؤ/g,'و').replace(/ئ/g,'ي')
     .replace(/[^؀-ۿ0-9a-z]/g,'');
 }
+function _idKey(x){return convertArabicDigits(String(x==null?'':x)).replace(/\D/g,'');}
+function _editDist(a,b,max){
+  if(a===b)return 0;if(Math.abs(a.length-b.length)>max)return max+1;
+  let prev=[];for(let j=0;j<=b.length;j++)prev[j]=j;
+  for(let i=1;i<=a.length;i++){const cur=[i];for(let j=1;j<=b.length;j++)cur[j]=Math.min(prev[j]+1,cur[j-1]+1,prev[j-1]+(a[i-1]===b[j-1]?0:1));prev=cur;}
+  return prev[b.length];
+}
+function _nameTokens(n){
+  return convertArabicDigits(String(n==null?'':n)).toLowerCase()
+    .replace(/[ً-ْٰـ]/g,'').replace(/[إأآ]/g,'ا').replace(/ى/g,'ي').replace(/ة/g,'ه').replace(/ؤ/g,'و').replace(/ئ/g,'ي')
+    .replace(/[^؀-ۿ0-9a-z\s]/g,' ').split(/\s+/).filter(Boolean);
+}
+// تشابه الأسماء 0..1: بيتحمّل غلطة حرف في الكلمة، واسم ناقص كلمة (احمد محمد ~ احمد محمد علي)
+function _nameSim(a,b){
+  const ta=_nameTokens(a),tb=_nameTokens(b);
+  if(!ta.length||!tb.length)return 0;
+  const used=new Array(tb.length).fill(false);let m=0;
+  ta.forEach(function(x){
+    for(let j=0;j<tb.length;j++){
+      if(used[j])continue;
+      if(x===tb[j]||(x.length>=4&&tb[j].length>=4&&_editDist(x,tb[j],1)<=1)){used[j]=true;m++;break;}
+    }
+  });
+  const mn=Math.min(ta.length,tb.length),mx=Math.max(ta.length,tb.length);
+  let sim=m/mx;
+  if(mn>=2&&m===mn)sim=Math.max(sim,0.9);
+  return sim;
+}
 // المرضى المتطابقين مع صف صرف قديم (بالرقم القومي أو الاسم الحالي أو أي اسم قديم اتصلّح)
 function rowMatchesPatient(r,p){
   return (p.id&&r.patientId===p.id)||r.patientName===p.name||(Array.isArray(p.oldNames)&&p.oldNames.includes(r.patientName));
@@ -7468,17 +7496,18 @@ function smartMergePatients(list){
   // 1) بالرقم القومي
   list.forEach(function(f,i){
     if(!f.id)return;
-    const rec=cur.find(p=>p.id===f.id&&!claimed.has(p));
+    const fk=_idKey(f.id);const rec=cur.find(p=>p.id&&_idKey(p.id)===fk&&!claimed.has(p));
     if(!rec)return;
     claimed.add(rec);matched[i]=rec;
   });
   list.forEach(function(f,i){
     const rec=matched[i];if(!rec)return;
     fixName(rec,f,' (رقم قومي '+f.id+')');
+    if(f.id&&rec.id!==f.id){rec.id=f.id;touched.add(rec);} // توحيد شكل الرقم (مسافات/أرقام عربي)
     // سجل تاني بنفس الاسم ومن غير رقم قومي = تكرار لنفس المريض → بيتدمج فيه
     cur.forEach(function(q){
       if(q===rec||claimed.has(q)||removed.has(q)||q.id)return;
-      if(_nameKey(q.name)!==_nameKey(f.name))return;
+      if(_nameSim(q.name,f.name)<0.75)return;
       const dl=_decisionsOf(rec);
       _decisionsOf(q).forEach(d=>_insertDecisionOrdered(dl,d));
       if(dl.length)_mirrorDecisions(rec,dl);
@@ -7501,6 +7530,30 @@ function smartMergePatients(list){
       rec.id=f.id;counts.idFixed++;touched.add(rec);
     }
     fixName(rec,f,' (تصحيح كتابة الاسم)');
+  });
+  // 2.5) تطابق تقريبي: غلطة في الرقم القومي (حرف/حرفين) أو اختلاف بسيط في كتابة الاسم، عشان ما يتضافش نفس المريض مرتين
+  list.forEach(function(f,i){
+    if(matched[i])return;
+    const fk=_idKey(f.id);
+    let best=null,bs=0,tie=false;
+    cur.forEach(function(q){
+      if(claimed.has(q)||removed.has(q))return;
+      const qk=_idKey(q.id);
+      const sim=_nameSim(q.name,f.name);
+      let ok=false,score=sim;
+      if(!qk||!fk)ok=sim>=0.75;                                   // واحد منهم من غير رقم قومي
+      else if(qk.length===fk.length&&_editDist(qk,fk,2)<=2)ok=sim>=0.5; // رقم قومي فيه غلطة بسيطة
+      else ok=sim>=0.9;                                            // اسم شبه مطابق والرقم مختلف تماماً
+      if(!ok)return;
+      if(score>bs){best=q;bs=score;tie=false;}else if(score===bs&&best)tie=true;
+    });
+    if(!best||tie)return;
+    claimed.add(best);matched[i]=best;
+    if(f.id&&_idKey(best.id)!==fk){
+      log('id','الرقم القومي: «'+best.name+'» '+(best.id||'(فاضي)')+' ← '+f.id+' (تطابق تقريبي بالاسم)');
+      best.id=f.id;counts.idFixed++;touched.add(best);
+    }
+    fixName(best,f,' (تطابق تقريبي)');
   });
   // 3) القرارات للمرضى الموجودين + 4) المرضى الجداد
   list.forEach(function(f,i){
