@@ -946,10 +946,174 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
 .s44-total-out .s44-row-label,.s44-total-out td{background:#FDE8C8!important;font-weight:900;border-top:2px solid #C9A84C;}
 .s44-balance .s44-row-label,.s44-balance td{background:#D4EDE0!important;font-weight:900;border-top:2px solid #1A7A4A;}
 .s44-section-header{background:#16406B!important;color:#fff!important;font-size:8.5px;font-weight:700;text-align:center;}
+
+/* ═════ ثيمات + أيقونات حديثة ═════ */
+body[data-theme=emerald]{--navy:#062B24;--navy2:#0B3D33;--teal:#0F8B6D;--teal2:#16A883;--teal3:#7BE0C3;--gold:#D4A72C;--gold2:#EFCB62;--gold3:#FBF3D6;}
+body[data-theme=emerald]:not(.dark-mode){--off:#F3FAF7;--light:#E6F3EC;--border:#CBE2D7;--text1:#062B24;--text2:#0B3D33cc;}
+body[data-theme=ocean]{--navy:#06283D;--navy2:#0A3A58;--teal:#0369A1;--teal2:#0EA5E9;--teal3:#7DD3FC;--gold:#F59E0B;--gold2:#FBBF24;--gold3:#FEF3D3;}
+body[data-theme=ocean]:not(.dark-mode){--off:#F3F9FD;--light:#E4F1F9;--border:#C9DEEC;--text1:#06283D;--text2:#0A3A58cc;}
+body[data-theme=royal]{--navy:#1B1038;--navy2:#2A1A52;--teal:#6D3FC0;--teal2:#8B5CE0;--teal3:#C4B0FF;--gold:#F0B429;--gold2:#F7CE62;--gold3:#FDF1D0;}
+body[data-theme=royal]:not(.dark-mode){--off:#F8F5FD;--light:#EEE8F8;--border:#D9CEEC;--text1:#1B1038;--text2:#2A1A52cc;}
+body[data-theme=rose]{--navy:#3A0F24;--navy2:#52183A;--teal:#C2255C;--teal2:#E0457B;--teal3:#FFB3CB;--gold:#E8B04C;--gold2:#F2CB80;--gold3:#FBF0D3;}
+body[data-theme=rose]:not(.dark-mode){--off:#FDF5F8;--light:#F9E8EE;--border:#EBCDD8;--text1:#3A0F24;--text2:#52183Acc;}
+body[data-theme=sunset]{--navy:#2B1608;--navy2:#40220D;--teal:#C2570C;--teal2:#EA7A1E;--teal3:#FDBA74;--gold:#EAB308;--gold2:#F5CF48;--gold3:#FBF0C8;}
+body[data-theme=sunset]:not(.dark-mode){--off:#FDF8F2;--light:#F8EDE0;--border:#E8D5C0;--text1:#2B1608;--text2:#40220Dcc;}
+body[data-theme=graphite]{--navy:#16181D;--navy2:#22252C;--teal:#475569;--teal2:#64748B;--teal3:#CBD5E1;--gold:#D4AF37;--gold2:#E6CC6B;--gold3:#F8F0D2;}
+body[data-theme=graphite]:not(.dark-mode){--off:#F6F7F9;--light:#ECEEF2;--border:#D3D8E0;--text1:#16181D;--text2:#22252Ccc;}
+
+.ic{width:1.15em;height:1.15em;flex:none;display:inline-block;vertical-align:middle;}
+.ic.sm{width:16px;height:16px;}
+.nav-btn .ic{width:22px;height:22px;transition:transform .2s;}
+.nav-btn:hover .ic{transform:scale(1.12);}
+.nav-btn{color:rgba(255,255,255,.55);}
+.nav-btn:hover{color:#fff;}
+.nav-btn.active{color:var(--gold2);background:linear-gradient(135deg,color-mix(in srgb,var(--gold) 20%,transparent),color-mix(in srgb,var(--teal) 25%,transparent));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--gold) 35%,transparent);}
+.nav-btn.active::after{content:'';position:absolute;right:-12px;top:11px;bottom:11px;width:4px;border-radius:4px 0 0 4px;background:var(--gold);}
+.sidebar{background:linear-gradient(180deg,var(--navy2),var(--navy));border-left:1px solid color-mix(in srgb,var(--gold) 25%,transparent);box-shadow:-4px 0 24px rgba(0,0,0,.18);}
+.logo-mark{background:linear-gradient(135deg,var(--gold),var(--teal3));color:var(--navy);}
+.logo-mark .logo-ic{width:25px;height:25px;stroke-width:2.1;}
+.ch-icon{background:rgba(255,255,255,.2);color:#fff;}
+.ch-icon .ic{width:17px;height:17px;}
+.card-header.gold .ch-icon{color:var(--navy);background:rgba(255,255,255,.35);}
+.card-header.gold .ch-title{color:var(--navy);}
+.card-header.teal{background:linear-gradient(135deg,var(--teal),var(--teal2));}
+.card{transition:box-shadow .2s,transform .2s;}
+.card:hover{box-shadow:var(--shadow);}
+.topbar{backdrop-filter:blur(8px);}
+.dm-toggle{gap:7px;}
+.dm-toggle .ic{color:var(--teal);}
+body.dark-mode .dm-toggle .ic{color:var(--gold2);}
+.dm-toggle:hover{background:color-mix(in srgb,var(--teal) 10%,transparent);}
+.date-label{display:flex;align-items:center;color:var(--teal);}
+.form-input:focus{box-shadow:0 0 0 3px color-mix(in srgb,var(--teal) 16%,transparent);}
+.autocomplete-item:hover,.autocomplete-item.selected{background:color-mix(in srgb,var(--teal) 9%,transparent);}
+.btn-primary{background:linear-gradient(135deg,var(--teal),var(--teal2));box-shadow:0 3px 10px color-mix(in srgb,var(--teal) 35%,transparent);}
+.btn-gold{background:linear-gradient(135deg,var(--gold),var(--gold2));box-shadow:0 4px 14px color-mix(in srgb,var(--gold) 38%,transparent);}
+.btn-outline{color:var(--teal);border-color:var(--teal);}
+.btn-outline:hover{background:var(--teal);color:#fff;}
+.page-header::after{background:linear-gradient(90deg,var(--gold),transparent);}
+.mic-btn{background:color-mix(in srgb,var(--teal3) 55%,transparent);}
+::-webkit-scrollbar{width:10px;height:10px;}
+::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--teal) 40%,transparent);border-radius:10px;border:2px solid transparent;background-clip:content-box;}
+::-webkit-scrollbar-thumb:hover{background:var(--teal);background-clip:content-box;border:2px solid transparent;}
+body.dark-mode .nav-btn.active{color:var(--gold2);}
+body.dark-mode .card-header.navy{background:var(--navy2);}
+.btn .ic.sm{width:15px;height:15px;}
+/* منتقي الثيمات */
+.theme-wrap{position:relative;}
+.theme-pop{position:absolute;top:calc(100% + 10px);left:0;width:290px;background:var(--white);border:1px solid var(--border);border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.22);padding:14px;display:none;z-index:500;animation:fadeIn .18s ease;}
+.theme-pop.open{display:block;}
+.tp-title{font-family:'Cairo',sans-serif;font-weight:800;font-size:14px;color:var(--text1);margin-bottom:10px;}
+.tp-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.tp-item{display:flex;align-items:center;gap:9px;padding:8px 10px;border:1.5px solid var(--border);border-radius:10px;background:var(--off);cursor:pointer;font-family:'Tajawal',sans-serif;font-weight:700;font-size:13px;color:var(--text1);transition:all .15s;}
+.tp-item:hover{border-color:var(--teal);transform:translateY(-1px);}
+.tp-item.on{border-color:var(--teal);background:color-mix(in srgb,var(--teal) 12%,transparent);box-shadow:0 0 0 2px color-mix(in srgb,var(--teal) 25%,transparent);}
+.tp-sw{width:30px;height:30px;border-radius:50%;flex:none;box-shadow:0 2px 6px rgba(0,0,0,.25);}
+.tp-note{margin-top:10px;font-size:11.5px;color:var(--text3);text-align:center;}
+body.dark-mode .theme-pop{background:#0D1B2A;border-color:#1E3248;}
+body.dark-mode .tp-item{background:#111F30;border-color:#1E3248;color:#D6E8F5;}
+body.dark-mode .tp-title{color:#D6E8F5;}
+
+/* ═════ ستايل سينمائي (شكل كروت وأزرار حديث — من غير تغيير الألوان) ═════ */
+@media screen{
+body[data-style=cine]{--radius:22px;--radius2:14px;--shadow2:0 6px 22px rgba(11,25,41,.07);}
+body[data-style=cine].dark-mode{--shadow2:0 6px 22px rgba(0,0,0,.35);}
+/* عناوين الصفحات: شريط جانبي + عنوان كبير */
+body[data-style=cine] .page-header{border-bottom:none;padding:2px 18px 0 0;margin-bottom:26px;border-right:4px solid var(--teal);align-items:center;}
+body[data-style=cine] .page-header::after{display:none;}
+body[data-style=cine] .page-title{font-size:30px;font-weight:800;letter-spacing:-.3px;line-height:1.15;}
+body[data-style=cine] .page-subtitle{font-size:15px;margin-top:6px;}
+/* الأزرار: حبوب كبيرة */
+body[data-style=cine] .btn{border-radius:999px;font-weight:700;letter-spacing:.1px;}
+body[data-style=cine] .btn-primary,body[data-style=cine] .btn-excel,body[data-style=cine] .btn-purple{padding:11px 22px;font-size:14px;}
+body[data-style=cine] .btn-gold,body[data-style=cine] .btn-sage{padding:14px 26px;font-size:15px;}
+body[data-style=cine] .btn-sm{padding:7px 15px;font-size:12.5px;border-radius:999px;}
+body[data-style=cine] .btn-outline{padding:10px 20px;border:1px solid color-mix(in srgb,var(--text1) 16%,transparent);color:var(--text1);background:color-mix(in srgb,var(--text1) 5%,transparent);}
+body[data-style=cine] .btn-outline:hover{background:color-mix(in srgb,var(--text1) 12%,transparent);color:var(--text1);}
+body[data-style=cine] .btn-danger,body[data-style=cine] .btn-warn{border:1px solid color-mix(in srgb,currentColor 25%,transparent);}
+body[data-style=cine] .btn .ic.sm{width:17px;height:17px;}
+body[data-style=cine] .btn:active{transform:scale(.97);}
+/* الكروت: حواف دايرية كبيرة وعناوين هادية */
+body[data-style=cine] .card{border-radius:22px;border:1px solid color-mix(in srgb,var(--text1) 9%,transparent);box-shadow:var(--shadow2);overflow:visible;}
+body[data-style=cine] .card:hover{transform:translateY(-1px);}
+body[data-style=cine] .card-header,body[data-style=cine] .card-header.teal,body[data-style=cine] .card-header.sage,body[data-style=cine] .card-header.navy,body[data-style=cine] .card-header.gold,body[data-style=cine] .card-header.purple,body[data-style=cine] .card-header.crimson{background:transparent;border-bottom:1px solid color-mix(in srgb,var(--text1) 8%,transparent);padding:18px 22px;border-radius:22px 22px 0 0;}
+body[data-style=cine] .ch-title{color:var(--text1)!important;font-size:17px;font-weight:800;}
+body[data-style=cine] .ch-icon{width:36px;height:36px;border-radius:50%;background:color-mix(in srgb,var(--teal) 14%,transparent);color:var(--teal);}
+body[data-style=cine] .card-header.sage .ch-icon{background:color-mix(in srgb,var(--sage2) 16%,transparent);color:var(--sage2);}
+body[data-style=cine] .card-header.gold .ch-icon{background:color-mix(in srgb,var(--gold) 20%,transparent);color:var(--gold);}
+body[data-style=cine] .card-header.crimson .ch-icon{background:color-mix(in srgb,var(--crimson) 14%,transparent);color:var(--crimson);}
+body[data-style=cine] .card-header.purple .ch-icon{background:rgba(155,89,182,.16);color:#9B59B6;}
+body[data-style=cine] .card-header.navy .ch-icon{background:color-mix(in srgb,var(--text1) 10%,transparent);color:var(--text1);}
+body[data-style=cine] .card-header .btn-outline,body[data-style=cine] .card-header .btn{margin-inline-start:auto;}
+body[data-style=cine] .card-body{padding:22px;}
+/* الحقول */
+body[data-style=cine] .form-input,body[data-style=cine] .date-input{border-radius:14px;border:1px solid color-mix(in srgb,var(--text1) 14%,transparent);padding:11px 15px;background:color-mix(in srgb,var(--text1) 3%,var(--white));}
+body[data-style=cine] .form-input:focus{border-color:var(--teal);}
+body[data-style=cine] .form-label{font-size:11.5px;letter-spacing:.4px;}
+body[data-style=cine] .search-bar input{border-radius:999px;padding-inline:20px;}
+body[data-style=cine] .autocomplete-list{border-radius:0 0 16px 16px;}
+/* كروت الإحصائيات */
+body[data-style=cine] .stats-band{gap:16px;}
+body[data-style=cine] .stat-card{border-radius:20px;padding:18px 20px;border:1px solid color-mix(in srgb,var(--text1) 9%,transparent);box-shadow:var(--shadow2);transition:transform .2s;}
+body[data-style=cine] .stat-card:hover{transform:translateY(-2px);}
+body[data-style=cine] .stat-icon{width:50px;height:50px;border-radius:50%;font-size:21px;}
+body[data-style=cine] .stat-num{font-size:30px;font-weight:800;letter-spacing:-.5px;}
+body[data-style=cine] .stat-label{font-size:13px;margin-top:4px;}
+/* كروت الأصناف: بطاقة بتاج رقم في الركن */
+body[data-style=cine] .items-grid{gap:16px;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));}
+body[data-style=cine] .item-card{position:relative;border-radius:20px;border:1px solid color-mix(in srgb,var(--text1) 10%,transparent);padding:18px 62px 16px 18px;overflow:hidden;background:linear-gradient(160deg,var(--white),color-mix(in srgb,var(--teal) 5%,var(--white)));box-shadow:var(--shadow2);flex-wrap:wrap;}
+body[data-style=cine] .item-card:hover{transform:translateY(-3px);border-color:color-mix(in srgb,var(--teal) 45%,transparent);box-shadow:var(--shadow);}
+body[data-style=cine] .item-num{position:absolute;top:0;right:0;width:46px;height:50px;border-radius:0 20px 0 16px;background:var(--teal);color:#fff;font-size:15px;font-weight:800;flex-direction:column;}
+body[data-style=cine] .item-name{font-size:17px;font-weight:700;}
+body[data-style=cine] .item-actions{width:100%;justify-content:flex-start;padding-top:10px;margin-top:4px;border-top:1px solid color-mix(in srgb,var(--text1) 8%,transparent);margin-right:-44px;padding-right:44px;}
+/* تبويبات وأرشيف */
+body[data-style=cine] .month-tabs{gap:8px;}
+body[data-style=cine] .month-tab{border-radius:999px;padding:9px 20px;border:1px solid color-mix(in srgb,var(--text1) 12%,transparent);}
+body[data-style=cine] .archive-card{border-radius:18px;border:1px solid color-mix(in srgb,var(--text1) 10%,transparent);padding:18px 22px;box-shadow:var(--shadow2);}
+body[data-style=cine] .archive-badge{padding:4px 14px;}
+/* النوافذ */
+body[data-style=cine] .modal{border-radius:24px;}
+body[data-style=cine] .modal-header{background:transparent;border-bottom:1px solid color-mix(in srgb,var(--text1) 9%,transparent);padding:20px 26px;}
+body[data-style=cine] .modal-title{color:var(--text1);font-size:18px;font-weight:800;}
+body[data-style=cine] .modal-footer{border-radius:0 0 24px 24px;}
+/* الشريط العلوي والقائمة */
+body[data-style=cine] .topbar{height:68px;box-shadow:none;border-bottom:1px solid color-mix(in srgb,var(--text1) 8%,transparent);background:color-mix(in srgb,var(--white) 86%,transparent);}
+body[data-style=cine] .topbar-title{font-size:18px;font-weight:800;}
+body[data-style=cine] .dm-toggle,body[data-style=cine] .save-badge{padding:7px 15px;}
+body[data-style=cine] .nav-btn{width:50px;height:50px;border-radius:16px;}
+body[data-style=cine] .nav-btn.active::after{display:none;}
+body[data-style=cine] .logo-mark{border-radius:16px;width:46px;height:46px;}
+/* الجداول */
+body[data-style=cine] .daily-table th,body[data-style=cine] .inv-table th{letter-spacing:.3px;}
+body[data-style=cine] .page{padding:30px 34px;}
+body[data-style=cine].dark-mode .card,body[data-style=cine].dark-mode .stat-card,body[data-style=cine].dark-mode .item-card{border-color:#1E3248;}
+body[data-style=cine].dark-mode .item-card{background:linear-gradient(160deg,#0D1B2A,#0F2236);}
+body[data-style=cine].dark-mode .form-input,body[data-style=cine].dark-mode .date-input{background:#111F30;}
+}
+@media screen{
+body[data-style=cine] .item-info{flex:1 1 100%;}
+body[data-style=cine] .item-actions{margin-right:0;padding-right:0;}
+body[data-style=cine] .card-header .btn-outline,body[data-style=cine] .card-header .btn-sm{color:var(--text1)!important;background:color-mix(in srgb,var(--text1) 7%,transparent)!important;border:1px solid color-mix(in srgb,var(--text1) 16%,transparent)!important;}
+body[data-style=cine] .header-actions{gap:10px;}
+body[data-style=cine] .header-actions .btn{padding:9px 16px;font-size:13px;}
+}
+/* مفتاح الستايل في قائمة الثيم */
+.sty-row{display:flex;gap:6px;margin-bottom:12px;background:var(--light);padding:4px;border-radius:999px;}
+.sty-row button{flex:1;border:none;background:none;padding:7px 8px;border-radius:999px;font-family:'Tajawal',sans-serif;font-weight:700;font-size:12.5px;color:var(--text2);cursor:pointer;}
+.sty-row button.on{background:var(--teal);color:#fff;box-shadow:0 2px 8px color-mix(in srgb,var(--teal) 40%,transparent);}
+body.dark-mode .sty-row{background:#111F30;}
+
+.upa-btn{background:var(--light);color:var(--text2);border:1.5px dashed var(--border);font-weight:800;}
+.upa-btn:hover{border-color:var(--sage2);color:var(--sage);}
+.upa-btn.on{background:var(--sage3);color:var(--sage);border:1.5px solid var(--sage2);}
+tr.upa-done td{background:color-mix(in srgb,var(--sage2) 7%,transparent);}
+body.dark-mode .upa-btn.on{background:#091A11;color:var(--sage2);}
+@media print{.upa-btn{display:none!important;}}
 </style>
 <base target="_blank">
 </head>
 <body>
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true"><symbol id="i-pill" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/><path d="m8.5 8.5 7 7"/></symbol><symbol id="i-pen" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></symbol><symbol id="i-clip" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4M12 16h4M8 11h.01M8 16h.01"/></symbol><symbol id="i-package" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></symbol><symbol id="i-inbox" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m8 11 4 4 4-4"/><path d="M8 5H4a1 1 0 0 0-1 1v12a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a1 1 0 0 0-1-1h-4"/></symbol><symbol id="i-chart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 16v-5M12 16V7M17 16v-3"/></symbol><symbol id="i-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol><symbol id="i-user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol><symbol id="i-archive" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="5" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></symbol><symbol id="i-printer" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></symbol><symbol id="i-save" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></symbol><symbol id="i-db" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3"/></symbol><symbol id="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></symbol><symbol id="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></symbol><symbol id="i-palette" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r="1"/><circle cx="17.5" cy="10.5" r="1"/><circle cx="8.5" cy="7.5" r="1"/><circle cx="6.5" cy="12.5" r="1"/><path d="M12 2a10 10 0 0 0 0 20c1.1 0 2-.9 2-2 0-.5-.2-1-.5-1.3-.3-.4-.5-.8-.5-1.3 0-1.1.9-2 2-2h2.4a4.6 4.6 0 0 0 4.6-4.6C22 6.1 17.5 2 12 2Z"/></symbol><symbol id="i-calendar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></symbol><symbol id="i-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"/></symbol><symbol id="i-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4M12 17h.01"/></symbol><symbol id="i-refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></symbol><symbol id="i-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M10 11v6M14 11v6"/></symbol><symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></symbol><symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></symbol><symbol id="i-upload" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3"/><path d="m8 7 4-4 4 4"/><path d="M8 19H4a1 1 0 0 1-1-1v-3M21 15v3a1 1 0 0 1-1 1h-4"/></symbol><symbol id="i-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m8 11 4 4 4-4"/><path d="M5 21h14"/></symbol><symbol id="i-mic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M19 10a7 7 0 0 1-14 0M12 17v5"/></symbol><symbol id="i-file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M8 13h8M8 17h8"/></symbol></svg>
 
 <!-- ═══ LOGIN SCREEN (حماية بكلمة سر — Firebase Auth) ═══ -->
 <div id="loginScreen" style="position:fixed;inset:0;z-index:9999;background:linear-gradient(180deg,#0B1929,#112240);display:none;align-items:center;justify-content:center;padding:20px;direction:rtl;font-family:'Tajawal',sans-serif;">
@@ -973,30 +1137,31 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
 </div>
 
 <nav class="sidebar">
-  <div class="logo-mark">💊</div>
-  <button class="nav-btn active" onclick="showPage('entry')" id="nav-entry">✏️<span class="tip">إدخال البيانات</span></button>
-  <button class="nav-btn" onclick="showPage('daily')" id="nav-daily">📋<span class="tip">اليومية</span></button>
-  <button class="nav-btn" onclick="showPage('items')" id="nav-items">📦<span class="tip">الأصناف والمخزون</span></button>
-  <button class="nav-btn" onclick="showPage('receipts')" id="nav-receipts">📥<span class="tip">الوارد</span></button>
-  <button class="nav-btn" onclick="showPage('inventory')" id="nav-inventory">📊<span class="tip">الجرد الشهري</span></button>
-  <button class="nav-btn" onclick="showPage('patients')" id="nav-patients">👥<span class="tip">قاعدة بيانات المرضى</span></button>
-  <button class="nav-btn" onclick="showPage('archive')" id="nav-archive">🗄️<span class="tip">الأرشيف</span></button>
-  <button class="nav-btn" onclick="openPrintCenter()" id="nav-printcenter">🖨️<span class="tip">مركز الطباعة</span></button>
+  <div class="logo-mark"><svg class="ic logo-ic"><use href="#i-pill"/></svg></div>
+  <button class="nav-btn active" onclick="showPage('entry')" id="nav-entry"><svg class="ic"><use href="#i-pen"/></svg><span class="tip">إدخال البيانات</span></button>
+  <button class="nav-btn" onclick="showPage('daily')" id="nav-daily"><svg class="ic"><use href="#i-clip"/></svg><span class="tip">اليومية</span></button>
+  <button class="nav-btn" onclick="showPage('items')" id="nav-items"><svg class="ic"><use href="#i-package"/></svg><span class="tip">الأصناف والمخزون</span></button>
+  <button class="nav-btn" onclick="showPage('receipts')" id="nav-receipts"><svg class="ic"><use href="#i-inbox"/></svg><span class="tip">الوارد</span></button>
+  <button class="nav-btn" onclick="showPage('inventory')" id="nav-inventory"><svg class="ic"><use href="#i-chart"/></svg><span class="tip">الجرد الشهري</span></button>
+  <button class="nav-btn" onclick="showPage('patients')" id="nav-patients"><svg class="ic"><use href="#i-users"/></svg><span class="tip">قاعدة بيانات المرضى</span></button>
+  <button class="nav-btn" onclick="showPage('archive')" id="nav-archive"><svg class="ic"><use href="#i-archive"/></svg><span class="tip">الأرشيف</span></button>
+  <button class="nav-btn" onclick="openPrintCenter()" id="nav-printcenter"><svg class="ic"><use href="#i-printer"/></svg><span class="tip">مركز الطباعة</span></button>
   <div style="flex:1"></div>
   <div class="sidebar-sep"></div>
-  <button class="nav-btn" onclick="showPage('backup')" id="nav-backup" title="حفظ واسترجاع">💾<span class="tip">حفظ واسترجاع</span></button>
-  <button class="nav-btn" onclick="manualSave()" title="حفظ يدوي">💾<span class="tip">حفظ (Ctrl+S)</span></button>
+  <button class="nav-btn" onclick="showPage('backup')" id="nav-backup" title="حفظ واسترجاع"><svg class="ic"><use href="#i-db"/></svg><span class="tip">حفظ واسترجاع</span></button>
+  <button class="nav-btn" onclick="manualSave()" title="حفظ يدوي"><svg class="ic"><use href="#i-save"/></svg><span class="tip">حفظ (Ctrl+S)</span></button>
 </nav>
 
 <div class="main">
   <div class="topbar">
     <div class="topbar-title">نظام صرف الأدوية <span>| Health Dispensary</span></div>
     <div class="topbar-right">
-      <button class="dm-toggle" onclick="openPrintCenter()" title="مركز الطباعة">🖨️ <span>طباعة</span></button>
+      <button class="dm-toggle" onclick="openPrintCenter()" title="مركز الطباعة"><svg class="ic sm"><use href="#i-printer"/></svg> <span>طباعة</span></button>
       <div class="save-badge" id="saveBadge"><div class="save-dot"></div><span id="saveText">محفوظ تلقائياً</span></div>
       <div class="save-badge" id="syncBadge" style="display:none;background:var(--light);color:var(--text3);"><span id="syncText"></span></div>
-      <button class="dm-toggle" id="dmToggle" onclick="toggleDarkMode()" title="الوضع الليلي">🌙 <span id="dmLabel">ليلي</span></button>
-      <span class="date-label">📅</span>
+      <div class="theme-wrap"><button class="dm-toggle" id="themeBtn" onclick="toggleThemePop(event)" title="الثيمات"><svg class="ic sm"><use href="#i-palette"/></svg> <span>الستايل</span></button><div class="theme-pop" id="themePop"></div></div>
+      <button class="dm-toggle" id="dmToggle" onclick="toggleDarkMode()" title="الوضع الليلي"><svg class="ic sm" id="dmIcon"><use href="#i-moon"/></svg> <span id="dmLabel">ليلي</span></button>
+      <span class="date-label"><svg class="ic sm"><use href="#i-calendar"/></svg></span>
       <input type="date" class="date-input" id="globalDate" onchange="onDateChange()">
     </div>
   </div>
@@ -1004,8 +1169,8 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
   <div id="backupReminderBanner" style="display:none;background:var(--gold3);color:#6a5010;padding:10px 20px;align-items:center;justify-content:space-between;gap:10px;font-size:13px;">
     <span>⏰ عدّت فترة كويسة من غير ما تعمل نسخة احتياطية — لو بتنقل البيانات يدوي بين الأجهزة، دي فرصة تعمل واحدة دلوقتي.</span>
     <div style="display:flex;gap:8px;flex-shrink:0;">
-      <button class="btn btn-sm btn-navy" onclick="exportBackup()">⬇ صدّر دلوقتي</button>
-      <button class="btn btn-sm" style="background:#25D366;color:#fff;font-weight:800;" onclick="shareBackupWhatsApp()">📤 واتساب</button>
+      <button class="btn btn-sm btn-navy" onclick="exportBackup()"><svg class="ic sm"><use href="#i-download"/></svg> صدّر دلوقتي</button>
+      <button class="btn btn-sm" style="background:#25D366;color:#fff;font-weight:800;" onclick="shareBackupWhatsApp()"><svg class="ic sm"><use href="#i-upload"/></svg> واتساب</button>
       <button class="btn btn-sm" style="background:rgba(255,255,255,0.5);color:#6a5010;" onclick="snoozeBackupReminder()">تذكرني بعدين</button>
     </div>
   </div>
@@ -1014,21 +1179,21 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
     <div class="page-header">
       <div><div class="page-title">إدخال بيانات المريض</div><div class="page-subtitle">أدخل بيانات المريض والأصناف ثم ارحّل إلى اليومية</div></div>
       <div class="header-actions">
-        <button class="btn" onclick="openVoiceWizard()" style="padding:10px 18px;font-size:14px;background:var(--teal);color:#fff;" id="voiceWizardBtn">🎙 إدخال صوتي كامل</button>
-        <button class="btn btn-danger" onclick="clearPatientEntry()" style="padding:10px 18px;font-size:14px;background:var(--crim2);color:var(--crimson);border:1.5px solid rgba(181,48,42,0.25);">🗑 حذف المريض من السيستم</button>
-        <button class="btn btn-gold" onclick="transferToDaily()" style="width:auto;font-size:14px;padding:10px 22px;">⬆ ترحيل إلى اليومية</button>
+        <button class="btn" onclick="openVoiceWizard()" style="padding:10px 18px;font-size:14px;background:var(--teal);color:#fff;" id="voiceWizardBtn"><svg class="ic sm"><use href="#i-mic"/></svg> إدخال صوتي كامل</button>
+        <button class="btn btn-danger" onclick="clearPatientEntry()" style="padding:10px 18px;font-size:14px;background:var(--crim2);color:var(--crimson);border:1.5px solid rgba(181,48,42,0.25);"><svg class="ic sm"><use href="#i-trash"/></svg> حذف المريض من السيستم</button>
+        <button class="btn btn-gold" onclick="transferToDaily()" style="width:auto;font-size:14px;padding:10px 22px;"><svg class="ic sm"><use href="#i-upload"/></svg> ترحيل إلى اليومية</button>
       </div>
     </div>
 
     <div class="card">
-      <div class="card-header teal"><div class="ch-icon">👤</div><div class="ch-title">بيانات المريض</div></div>
+      <div class="card-header teal"><div class="ch-icon"><svg class="ic"><use href="#i-user"/></svg></div><div class="ch-title">بيانات المريض</div></div>
       <div class="card-body">
         <div class="form-row">
           <div class="form-group">
             <label class="form-label">اسم المريض</label>
             <div class="autocomplete-wrap">
               <input class="form-input" id="patientName" style="padding-left:38px;" placeholder="ابدأ الكتابة أو أدخل الرقم القومي..." oninput="onPatientNameInput()" onkeydown="onPatientKeydown(event)">
-              <button type="button" class="mic-btn" id="micBtnName" onclick="dictateField('name')" title="نطق اسم المريض بالصوت">🎤</button>
+              <button type="button" class="mic-btn" id="micBtnName" onclick="dictateField('name')" title="نطق اسم المريض بالصوت"><svg class="ic sm"><use href="#i-mic"/></svg></button>
               <div class="autocomplete-list" id="nameDropdown"></div>
             </div>
           </div>
@@ -1058,14 +1223,14 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
     </div>
 
     <div class="card">
-      <div class="card-header sage"><div class="ch-icon">💊</div><div class="ch-title">إضافة صنف</div></div>
+      <div class="card-header sage"><div class="ch-icon"><svg class="ic"><use href="#i-pill"/></svg></div><div class="ch-title">إضافة صنف</div></div>
       <div class="card-body">
         <div class="form-row triple" style="align-items:end;">
           <div class="form-group">
             <label class="form-label">اسم الصنف</label>
             <div class="autocomplete-wrap">
               <input class="form-input" id="itemSearch" style="padding-left:38px;" placeholder="اكتب أول حرفين للبحث..." oninput="onItemSearch()" onkeydown="onItemKeydown(event)">
-              <button type="button" class="mic-btn" id="micBtnItem" onclick="dictateField('item')" title="نطق اسم الصنف والكمية بالصوت — مثال: باراسيتامول اتنين">🎤</button>
+              <button type="button" class="mic-btn" id="micBtnItem" onclick="dictateField('item')" title="نطق اسم الصنف والكمية بالصوت — مثال: باراسيتامول اتنين"><svg class="ic sm"><use href="#i-mic"/></svg></button>
               <div class="autocomplete-list" id="itemDropdown"></div>
             </div>
           </div>
@@ -1075,7 +1240,7 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
           </div>
           <div class="form-group">
             <label class="form-label">&nbsp;</label>
-            <button class="btn btn-sage" onclick="addItem()">➕ إضافة</button>
+            <button class="btn btn-sage" onclick="addItem()"><svg class="ic sm"><use href="#i-plus"/></svg> إضافة</button>
           </div>
         </div>
       </div>
@@ -1083,7 +1248,7 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
 
     <div class="card">
       <div class="card-header navy">
-        <div class="ch-icon">📝</div><div class="ch-title">الأصناف المضافة للمريض الحالي</div>
+        <div class="ch-icon"><svg class="ic"><use href="#i-pen"/></svg></div><div class="ch-title">الأصناف المضافة للمريض الحالي</div>
         <div style="margin-right:auto;"><button class="btn btn-sm btn-outline" onclick="clearCurrentItems()" style="color:#fff;border-color:rgba(255,255,255,0.3);">مسح الكل</button></div>
       </div>
       <div style="overflow-x:auto;">
@@ -1095,7 +1260,7 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
         </table>
       </div>
     </div>
-    <button class="btn btn-gold" onclick="transferToDaily()">⬆ &nbsp;ترحيل بيانات المريض إلى اليومية</button>
+    <button class="btn btn-gold" onclick="transferToDaily()"><svg class="ic sm"><use href="#i-upload"/></svg> &nbsp;ترحيل بيانات المريض إلى اليومية</button>
     <div style="text-align:center;font-size:11.5px;color:var(--text3);margin-top:6px;">💡 اختصار: اضغط <b>Ctrl + Enter</b> من أي مكان في الصفحة عشان ترحّل المريض مباشرة من غير ما تسيب الكيبورد</div>
   </div>
 
@@ -1125,12 +1290,12 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
           </div>
         </div>
         <div id="dailyTabs" style="display:none;"></div>
-        <button class="btn btn-excel" onclick="exportToExcel()">⬇ Excel</button>
-        <button class="btn btn-purple" onclick="archiveCurrentDay()">🗄 أرشفة</button>
-        <button class="btn btn-sm btn-outline" onclick="printAllDaily()">🖨</button>
-        <button class="btn btn-sm btn-outline" onclick="printAllPatientReceiptsA4()">🧾 طباعة كل الفواتير</button>
+        <button class="btn btn-excel" onclick="exportToExcel()"><svg class="ic sm"><use href="#i-download"/></svg> Excel</button>
+        <button class="btn btn-purple" onclick="archiveCurrentDay()"><svg class="ic sm"><use href="#i-archive"/></svg> أرشفة</button>
+        <button class="btn btn-sm btn-outline" onclick="printAllDaily()"><svg class="ic sm"><use href="#i-printer"/></svg></button>
+        <button class="btn btn-sm btn-outline" onclick="printAllPatientReceiptsA4()"><svg class="ic sm"><use href="#i-clip"/></svg> طباعة كل الفواتير</button>
         <button class="btn btn-sm" id="transferSelectedBtn" onclick="openTransferModal()" disabled style="background:var(--light);color:var(--text3);border:none;padding:8px 14px;cursor:not-allowed;">↪ ترحيل المحدد ليومية أخرى</button>
-        <button class="btn btn-sm btn-danger" onclick="openDeleteDayModal()" style="background:var(--crimson);color:white;border:none;padding:8px 14px;">🗑 حذف اليومية</button>
+        <button class="btn btn-sm btn-danger" onclick="openDeleteDayModal()" style="background:var(--crimson);color:white;border:none;padding:8px 14px;"><svg class="ic sm"><use href="#i-trash"/></svg> حذف اليومية</button>
       </div>
     </div>
     <div class="stats-band">
@@ -1161,9 +1326,9 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
       <div><div class="page-title">قائمة الأصناف والمخزون</div><div class="page-subtitle">أضف أصناف جديدة مع الكمية — تظهر فوراً في قائمة البحث</div></div>
       <div style="display:flex;gap:8px;">
         <button class="btn" onclick="openConsumptionModal()">📈 تحليل الاستهلاك والطلبيات</button>
-        <button class="btn" onclick="openAnnualNeedsModal()">📦 الاحتياج السنوي للأصناف</button>
-        <button class="btn" onclick="printItemsInStock()">🖨 طباعة شيت الأصناف المتوفرة</button>
-        <button class="btn" onclick="printItemCardsA4All()">🗂 طباعة كروت الأصناف</button>
+        <button class="btn" onclick="openAnnualNeedsModal()"><svg class="ic sm"><use href="#i-package"/></svg> الاحتياج السنوي للأصناف</button>
+        <button class="btn" onclick="printItemsInStock()"><svg class="ic sm"><use href="#i-printer"/></svg> طباعة شيت الأصناف المتوفرة</button>
+        <button class="btn" onclick="printItemCardsA4All()"><svg class="ic sm"><use href="#i-folder"/></svg> طباعة كروت الأصناف</button>
         <button class="btn btn-primary" onclick="openAddItemModal()">+ إضافة صنف</button>
       </div>
     </div>
@@ -1178,13 +1343,13 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
     <div class="page-header">
       <div><div class="page-title">الوارد</div><div class="page-subtitle">تسجيل واردات الأدوية — تترحل تلقائياً للجرد الشهري</div></div>
       <div class="header-actions">
-        <button class="btn btn-excel" onclick="exportReceiptsToExcel()">⬇ Excel</button>
-        <button class="btn btn-sm btn-outline" onclick="printReceiptsA4()">🖨</button>
+        <button class="btn btn-excel" onclick="exportReceiptsToExcel()"><svg class="ic sm"><use href="#i-download"/></svg> Excel</button>
+        <button class="btn btn-sm btn-outline" onclick="printReceiptsA4()"><svg class="ic sm"><use href="#i-printer"/></svg></button>
       </div>
     </div>
 
     <div class="card">
-      <div class="card-header gold"><div class="ch-icon">📥</div><div class="ch-title">تسجيل وارد جديد</div></div>
+      <div class="card-header gold"><div class="ch-icon"><svg class="ic"><use href="#i-inbox"/></svg></div><div class="ch-title">تسجيل وارد جديد</div></div>
       <div class="card-body">
         <div class="form-row five" style="align-items:end;">
           <div class="form-group">
@@ -1220,7 +1385,7 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
           </div>
         </div>
         <div style="margin-top:14px;display:flex;gap:10px;">
-          <button class="btn btn-gold" onclick="addReceipt()" style="width:auto;padding:10px 28px;">➕ تسجيل الوارد</button>
+          <button class="btn btn-gold" onclick="addReceipt()" style="width:auto;padding:10px 28px;"><svg class="ic sm"><use href="#i-plus"/></svg> تسجيل الوارد</button>
           <button class="btn btn-sm" style="background:var(--light);color:var(--text2)" onclick="clearReceiptForm()">مسح</button>
         </div>
       </div>
@@ -1228,7 +1393,7 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
 
     <div class="card">
       <div class="card-header sage" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
-        <div style="display:flex;align-items:center;gap:8px;"><div class="ch-icon">📋</div><div class="ch-title">سجل الواردات</div></div>
+        <div style="display:flex;align-items:center;gap:8px;"><div class="ch-icon"><svg class="ic"><use href="#i-clip"/></svg></div><div class="ch-title">سجل الواردات</div></div>
         <div class="daily-day-dropdown" id="rcptMonthDropdownWrap" style="min-width:180px;">
           <div class="ddd-selected" id="rcptMddSelected" onclick="toggleReceiptMonthDropdown()">
             <span id="rcptMddLabel">اختر شهر...</span>
@@ -1271,12 +1436,12 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
     <div class="page-header">
       <div><div class="page-title">الجرد الشهري — صيدلية نفقة الدولة خارجي</div><div class="page-subtitle">متابعة الأرصدة — الوارد والمنصرف والرصيد الحالي</div></div>
       <div class="header-actions">
-        <button class="btn btn-excel" onclick="exportInventoryToExcel()">⬇ Excel</button>
-        <button class="btn btn-warn" onclick="openEditAllOpeningModal()" style="padding:10px 18px;font-size:14px;">✏ تعديل أرصدة أول المدة</button>
-        <button class="btn btn-gold" onclick="openMonthlyReportModal()" style="width:auto;padding:10px 20px;font-size:14px;">📊 الجرد الشهري</button>
-        <button class="btn btn-primary" onclick="carryOverInventory()">🔄 ترحيل للشهر الجديد</button>
-        <button class="btn btn-sm btn-outline" onclick="printMonthlyReportA4(S.activeInvMonth)">🖨</button>
-        <button class="btn btn-navy" onclick="printSeha44()" style="padding:10px 20px;font-size:14px;background:#16406B;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:700;">🖨 صحة 44</button>
+        <button class="btn btn-excel" onclick="exportInventoryToExcel()"><svg class="ic sm"><use href="#i-download"/></svg> Excel</button>
+        <button class="btn btn-warn" onclick="openEditAllOpeningModal()" style="padding:10px 18px;font-size:14px;"><svg class="ic sm"><use href="#i-pen"/></svg> تعديل أرصدة أول المدة</button>
+        <button class="btn btn-gold" onclick="openMonthlyReportModal()" style="width:auto;padding:10px 20px;font-size:14px;"><svg class="ic sm"><use href="#i-chart"/></svg> الجرد الشهري</button>
+        <button class="btn btn-primary" onclick="carryOverInventory()"><svg class="ic sm"><use href="#i-refresh"/></svg> ترحيل للشهر الجديد</button>
+        <button class="btn btn-sm btn-outline" onclick="printMonthlyReportA4(S.activeInvMonth)"><svg class="ic sm"><use href="#i-printer"/></svg></button>
+        <button class="btn btn-navy" onclick="printSeha44()" style="padding:10px 20px;font-size:14px;background:#16406B;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:700;"><svg class="ic sm"><use href="#i-printer"/></svg> صحة 44</button>
       </div>
     </div>
     <div id="invAlertBanner" style="margin-bottom:4px;"></div>
@@ -1306,11 +1471,11 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
       <div><div class="page-title">قاعدة بيانات المرضى</div><div class="page-subtitle">جميع المرضى المسجلين — بحث وتعديل وحذف</div></div>
       <div class="header-actions">
         <div class="search-bar" style="max-width:280px;"><svg class="search-icon" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><input id="patientDBSearch" placeholder="بحث بالاسم أو الرقم القومي..." oninput="renderPatientsDB()"></div>
-        <button class="btn btn-primary" onclick="openAddPatientDBModal()">➕ إضافة مريض</button>
-        <button class="btn btn-navy" onclick="exportPatientsBackup()">💾 نسخة احتياطية للمرضى</button>
-        <button class="btn btn-navy" onclick="document.getElementById('patientsRestoreFile').click()">📥 استرجاع بيانات المرضى</button>
+        <button class="btn btn-primary" onclick="openAddPatientDBModal()"><svg class="ic sm"><use href="#i-plus"/></svg> إضافة مريض</button>
+        <button class="btn btn-navy" onclick="exportPatientsBackup()"><svg class="ic sm"><use href="#i-save"/></svg> نسخة احتياطية للمرضى</button>
+        <button class="btn btn-navy" onclick="document.getElementById('patientsRestoreFile').click()"><svg class="ic sm"><use href="#i-inbox"/></svg> استرجاع بيانات المرضى</button>
         <input type="file" id="patientsRestoreFile" accept=".json,.txt,.xlsx,.xls,.csv,application/json,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv" style="display:none" onchange="onPatientsRestoreFile(this)">
-        <button class="btn btn-danger" onclick="openDeleteAllPatientsModal()" style="background:var(--crimson);color:#fff;border:none;">🗑️ حذف كل المرضى</button>
+        <button class="btn btn-danger" onclick="openDeleteAllPatientsModal()" style="background:var(--crimson);color:#fff;border:none;"><svg class="ic sm"><use href="#i-trash"/></svg> حذف كل المرضى</button>
       </div>
     </div>
     <div class="stats-band" style="grid-template-columns:repeat(3,1fr)">
@@ -1319,7 +1484,7 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
       <div class="stat-card"><div class="stat-icon gold">📅</div><div><div class="stat-num" id="db-stat-days">0</div><div class="stat-label">أيام بها بيانات</div></div></div>
     </div>
     <div class="card">
-      <div class="card-header teal"><div class="ch-icon">👥</div><div class="ch-title">سجل المرضى</div></div>
+      <div class="card-header teal"><div class="ch-icon"><svg class="ic"><use href="#i-users"/></svg></div><div class="ch-title">سجل المرضى</div></div>
       <div style="overflow-x:auto;">
         <table class="patient-db-table">
           <thead><tr><th>#</th><th>اسم المريض</th><th>الرقم القومي</th><th>رقم القرار</th><th>تاريخ القرار</th><th style="width:80px;text-align:center;">أيام</th><th style="width:140px;text-align:center;">إجراءات</th></tr></thead>
@@ -1354,30 +1519,30 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
 
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
       <div class="card">
-        <div class="card-header teal"><div class="ch-icon">💾</div><div class="ch-title">حفظ نسخة احتياطية</div></div>
+        <div class="card-header teal"><div class="ch-icon"><svg class="ic"><use href="#i-save"/></svg></div><div class="ch-title">حفظ نسخة احتياطية</div></div>
         <div class="card-body" style="text-align:center;padding:30px;">
           <div style="font-size:48px;margin-bottom:12px;">💾</div>
           <div style="font-size:15px;font-weight:700;color:var(--navy);margin-bottom:8px;">تصدير جميع البيانات</div>
           <div style="font-size:13px;color:var(--text3);margin-bottom:20px;">سيتم حفظ ملف JSON يحتوي على كل بيانات النظام</div>
-          <button class="btn btn-primary" onclick="exportBackup()" style="width:100%;">⬇ تحميل نسخة احتياطية</button>
-          <button class="btn btn-sm" style="width:100%;margin-top:9px;background:#25D366;color:#fff;font-weight:800;" onclick="shareBackupWhatsApp()">📤 مشاركة عبر واتساب</button>
+          <button class="btn btn-primary" onclick="exportBackup()" style="width:100%;"><svg class="ic sm"><use href="#i-download"/></svg> تحميل نسخة احتياطية</button>
+          <button class="btn btn-sm" style="width:100%;margin-top:9px;background:#25D366;color:#fff;font-weight:800;" onclick="shareBackupWhatsApp()"><svg class="ic sm"><use href="#i-upload"/></svg> مشاركة عبر واتساب</button>
         </div>
       </div>
 
       <div class="card">
-        <div class="card-header sage"><div class="ch-icon">📂</div><div class="ch-title">استرجاع البيانات</div></div>
+        <div class="card-header sage"><div class="ch-icon"><svg class="ic"><use href="#i-folder"/></svg></div><div class="ch-title">استرجاع البيانات</div></div>
         <div class="card-body" style="text-align:center;padding:30px;">
           <div style="font-size:48px;margin-bottom:12px;">📂</div>
           <div style="font-size:15px;font-weight:700;color:var(--navy);margin-bottom:8px;">استيراد بيانات سابقة</div>
           <div style="font-size:13px;color:var(--text3);margin-bottom:20px;">اختر ملف JSON سابق لاسترجاع جميع البيانات</div>
           <input type="file" id="backupFile" accept=".json,.txt,application/json,text/plain" style="display:none;" onchange="importBackup(this)">
-          <button class="btn btn-sage" onclick="document.getElementById('backupFile').click()" style="width:100%;">📂 اختيار ملف واسترجاع</button>
+          <button class="btn btn-sage" onclick="document.getElementById('backupFile').click()" style="width:100%;"><svg class="ic sm"><use href="#i-folder"/></svg> اختيار ملف واسترجاع</button>
         </div>
       </div>
     </div>
 
     <div class="card" style="margin-top:16px;">
-      <div class="card-header crimson"><div class="ch-icon">⚠️</div><div class="ch-title">تحذير</div></div>
+      <div class="card-header crimson"><div class="ch-icon"><svg class="ic"><use href="#i-alert"/></svg></div><div class="ch-title">تحذير</div></div>
       <div class="card-body" style="color:var(--crimson);font-size:14px;">
         <p>⚠️ عند استرجاع بيانات من ملف احتياطي، سيتم <strong>استبدال جميع البيانات الحالية</strong> بالبيانات الموجودة في الملف.</p>
         <p style="margin-top:8px;">💡 ننصح بحفظ نسخة احتياطية قبل الاسترجاع.</p>
@@ -1385,26 +1550,26 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
     </div>
 
     <div class="card" style="margin-top:16px;border:2px solid var(--teal);">
-      <div class="card-header teal"><div class="ch-icon">🔄</div><div class="ch-title">إعادة حساب شاملة للمخزون والجرد</div></div>
+      <div class="card-header teal"><div class="ch-icon"><svg class="ic"><use href="#i-refresh"/></svg></div><div class="ch-title">إعادة حساب شاملة للمخزون والجرد</div></div>
       <div class="card-body" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
         <div>
           <div style="font-size:14px;font-weight:700;color:var(--teal);margin-bottom:4px;">🔄 تصحيح أي تضارب في الكميات</div>
           <div style="font-size:13px;color:var(--text2);">يُعيد حساب المخزون والجرد من اليوميات والوارد الفعلي</div>
           <div style="font-size:12px;color:var(--text3);margin-top:3px;">استخدم لو لاحظت أرقاماً غلط بعد حذف أو تعديل</div>
         </div>
-        <button class="btn btn-primary" onclick="recalculateAll()" style="padding:12px 24px;font-size:14px;white-space:nowrap;">🔄 إعادة الحساب الشاملة</button>
+        <button class="btn btn-primary" onclick="recalculateAll()" style="padding:12px 24px;font-size:14px;white-space:nowrap;"><svg class="ic sm"><use href="#i-refresh"/></svg> إعادة الحساب الشاملة</button>
       </div>
     </div>
 
     <div class="card" style="margin-top:16px;border:2px solid var(--crimson);">
-      <div class="card-header crimson"><div class="ch-icon">🗑️</div><div class="ch-title">حذف كل بيانات السيستم</div></div>
+      <div class="card-header crimson"><div class="ch-icon"><svg class="ic"><use href="#i-trash"/></svg></div><div class="ch-title">حذف كل بيانات السيستم</div></div>
       <div class="card-body" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
         <div>
           <div style="font-size:14px;font-weight:700;color:var(--crimson);margin-bottom:4px;">⚠️ مسح شامل ونهائي لجميع البيانات</div>
           <div style="font-size:13px;color:var(--text2);">يشمل: المرضى · اليوميات · الأرشيف · الواردات · الجرد · الأصناف</div>
           <div style="font-size:12px;color:var(--text3);margin-top:3px;">لا يمكن التراجع عن هذا الإجراء — احفظ نسخة احتياطية أولاً</div>
         </div>
-        <button class="btn btn-danger" onclick="openResetModal()" style="background:var(--crimson);color:white;border:none;padding:12px 24px;font-size:14px;white-space:nowrap;">🗑️ حذف كل البيانات</button>
+        <button class="btn btn-danger" onclick="openResetModal()" style="background:var(--crimson);color:white;border:none;padding:12px 24px;font-size:14px;white-space:nowrap;"><svg class="ic sm"><use href="#i-trash"/></svg> حذف كل البيانات</button>
       </div>
     </div>
   </div>
@@ -1414,10 +1579,10 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
       <div><div class="page-title" id="archViewPageTitle">يومية</div><div class="page-subtitle">الأرشيف — عرض تفصيلي</div></div>
       <div class="header-actions">
         <button class="btn btn-sm btn-outline" onclick="showPage('archive')">↩ رجوع للأرشيف</button>
-        <button class="btn btn-sage" onclick="openArchAddPatient()" style="padding:9px 16px;font-size:13px;width:auto;">➕ إضافة مريض</button>
-        <button class="btn btn-excel" onclick="exportArchiveToExcel()">⬇ Excel</button>
-        <button class="btn btn-sm btn-danger" onclick="deleteArchiveDayPage()">🗑 حذف من الأرشيف</button>
-        <button class="btn btn-sm btn-outline" onclick="printArchiveDayA4()">🖨 طباعة</button>
+        <button class="btn btn-sage" onclick="openArchAddPatient()" style="padding:9px 16px;font-size:13px;width:auto;"><svg class="ic sm"><use href="#i-plus"/></svg> إضافة مريض</button>
+        <button class="btn btn-excel" onclick="exportArchiveToExcel()"><svg class="ic sm"><use href="#i-download"/></svg> Excel</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteArchiveDayPage()"><svg class="ic sm"><use href="#i-trash"/></svg> حذف من الأرشيف</button>
+        <button class="btn btn-sm btn-outline" onclick="printArchiveDayA4()"><svg class="ic sm"><use href="#i-printer"/></svg> طباعة</button>
       </div>
     </div>
     <div class="card">
@@ -1468,9 +1633,9 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-sm btn-danger" onclick="deleteItemConfirm()" style="margin-left:auto;">🗑 حذف</button>
+      <button class="btn btn-sm btn-danger" onclick="deleteItemConfirm()" style="margin-left:auto;"><svg class="ic sm"><use href="#i-trash"/></svg> حذف</button>
       <button class="btn btn-sm" style="background:var(--light);color:var(--text2)" onclick="closeModal('editItemModal')">إلغاء</button>
-      <button class="btn btn-primary" onclick="saveItemEdit()">💾 حفظ التعديلات</button>
+      <button class="btn btn-primary" onclick="saveItemEdit()"><svg class="ic sm"><use href="#i-save"/></svg> حفظ التعديلات</button>
     </div>
   </div>
 </div>
@@ -1502,14 +1667,14 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
             </div>
           </div>
           <div class="form-group"><input class="form-input qty" id="editNewQty" type="number" min="1" placeholder="0" onkeydown="if(event.key==='Enter') addEditItem()"></div>
-          <div class="form-group"><button class="btn btn-sage" onclick="addEditItem()">➕</button></div>
+          <div class="form-group"><button class="btn btn-sage" onclick="addEditItem()"><svg class="ic sm"><use href="#i-plus"/></svg></button></div>
         </div>
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-danger" onclick="deletePatientRow()" style="margin-left:auto;background:var(--crimson);color:white;border:none;padding:9px 18px;font-size:13px;">🗑 حذف المريض من اليومية</button>
+      <button class="btn btn-danger" onclick="deletePatientRow()" style="margin-left:auto;background:var(--crimson);color:white;border:none;padding:9px 18px;font-size:13px;"><svg class="ic sm"><use href="#i-trash"/></svg> حذف المريض من اليومية</button>
       <button class="btn btn-sm" style="background:var(--light);color:var(--text2)" onclick="closeModal('editPatientModal')">إلغاء</button>
-      <button class="btn btn-primary" onclick="savePatientEdit()">💾 حفظ التعديلات</button>
+      <button class="btn btn-primary" onclick="savePatientEdit()"><svg class="ic sm"><use href="#i-save"/></svg> حفظ التعديلات</button>
     </div>
   </div>
 </div>
@@ -1521,9 +1686,9 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
       <div class="daily-wrap"><table class="daily-table"><thead id="archiveViewHead"></thead><tbody id="archiveViewBody"></tbody></table></div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-excel" onclick="exportArchiveToExcel()">⬇ تصدير Excel</button>
-      <button class="btn btn-sm btn-outline" onclick="printAllPatientReceiptsA4(archViewDay,true)">🧾 طباعة كل الفواتير</button>
-      <button class="btn btn-sm btn-danger" onclick="deleteArchiveDay()">🗑 حذف من الأرشيف</button>
+      <button class="btn btn-excel" onclick="exportArchiveToExcel()"><svg class="ic sm"><use href="#i-download"/></svg> تصدير Excel</button>
+      <button class="btn btn-sm btn-outline" onclick="printAllPatientReceiptsA4(archViewDay,true)"><svg class="ic sm"><use href="#i-clip"/></svg> طباعة كل الفواتير</button>
+      <button class="btn btn-sm btn-danger" onclick="deleteArchiveDay()"><svg class="ic sm"><use href="#i-trash"/></svg> حذف من الأرشيف</button>
       <button class="btn btn-sm" style="background:var(--light);color:var(--text2)" onclick="closeModal('archiveViewModal')">إغلاق</button>
     </div>
   </div>
@@ -1546,7 +1711,7 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
       </table>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-excel" onclick="exportArchInvToExcel()">⬇ تصدير Excel</button>
+      <button class="btn btn-excel" onclick="exportArchInvToExcel()"><svg class="ic sm"><use href="#i-download"/></svg> تصدير Excel</button>
       <button class="btn btn-sm" style="background:var(--light);color:var(--text2)" onclick="closeModal('archInvModal')">إغلاق</button>
     </div>
   </div>
@@ -1565,9 +1730,9 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-sm btn-danger" onclick="deletePatientDB()" style="margin-left:auto;">🗑 حذف المريض</button>
+      <button class="btn btn-sm btn-danger" onclick="deletePatientDB()" style="margin-left:auto;"><svg class="ic sm"><use href="#i-trash"/></svg> حذف المريض</button>
       <button class="btn btn-sm" style="background:var(--light);color:var(--text2)" onclick="closeModal('editPatientDBModal')">إلغاء</button>
-      <button class="btn btn-primary" onclick="savePatientDB()">💾 حفظ</button>
+      <button class="btn btn-primary" onclick="savePatientDB()"><svg class="ic sm"><use href="#i-save"/></svg> حفظ</button>
     </div>
   </div>
 </div>
@@ -1601,8 +1766,8 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-excel" onclick="exportMonthlyReportExcel()">⬇ تصدير Excel</button>
-      <button class="btn btn-navy" onclick="printMonthlyReportA4()">🖨 طباعة A4</button>
+      <button class="btn btn-excel" onclick="exportMonthlyReportExcel()"><svg class="ic sm"><use href="#i-download"/></svg> تصدير Excel</button>
+      <button class="btn btn-navy" onclick="printMonthlyReportA4()"><svg class="ic sm"><use href="#i-printer"/></svg> طباعة A4</button>
       <button class="btn btn-sm" style="background:var(--light);color:var(--text2)" onclick="closeModal('monthlyReportModal')">إغلاق</button>
     </div>
   </div>
@@ -1628,7 +1793,7 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
       </div>
       <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
         <input class="form-input" id="consumptionSearch" placeholder="بحث عن صنف..." style="flex:1;min-width:160px;" oninput="renderConsumptionTable(this.value)">
-        <button class="btn btn-sm" style="background:var(--light);color:var(--text2)" onclick="recalcConsumptionAll()">🔄 إعادة حساب الكل</button>
+        <button class="btn btn-sm" style="background:var(--light);color:var(--text2)" onclick="recalcConsumptionAll()"><svg class="ic sm"><use href="#i-refresh"/></svg> إعادة حساب الكل</button>
       </div>
       <div style="overflow-x:auto;">
         <table class="a4-table" style="width:100%;font-size:12.5px;">
@@ -1651,8 +1816,8 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-excel" onclick="exportConsumptionExcel()">⬇ تصدير Excel</button>
-      <button class="btn btn-navy" onclick="printConsumptionA4()">🖨 طباعة A4</button>
+      <button class="btn btn-excel" onclick="exportConsumptionExcel()"><svg class="ic sm"><use href="#i-download"/></svg> تصدير Excel</button>
+      <button class="btn btn-navy" onclick="printConsumptionA4()"><svg class="ic sm"><use href="#i-printer"/></svg> طباعة A4</button>
       <button class="btn btn-sm" style="background:var(--light);color:var(--text2)" onclick="closeModal('consumptionModal')">إغلاق</button>
     </div>
   </div>
@@ -1678,7 +1843,7 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
       </div>
       <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
         <input class="form-input" id="annualNeedsSearch" placeholder="بحث عن صنف..." style="flex:1;min-width:160px;" oninput="renderAnnualNeedsTable(this.value)">
-        <button class="btn btn-sm" style="background:var(--light);color:var(--text2)" onclick="recalcAnnualNeedsAll()">🔄 إعادة حساب الكل</button>
+        <button class="btn btn-sm" style="background:var(--light);color:var(--text2)" onclick="recalcAnnualNeedsAll()"><svg class="ic sm"><use href="#i-refresh"/></svg> إعادة حساب الكل</button>
       </div>
       <div style="overflow-x:auto;">
         <table class="a4-table" style="width:100%;font-size:12.5px;">
@@ -1705,8 +1870,8 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
       <div id="annualNeedsTotalValue" style="margin-top:10px;text-align:left;font-size:15px;font-weight:900;color:#6C3483;background:rgba(108,52,131,0.06);padding:8px 12px;border-radius:8px;"></div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-excel" onclick="exportAnnualNeedsExcel()">⬇ تصدير Excel (تنسيق احترافي)</button>
-      <button class="btn btn-navy" onclick="printAnnualNeedsA4()">🖨 طباعة A4</button>
+      <button class="btn btn-excel" onclick="exportAnnualNeedsExcel()"><svg class="ic sm"><use href="#i-download"/></svg> تصدير Excel (تنسيق احترافي)</button>
+      <button class="btn btn-navy" onclick="printAnnualNeedsA4()"><svg class="ic sm"><use href="#i-printer"/></svg> طباعة A4</button>
       <button class="btn btn-sm" style="background:var(--light);color:var(--text2)" onclick="closeModal('annualNeedsModal')">إغلاق</button>
     </div>
   </div>
@@ -1756,7 +1921,7 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
             <input class="form-input" id="itemCardNewExpiry" type="date">
           </div>
         </div>
-        <button class="btn btn-sm btn-navy" style="margin-top:10px;width:100%;" onclick="addItemBatchDirect()">➕ إضافة التشغيلة للصنف</button>
+        <button class="btn btn-sm btn-navy" style="margin-top:10px;width:100%;" onclick="addItemBatchDirect()"><svg class="ic sm"><use href="#i-plus"/></svg> إضافة التشغيلة للصنف</button>
       </div>
       <div style="margin-top:14px;padding-top:12px;border-top:2px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
         <span style="font-weight:700;color:var(--text2);">الإجمالي الكلي:</span>
@@ -1932,8 +2097,8 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
       <div class="pm-page-info" id="pmPageInfo"></div>
       <div style="display:flex;gap:9px;align-items:center;">
         <button class="btn btn-sm" style="background:var(--light);color:var(--text2);" onclick="PM.close()">إلغاء</button>
-        <button class="btn btn-sm btn-outline" onclick="PM.exportPdf()" title="تنزيل ملف PDF مباشرة بدون المرور على نافذة الطباعة">📄 تصدير PDF</button>
-        <button class="pm-print-btn" onclick="PM.print()">🖨 طباعة الآن</button>
+        <button class="btn btn-sm btn-outline" onclick="PM.exportPdf()" title="تنزيل ملف PDF مباشرة بدون المرور على نافذة الطباعة"><svg class="ic sm"><use href="#i-file"/></svg> تصدير PDF</button>
+        <button class="pm-print-btn" onclick="PM.print()"><svg class="ic sm"><use href="#i-printer"/></svg> طباعة الآن</button>
       </div>
     </div>
   </div>
@@ -1958,9 +2123,9 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
       </div>
     </div>
     <div class="modal-footer" style="flex-wrap:wrap;">
-      <button class="btn btn-sm" style="background:var(--light);color:var(--text2)" onclick="recalcOrderPlanning()">🔄 إعادة الحساب التلقائي (يمسح تعديلاتك)</button>
-      <button class="btn btn-sm btn-excel" onclick="saveOrderPlanningOverrides()">💾 حفظ التعديلات</button>
-      <button class="btn btn-navy" onclick="printOrderPlanningA4()">🖨 طباعة</button>
+      <button class="btn btn-sm" style="background:var(--light);color:var(--text2)" onclick="recalcOrderPlanning()"><svg class="ic sm"><use href="#i-refresh"/></svg> إعادة الحساب التلقائي (يمسح تعديلاتك)</button>
+      <button class="btn btn-sm btn-excel" onclick="saveOrderPlanningOverrides()"><svg class="ic sm"><use href="#i-save"/></svg> حفظ التعديلات</button>
+      <button class="btn btn-navy" onclick="printOrderPlanningA4()"><svg class="ic sm"><use href="#i-printer"/></svg> طباعة</button>
       <button class="btn btn-sm" style="background:var(--light);color:var(--text2)" onclick="closeModal('orderPlanningModal')">إغلاق</button>
     </div>
   </div>
@@ -1975,7 +2140,7 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
     </div>
     <div class="modal-footer">
       <button class="btn btn-sm" style="background:var(--light);color:var(--text2)" onclick="closeModal('addPatientDBModal')">إلغاء</button>
-      <button class="btn btn-primary" onclick="confirmAddPatientDB()">💾 حفظ</button>
+      <button class="btn btn-primary" onclick="confirmAddPatientDB()"><svg class="ic sm"><use href="#i-save"/></svg> حفظ</button>
     </div>
   </div>
 </div>
@@ -1996,7 +2161,7 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
     </div>
     <div class="modal-footer" style="justify-content:space-between;">
       <button class="btn btn-sm" style="background:var(--light);color:var(--text2)" onclick="closeModal('patientReportModal')">إغلاق</button>
-      <button class="btn btn-excel" onclick="exportPatientReportExcel()">⬇ Excel</button>
+      <button class="btn btn-excel" onclick="exportPatientReportExcel()"><svg class="ic sm"><use href="#i-download"/></svg> Excel</button>
     </div>
   </div>
 </div>
@@ -2020,7 +2185,7 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
       <button class="btn btn-sm" style="background:var(--light);color:var(--text2);" onclick="addPatientInvoiceMonthField()">+ إضافة شهر</button>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-navy" onclick="generatePatientMonthInvoicePrint()">🖨 إنشاء وطباعة الفاتورة الموحدة</button>
+      <button class="btn btn-navy" onclick="generatePatientMonthInvoicePrint()"><svg class="ic sm"><use href="#i-printer"/></svg> إنشاء وطباعة الفاتورة الموحدة</button>
       <button class="btn btn-sm" style="background:var(--light);color:var(--text2)" onclick="closeModal('patientMonthInvoiceModal')">إغلاق</button>
     </div>
   </div>
@@ -2041,7 +2206,7 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
       <button class="btn btn-sm" style="background:var(--light);color:var(--text2);" onclick="addAllPatientsInvoiceMonthField()">+ إضافة شهر</button>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-navy" onclick="generateAllPatientsMonthInvoicesPrint()">🖨 إنشاء وطباعة كل الفواتير</button>
+      <button class="btn btn-navy" onclick="generateAllPatientsMonthInvoicesPrint()"><svg class="ic sm"><use href="#i-printer"/></svg> إنشاء وطباعة كل الفواتير</button>
       <button class="btn btn-sm" style="background:var(--light);color:var(--text2)" onclick="closeModal('allPatientsMonthInvoiceModal')">إغلاق</button>
     </div>
   </div>
@@ -2067,7 +2232,7 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
       </label>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-navy" onclick="generateDecisionInvoicesPrint()">🖨 إنشاء وطباعة الفواتير</button>
+      <button class="btn btn-navy" onclick="generateDecisionInvoicesPrint()"><svg class="ic sm"><use href="#i-printer"/></svg> إنشاء وطباعة الفواتير</button>
       <button class="btn btn-sm" style="background:var(--light);color:var(--text2)" onclick="closeModal('decisionInvoiceModal')">إغلاق</button>
     </div>
   </div>
@@ -2096,7 +2261,7 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
     </div>
     <div class="modal-footer" style="justify-content:space-between;">
       <button class="btn btn-sm" style="background:var(--light);color:var(--text2)" onclick="closeModal('deleteAllPatientsModal')">إلغاء</button>
-      <button class="btn btn-danger" id="delAllPatBtn" onclick="executeDeleteAllPatients()" disabled style="background:#ccc;color:#999;cursor:not-allowed;padding:10px 22px;font-size:14px;border:none;">🗑️ تأكيد الحذف</button>
+      <button class="btn btn-danger" id="delAllPatBtn" onclick="executeDeleteAllPatients()" disabled style="background:#ccc;color:#999;cursor:not-allowed;padding:10px 22px;font-size:14px;border:none;"><svg class="ic sm"><use href="#i-trash"/></svg> تأكيد الحذف</button>
     </div>
   </div>
 </div>
@@ -2130,7 +2295,7 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
     <div class="modal-footer" style="justify-content:space-between;">
       <button class="btn btn-sm" style="background:var(--light);color:var(--text2)" onclick="closeModal('restorePatientsModal')">إلغاء</button>
       <div style="display:flex;gap:8px;">
-        <button class="btn btn-navy" onclick="applyPatientsRestore('merge')">➕ دمج وتصحيح</button>
+        <button class="btn btn-navy" onclick="applyPatientsRestore('merge')"><svg class="ic sm"><use href="#i-plus"/></svg> دمج وتصحيح</button>
         <button class="btn btn-danger" style="background:var(--crimson);color:#fff;border:none;" onclick="applyPatientsRestore('replace')">🔁 استبدال</button>
       </div>
     </div>
@@ -2172,7 +2337,7 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
     </div>
     <div class="modal-footer" style="justify-content:space-between;">
       <button class="btn btn-sm" style="background:var(--light);color:var(--text2)" onclick="closeModal('resetModal')">إلغاء</button>
-      <button class="btn btn-danger" id="resetConfirmBtn" onclick="executeReset()" disabled style="background:#ccc;color:#999;cursor:not-allowed;padding:10px 22px;font-size:14px;border:none;">🗑️ تأكيد الحذف</button>
+      <button class="btn btn-danger" id="resetConfirmBtn" onclick="executeReset()" disabled style="background:#ccc;color:#999;cursor:not-allowed;padding:10px 22px;font-size:14px;border:none;"><svg class="ic sm"><use href="#i-trash"/></svg> تأكيد الحذف</button>
     </div>
   </div>
 </div>
@@ -2222,7 +2387,7 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
     </div>
     <div class="modal-footer" style="justify-content:space-between;">
       <button class="btn btn-sm" style="background:var(--light);color:var(--text2)" onclick="closeModal('deleteDayModal')">إلغاء</button>
-      <button class="btn btn-danger" id="deleteDayConfirmBtn" onclick="executeDeleteDay()" disabled style="background:#ccc;color:#999;cursor:not-allowed;padding:10px 22px;font-size:14px;border:none;">🗑️ تأكيد الحذف</button>
+      <button class="btn btn-danger" id="deleteDayConfirmBtn" onclick="executeDeleteDay()" disabled style="background:#ccc;color:#999;cursor:not-allowed;padding:10px 22px;font-size:14px;border:none;"><svg class="ic sm"><use href="#i-trash"/></svg> تأكيد الحذف</button>
     </div>
   </div>
 </div>
@@ -2263,7 +2428,7 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
       <div style="font-size:12px;color:var(--text3);" id="editOpeningChangeCount"></div>
       <div style="display:flex;gap:8px;">
         <button class="btn btn-sm" style="background:var(--light);color:var(--text2)" onclick="closeModal('editAllOpeningModal')">إلغاء</button>
-        <button class="btn btn-primary" onclick="saveAllOpeningEdits()" style="padding:9px 22px;">💾 حفظ جميع التعديلات</button>
+        <button class="btn btn-primary" onclick="saveAllOpeningEdits()" style="padding:9px 22px;"><svg class="ic sm"><use href="#i-save"/></svg> حفظ جميع التعديلات</button>
       </div>
     </div>
   </div>
@@ -2296,7 +2461,7 @@ body.dark-mode .dm-toggle:hover{border-color:var(--gold);color:var(--gold);}
       <div style="display:flex;gap:8px;">
         <button class="btn btn-sm btn-warn" id="voiceRestartBtn" onclick="restartVoiceWizard()" style="display:none;">↺ إعادة من اسم المريض</button>
         <button class="btn btn-primary" id="voiceFinishBtn" onclick="finishVoiceAndReview()" style="display:none;">✓ خلصت — راجع البيانات</button>
-        <button class="btn btn-gold" id="voiceTransferBtn" onclick="transferFromVoiceWizard()" style="display:none;">⬆ ترحيل إلى اليومية</button>
+        <button class="btn btn-gold" id="voiceTransferBtn" onclick="transferFromVoiceWizard()" style="display:none;"><svg class="ic sm"><use href="#i-upload"/></svg> ترحيل إلى اليومية</button>
       </div>
     </div>
   </div>
@@ -3252,7 +3417,7 @@ function renderReceipts(){
     return;
   }
 
-  tb.innerHTML=sorted.map((r,i)=>`<tr id="rcpt-row-${r.id}"><td>${i+1}</td><td class="name-cell" id="rcpt-name-display-${r.id}">${r.itemName}</td><td><span class="qty-badge" id="rcpt-qty-display-${r.id}">${r.qty}</span></td><td id="rcpt-company-display-${r.id}">${r.company}</td><td id="rcpt-deliveryNo-display-${r.id}">${r.deliveryNo}</td><td id="rcpt-orderNo-display-${r.id}">${r.orderNo}</td><td id="rcpt-batch-display-${r.id}">${r.batch||'—'}</td><td id="rcpt-expiry-display-${r.id}">${r.expiry?fmtDate(r.expiry):'—'}</td><td>${fmtDate(r.date)}</td><td style="text-align:center;white-space:nowrap;"><button class="btn btn-sm btn-warn" onclick="openEditReceipt('${r.id}')" title="تعديل كل بيانات الوارد">✏ تعديل</button> <button class="btn btn-sm btn-danger" onclick="deleteReceipt('${r.id}')" title="حذف">✕ حذف</button></td></tr>`).join('');
+  tb.innerHTML=sorted.map((r,i)=>`<tr id="rcpt-row-${r.id}"${r.upa?' class="upa-done"':''}><td>${i+1}</td><td class="name-cell" id="rcpt-name-display-${r.id}">${r.itemName}</td><td><span class="qty-badge" id="rcpt-qty-display-${r.id}">${r.qty}</span></td><td id="rcpt-company-display-${r.id}">${r.company}</td><td id="rcpt-deliveryNo-display-${r.id}">${r.deliveryNo}</td><td id="rcpt-orderNo-display-${r.id}">${r.orderNo}</td><td id="rcpt-batch-display-${r.id}">${r.batch||'—'}</td><td id="rcpt-expiry-display-${r.id}">${r.expiry?fmtDate(r.expiry):'—'}</td><td>${fmtDate(r.date)}</td><td style="text-align:center;white-space:nowrap;"><button class="btn btn-sm upa-btn${r.upa?' on':''}" onclick="toggleReceiptUpa('${r.id}')" title="${r.upa?('نزل على سيستم UPA'+(r.upaDate?' بتاريخ '+fmtDate(r.upaDate):'')+' — اضغط للإلغاء'):'اضغط لتأكيد إن الوارد ده نزل على سيستم UPA'}">${r.upa?'✓ نزل UPA':'UPA'}</button> <button class="btn btn-sm btn-warn" onclick="openEditReceipt('${r.id}')" title="تعديل كل بيانات الوارد">✏ تعديل</button> <button class="btn btn-sm btn-danger" onclick="deleteReceipt('${r.id}')" title="حذف">✕ حذف</button></td></tr>`).join('');
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -3350,6 +3515,18 @@ document.addEventListener('click',function(e){
 
 
 
+function toggleReceiptUpa(id){
+  const r=S.receipts.find(x=>String(x.id)===String(id));
+  if(!r)return;
+  if(r.upa){
+    if(!confirm('إلغاء علامة "نزل على UPA" لهذا الوارد؟'))return;
+    delete r.upa;delete r.upaDate;
+  }else{
+    r.upa=true;r.upaDate=new Date().toISOString().slice(0,10);
+  }
+  save();renderReceipts();
+  toast(r.upa?'تم تسجيل إن الوارد نزل على سيستم UPA ✓':'تم إلغاء العلامة','success');
+}
 function deleteReceipt(id){
   if(!confirm('حذف هذا الوارد؟\nسيتم تعديل الجرد والمخزون تلقائياً.'))return;
   const idx=S.receipts.findIndex(r=>String(r.id)===String(id));
@@ -4171,9 +4348,10 @@ function executeTransferSelected(){
 
   const sameMonth=getMonthKey(ad)===getMonthKey(targetDate);
   if(!S.daily[targetDate])S.daily[targetDate]=[];
-  const idxArr=Array.from(dailySelectedIdx).sort((a,b)=>b-a); // تنازلي عشان الحذف بالـ splice يبقى سليم
+  // الترتيب التصاعدي: الأسماء بتتضاف تحت اليومية الموجودة بنفس ترتيبها الأصلي
+  const idxAsc=Array.from(dailySelectedIdx).sort((a,b)=>a-b);
   let movedCount=0;
-  idxArr.forEach(i=>{
+  idxAsc.forEach(i=>{
     const row=S.daily[ad][i];
     if(!row)return;
     if(!sameMonth){
@@ -4181,9 +4359,10 @@ function executeTransferSelected(){
       updateInventoryOut(targetDate,row.items);
     }
     S.daily[targetDate].push(row);
-    S.daily[ad].splice(i,1);
     movedCount++;
   });
+  // الحذف من اليومية الأصلية تنازلي عشان الـ splice يفضل سليم
+  idxAsc.slice().reverse().forEach(i=>{if(S.daily[ad][i])S.daily[ad].splice(i,1);});
   let dayRemoved=false;
   if(!S.daily[ad].length){delete S.daily[ad];dayRemoved=true;}
 
@@ -8569,14 +8748,9 @@ function toggleDarkMode(){
 }
 function updateDmButton(isDark){
   const lbl=document.getElementById('dmLabel');
-  const btn=document.getElementById('dmToggle');
+  const u=document.querySelector('#dmIcon use');
   if(lbl)lbl.textContent=isDark?'نهاري':'ليلي';
-  if(btn)btn.querySelector('span') && (btn.childNodes[0].textContent=isDark?'☀️ ':'🌙 ');
-  // update emoji separately
-  if(btn){
-    const txt=btn.innerHTML;
-    btn.innerHTML=txt.replace(isDark?'🌙':'☀️', isDark?'☀️':'🌙');
-  }
+  if(u)u.setAttribute('href',isDark?'#i-sun':'#i-moon');
 }
 // تطبيق الوضع المحفوظ عند التحميل
 (function(){
@@ -8587,6 +8761,35 @@ function updateDmButton(isDark){
     window.addEventListener('DOMContentLoaded',()=>updateDmButton(true));
   }
 })();
+
+
+// ═══ الثيمات ═══
+const PH_THEMES=[["classic","كلاسيك","#0E6E8C","#C9A84C","#112240"],["emerald","زمردي","#0F8B6D","#D4A72C","#0B3D33"],["ocean","محيط","#0369A1","#F59E0B","#082F49"],["royal","ملكي","#6D3FC0","#F0B429","#2A1A52"],["rose","وردي","#C2255C","#E8B04C","#52183A"],["sunset","غروب","#C2570C","#EAB308","#40220D"],["graphite","جرافيت","#475569","#D4AF37","#22252C"]];
+function applyTheme(n,save){
+  if(!PH_THEMES.some(t=>t[0]===n))n='classic';
+  document.body.setAttribute('data-theme',n);
+  const t=PH_THEMES.find(x=>x[0]===n);
+  const m=document.querySelector('meta[name=theme-color]');if(m)m.content=t[4];
+  if(save){try{localStorage.setItem('pharma_theme',n);}catch(e){}}
+  renderThemePop();
+}
+function applyStyle(n,save){
+  if(n!=='classic')n='cine';
+  document.body.setAttribute('data-style',n);
+  if(save){try{localStorage.setItem('pharma_style',n);}catch(e){}}
+  renderThemePop();
+}
+function renderThemePop(){
+  const el=document.getElementById('themePop');if(!el)return;
+  const cur=document.body.getAttribute('data-theme')||'classic';
+  const sty=document.body.getAttribute('data-style')||'cine';
+  el.innerHTML='<div class="tp-title">الستايل</div><div class="sty-row"><button class="'+(sty==='cine'?'on':'')+'" onclick="applyStyle(\'cine\',true)">سينمائي</button><button class="'+(sty==='classic'?'on':'')+'" onclick="applyStyle(\'classic\',true)">كلاسيك</button></div><div class="tp-title">الألوان</div><div class="tp-grid">'+PH_THEMES.map(t=>
+   `<button class="tp-item${t[0]===cur?' on':''}" onclick="applyTheme('${t[0]}',true)"><span class="tp-sw" style="background:linear-gradient(135deg,${t[4]} 0 38%,${t[2]} 38% 72%,${t[3]} 72%)"></span><span>${t[1]}</span></button>`).join('')+
+   '</div><div class="tp-note">الوضع الليلي بيشتغل مع أي ثيم</div>';
+}
+function toggleThemePop(e){e&&e.stopPropagation();document.getElementById('themePop').classList.toggle('open');}
+document.addEventListener('click',e=>{const p=document.getElementById('themePop');if(p&&!e.target.closest('.theme-wrap'))p.classList.remove('open');});
+(function(){let t='classic',y='cine';try{t=localStorage.getItem('pharma_theme')||'classic';y=localStorage.getItem('pharma_style')||'cine';}catch(e){}document.body.setAttribute('data-style',y==='classic'?'classic':'cine');applyTheme(t,false);})();
 
 // ═══════════════════════════════════════════════════════════════
 // ══ PWA: تسجيل الـ Service Worker (إضافي - لا يؤثر على منطق النظام) ══
